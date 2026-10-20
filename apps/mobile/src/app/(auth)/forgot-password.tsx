@@ -1,12 +1,11 @@
-import { emailSchema } from '@kartapp/domain';
+import { emailSchema } from '@kartup/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Screen, Text, TextField } from '@/components/ui';
-import { authRedirectUrl } from '@/features/auth/redirect';
 import { errorKey } from '@/lib/errors';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/data';
 import { spacing } from '@/theme/tokens';
 
 export default function ForgotPassword() {
@@ -24,12 +23,14 @@ export default function ForgotPassword() {
     setFieldError(undefined);
     setError(null);
     setLoading(true);
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(parsed.data, {
-      redirectTo: authRedirectUrl('reset-password'),
-    });
-    setLoading(false);
-    if (authError) return setError(t(errorKey(authError) as 'errors.generic'));
-    setSentTo(parsed.data);
+    try {
+      await api.auth.requestPasswordReset(parsed.data);
+      setSentTo(parsed.data);
+    } catch (err) {
+      setError(t(errorKey(err) as 'errors.generic'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

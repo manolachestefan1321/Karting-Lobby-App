@@ -1,11 +1,11 @@
-import { passwordSchema } from '@kartapp/domain';
+import { passwordSchema } from '@kartup/domain';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Screen, Text, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { errorKey } from '@/lib/errors';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/data';
 import { spacing } from '@/theme/tokens';
 
 export default function ResetPassword() {
@@ -21,10 +21,14 @@ export default function ResetPassword() {
     if (!parsed.success) return setFieldError(t(parsed.error.issues[0]!.message as 'validation.passwordLength'));
     setFieldError(undefined);
     setLoading(true);
-    const { error: authError } = await supabase.auth.updateUser({ password });
-    setLoading(false);
-    if (authError) return setError(t(errorKey(authError) as 'errors.generic'));
-    finishPasswordRecovery();
+    try {
+      await api.auth.updatePassword(password);
+      finishPasswordRecovery();
+    } catch (err) {
+      setError(t(errorKey(err) as 'errors.generic'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

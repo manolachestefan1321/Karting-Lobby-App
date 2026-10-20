@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { CheckeredStripe, Screen, Text } from '@/components/ui';
+import { Wordmark } from '@/components/brand/Wordmark';
+import { Screen, Text } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { ProfileForm } from '@/features/profile/ProfileForm';
 import { spacing } from '@/theme/tokens';
@@ -12,7 +13,7 @@ export default function Onboarding() {
   return (
     <Screen edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <CheckeredStripe squares={16} size={5} />
+        <Wordmark size={36} />
         <Text variant="title">{t('onboarding.title')}</Text>
         <Text tone="muted">{t('onboarding.subtitle')}</Text>
       </View>

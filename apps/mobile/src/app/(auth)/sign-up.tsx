@@ -1,21 +1,21 @@
-import { signUpSchema } from '@kartapp/domain';
+import { signUpSchema } from '@kartup/domain';
 import { Link, router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View, type TextInputInstance } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { Button, Checkbox, Screen, Text, TextField } from '@/components/ui';
-import { authRedirectUrl } from '@/features/auth/redirect';
+import { api } from '@/data';
 import { TermsText } from '@/features/profile/ProfileForm';
 import { errorKey } from '@/lib/errors';
-import { supabase } from '@/lib/supabase';
 import { zodResolver } from '@/lib/zodResolver';
 import { usePreferences } from '@/store/preferences';
 import { spacing } from '@/theme/tokens';
 
 export default function SignUp() {
   const { t } = useTranslation();
-  const locale = usePreferences((s) => s.locale);
+  const locale = usePreferences((s) => s.locale) ?? 'en';
   const passwordRef = useRef<TextInputInstance>(null);
   const [error, setError] = useState<string | null>(null);
   const { control, handleSubmit, formState } = useForm({
@@ -25,17 +25,12 @@ export default function SignUp() {
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
     setError(null);
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: authRedirectUrl(),
-        data: { terms_accepted: true, locale },
-      },
-    });
-    if (authError) return setError(t(errorKey(authError) as 'errors.generic'));
-    // With email confirmation on, there is no session until the link is opened.
-    if (!data.session) router.replace({ pathname: '/verify-email', params: { email } });
+    try {
+      const { needsConfirmation } = await api.auth.signUp({ email, password, locale });
+      if (needsConfirmation) router.replace({ pathname: '/verify-email', params: { email } });
+    } catch (err) {
+      setError(t(errorKey(err) as 'errors.generic'));
+    }
   });
 
   const msg = (m?: string) => (m ? t(m as 'validation.required') : undefined);
@@ -43,6 +38,7 @@ export default function SignUp() {
   return (
     <Screen edges={['top', 'bottom']}>
       <View style={styles.top}>
+        <Wordmark size={40} />
         <Text variant="title">{t('auth.signUpTitle')}</Text>
       </View>
       <Controller
@@ -117,7 +113,7 @@ export default function SignUp() {
 }
 
 const styles = StyleSheet.create({
-  top: { paddingTop: spacing.xxxl },
+  top: { paddingTop: spacing.xxl, gap: spacing.lg },
   gapXs: { gap: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, flexWrap: 'wrap' },
 });

@@ -54,6 +54,7 @@ export const fonts = {
   display: 'BarlowCondensed_800ExtraBold',
   heading: 'BarlowCondensed_700Bold',
   headingMedium: 'BarlowCondensed_600SemiBold',
+  wordmark: 'BarlowCondensed_900Black_Italic',
 } as const;
 
 export const typography = {

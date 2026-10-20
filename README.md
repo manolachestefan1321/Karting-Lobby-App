@@ -1,167 +1,89 @@
-# KartApp (placeholder name)
+# KartUP
 
-A social app for karting: find drivers in your city, join a session lobby, pay your share, race, and climb the rankings.
+**Find your team & race.**
 
-- **Mobile app:** `apps/mobile`, built with Expo (React Native) for iOS and Android.
-- **Backend:** `supabase/`, which holds the database, security rules, server functions and seed data.
-- **Business rules:** `packages/domain`, pure TypeScript with tests.
-- **Branding:** `config/brand.ts`. The name, colors, logo and app IDs live only in this file.
-- **Architecture and decisions:** see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+KartUP is a social app for karting: find drivers in your city, join a session lobby, pay your share, race, and climb the rankings.
 
-## Build progress
-
-| Step | Status |
+| Folder | What it is |
 |---|---|
-| 1. Auth & profiles | ✅ done |
-| 2. Cities, tracks, prices | ⏳ next |
-| 3. Sessions & lobby | |
-| 4. Payments & refunds | |
-| 5. Check-in & bans | |
-| 6. Results & ranking | |
-| 7. Notifications | |
-| 8. Admin panel | |
-| 9. Store preparation | |
+| `apps/mobile` | The app (Expo / React Native). The same code runs on iPhone, Android and as the web preview. |
+| `packages/domain` | Business rules with tests: prices, refunds, bans, points, results. |
+| `supabase/` | Real backend: database, security rules, server functions, email templates. |
+| `config/brand.ts` | Name, slogan, colors and app IDs. Change branding here only. |
+| `legal/` | Privacy policy and terms templates (edit these). |
+| `docs/` | [Architecture](docs/ARCHITECTURE.md) and the [preview testing guide](docs/PREVIEW-TESTING.md). |
+
+## Where we are
+
+**Now: local web preview.** The whole app runs in your browser inside a phone frame. It uses fake data, a fake login, fake payments and a debug panel, and needs no accounts or keys. Once you approve the preview, we connect the real backend (Supabase, Stripe, sign-in providers, push notifications) and make the native builds.
 
 ---
 
-## Part A: One-time setup on your Mac
+## Run the preview on your Mac
 
-Type the commands in **Terminal** (press ⌘+Space, type "Terminal", then press Enter). Copy and paste one line at a time.
+You only need to do steps 1 and 2 once.
 
-### A1. Install the tools
-
-1. **Homebrew** (the package manager for macOS):
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
-   At the end it prints 2–3 lines under "Next steps". Copy and run them too.
-2. **Node.js and Git:**
-   ```bash
-   brew install node git
-   ```
-3. **Docker Desktop.** The local database runs inside it. Download it from https://www.docker.com/products/docker-desktop/, open it once and leave it running.
-4. **Xcode** (for the iPhone simulator). Install it from the Mac App Store; it's free and about 10 GB. Open it once and accept the license. Then run:
-   ```bash
-   xcode-select --install
-   ```
-5. **Android Studio** (optional, for the Android emulator). Download it from https://developer.android.com/studio. In *More Actions → Virtual Device Manager*, create a Pixel device.
-
-### A2. Get the code and install
-
+**1. Install Node.js.** Open **Terminal** (press ⌘+Space, type "Terminal", press Enter) and paste:
 ```bash
-git clone <your-repo-url> kartapp
-cd kartapp
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+At the end it prints 2–3 lines under "Next steps". Copy and run them too. Then run:
+```bash
+brew install node git
+```
+
+**2. Download the code and install:**
+```bash
+cd ~/Documents
+git clone https://github.com/manolachestefan1321/karting-lobby-app.git
+cd karting-lobby-app
 npm install
 ```
 
-### A3. Run the backend locally (no accounts needed)
-
+**3. Start the preview** (every time):
 ```bash
-npx supabase start
+cd ~/Documents/karting-lobby-app
+npm run web
 ```
-The first run downloads Docker images and takes a few minutes. When it finishes, it prints an **API URL** and an **anon key**. Keep them.
+Wait until it says **"Waiting on http://localhost:8081"**, then open **http://localhost:8081** in Chrome.
 
-```bash
-npx supabase db reset      # creates all tables and loads the seed data
-npx supabase test db       # runs the database security tests
-```
+- The preview only runs on your computer (`localhost`). Nobody else can see it.
+- Live reload is on: when the code changes, the page updates by itself.
+- To stop it, press `Ctrl + C` in Terminal.
+- To get the latest version later, run `git pull` and then `npm install` before `npm run web`.
 
-Open http://127.0.0.1:54323 to browse the database in Supabase Studio.
-Emails sent by the local backend (confirmation, password reset) appear at http://127.0.0.1:54324.
+**Test login:** `andrei@kartup.test`, password `kartup123`. On the login screen, the "Fill in test account" button types these in for you. Every demo user has the same password.
 
-### A4. Run the app in the simulator
+All demo data is stored in your browser. **Reset demo data** in the debug panel brings back the starting data. Every person, track and price in the demo is fictional.
 
-```bash
-cp apps/mobile/.env.example apps/mobile/.env
-open -e apps/mobile/.env     # paste the API URL and anon key from step A3
-cd apps/mobile
-npx expo run:ios             # first build takes 5–10 minutes
-# or, for Android:  npx expo run:android
-```
-
-> **Why not Expo Go?** Google sign-in and (later) Stripe use native code that Expo Go doesn't contain. `expo run:ios` builds a custom development version of the app. You only rebuild when native libraries change. Day-to-day code changes reload instantly.
-
-With the local backend, **email sign-up works right away.** Open the confirmation email at http://127.0.0.1:54324. Google, Apple and Facebook sign-in need the accounts from Part B.
-
-### A5. Run all tests
-
-```bash
-npm test                 # business rules (Vitest) + app tests (Jest)
-npm run typecheck        # TypeScript checks
-npx supabase test db     # database security (RLS) tests
-```
+See **[docs/PREVIEW-TESTING.md](docs/PREVIEW-TESTING.md)** for exactly what to click to test each flow.
 
 ---
 
-## Part B: Accounts and keys (do these when you're ready to go online)
+## Rebranding
 
-### B1. Supabase (hosted backend, free to start)
-1. Create an account at https://supabase.com and create a **New project**. Choose region *Central EU (Frankfurt)* and save the database password somewhere safe.
-2. Connect your code to the project:
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref <the id from your project URL>
-   npx supabase db push --include-seed    # creates the tables and loads the starter data
-   npx supabase functions deploy delete-account
-   ```
-   If the seed step fails, paste the contents of `supabase/seed.sql` into **SQL Editor** on the Supabase website and click *Run*. It is safe to run more than once.
-3. Under **Project Settings → API**, copy the *Project URL* and *anon public* key into `apps/mobile/.env`.
-4. Under **Authentication → URL Configuration**:
-   - Set *Site URL* to `kartapp://`.
-   - Add these *Redirect URLs*: `kartapp://**`, `exp://**`.
-5. Under **Authentication → Sign In / Providers → Email**, turn on *Confirm email*. Set the minimum password length to 8.
-6. **Before launch:** under **Authentication → Emails → SMTP Settings**, connect a real email service, for example Resend or Brevo. Supabase's built-in email only sends a few messages per hour and is meant for testing.
+1. Edit `config/brand.ts`: name, slogan, colors, bundle IDs, contact email and company name.
+2. Run `npm run brand:sync`. This regenerates the placeholder logo, the app icon and splash images, the email templates (`supabase/templates/`) and the in-app legal texts.
+3. When the real logo exists, put the image files in `apps/mobile/assets/images/` with the same names and sizes. From then on, run `npm run brand:sync -- --skip-images` so your logo isn't overwritten.
 
-### B2. Google sign-in
-1. Go to https://console.cloud.google.com and create a project. Open **APIs & Services → OAuth consent screen**, choose *External* and fill in the app name and support email.
-2. Under **Credentials → Create credentials → OAuth client ID**, create three clients:
-   - **Web application.** Authorized redirect URI: `https://<your-project>.supabase.co/auth/v1/callback`.
-   - **iOS.** Bundle ID: `com.kartapp.app`.
-   - **Android.** Package: `com.kartapp.app`. For the SHA-1, run `npx eas-cli credentials` in `apps/mobile` and use the fingerprint it shows.
-3. In Supabase, under **Authentication → Providers → Google**:
-   - Enable the provider.
-   - In *Client IDs*, paste `WEB_ID,IOS_ID,ANDROID_ID` (comma-separated).
-   - In *Client Secret*, paste the web client's secret.
-   - Turn on **Skip nonce checks**. Native iOS sign-in needs this.
-4. In `apps/mobile/.env`, set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`.
+The placeholder logo is the text "KartUP" in the accent color with a small checkered flag.
 
-### B3. Apple sign-in (needs the Apple Developer Program, $99/year)
-1. Join at https://developer.apple.com/programs/.
-2. Go to **Certificates, IDs & Profiles → Identifiers** and register the App ID `com.kartapp.app` with **Sign In with Apple** enabled. EAS can also create this for you on the first build.
-3. In Supabase, under **Authentication → Providers → Apple**, enable the provider and put `com.kartapp.app` in *Client IDs*. Native iOS sign-in doesn't need a secret.
+## Developer commands
 
-### B4. Facebook sign-in
-1. Go to https://developers.facebook.com and choose **Create App → Authenticate and request data from users with Facebook Login**.
-2. Under **Facebook Login → Settings → Valid OAuth Redirect URIs**, add `https://<your-project>.supabase.co/auth/v1/callback`.
-3. Copy the **App ID** and **App Secret** from **App settings → Basic**, and paste them into Supabase under **Authentication → Providers → Facebook**.
-4. Before launch, switch the Facebook app to **Live** mode. This requires the privacy policy URL.
-
-### B5. Expo / EAS (cloud builds, free tier available)
 ```bash
-cd apps/mobile
-npx eas-cli login          # create an account at https://expo.dev first
-npx eas-cli init           # links the project and fills EAS_PROJECT_ID
-npx eas-cli build --profile development --platform ios       # dev build for your iPhone
-npx eas-cli build --profile development --platform android   # dev build for Android
-```
-Store publishing instructions come in step 9.
-
----
-
-## Project structure
-
-```
-config/brand.ts        name, logo, colors, bundle IDs (change branding here)
-apps/mobile/           Expo app (Expo Router screens in src/app)
-packages/domain/       business rules + unit tests
-supabase/migrations/   database schema + security rules
-supabase/functions/    server-side Edge Functions
-supabase/tests/        database security tests (pgTAP)
-supabase/seed.sql      starter data (Romanian cities, tracks in step 2)
-docs/                  architecture & decisions
+npm run web          # web preview with fake backend (http://localhost:8081)
+npm test             # all unit + integration tests
+npm run typecheck    # TypeScript checks
+npm run db:test      # database migrations + security tests (needs local Postgres + PostGIS + pgTAP)
+npm run brand:sync   # regenerate logo images, email templates, legal texts from config/brand.ts
 ```
 
-## Notes for developers
-- **Strings:** every visible string is in `apps/mobile/src/i18n/en.ts` and `ro.ts`. A test fails if the two files have different keys.
-- **Database:** RLS is enabled on every table. Clients get column-level grants only. Anything involving money, seats, bans or points goes through Edge Functions or `SECURITY DEFINER` SQL.
-- **Testing without Docker:** `npm run db:test` runs migrations and pgTAP tests against a throw-away Postgres. It's used in CI and needs Postgres 16+, PostGIS and pgTAP installed.
+## Later: real backend and store builds
+
+These steps are **not needed for the preview**. When you approve the preview, we will:
+1. Connect Supabase. Auth, profiles and cities are already written for it in `apps/mobile/src/data/supabase`. Sessions, payments and results come next.
+2. Set up Stripe: test mode first, with Connect Express payouts to hosts.
+3. Set up sign-in with Google, Apple and Facebook, and push notifications.
+4. Make EAS builds for iPhone and Android, and publish to App Store Connect and Google Play Console.
+
+Each of these steps will come with exact account-setup instructions for macOS.

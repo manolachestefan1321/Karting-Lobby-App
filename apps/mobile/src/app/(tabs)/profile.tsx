@@ -2,27 +2,37 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Button, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
-import { useAuth } from '@/features/auth/AuthProvider';
-import { useCities, usePublicProfile, useRankTiers, useTrackExperience } from '@/features/profile/api';
+import { Button, ErrorState, ListRow, Card, LoadingState, promptDialog, Screen, Text } from '@/components/ui';
+import { useMyId } from '@/features/auth/AuthProvider';
+import { toast } from '@/features/notifications/BannerHost';
+import { useAppealBan, useCities, usePointsHistory, usePublicProfile, useRankTiers, useTrackExperience } from '@/features/profile/api';
 import { ProfileView } from '@/features/profile/ProfileView';
+import { errorText } from '@/lib/errors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 
 export default function MyProfile() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors } = useTheme();
-  const { session } = useAuth();
-  const userId = session?.user.id;
+  const userId = useMyId();
   const profile = usePublicProfile(userId);
   const tiers = useRankTiers();
   const experience = useTrackExperience(userId);
+  const points = usePointsHistory(userId);
   const cities = useCities();
+  const appeal = useAppealBan();
 
   const refreshing = profile.isRefetching || experience.isRefetching;
   const refresh = () => {
     void profile.refetch();
     void experience.refetch();
+  };
+
+  const ban = profile.data?.activeBan;
+  const onAppeal = async () => {
+    if (!ban) return;
+    const message = await promptDialog({ title: t('profile.appealTitle'), placeholder: t('profile.appealPlaceholder'), confirmText: t('common.send'), cancelText: t('common.cancel') });
+    if (message) appeal.mutate({ banId: ban.id, message }, { onSuccess: () => toast(t('profile.appealSent')), onError: (e) => toast(errorText(e, t as never, i18n.language), 'danger') });
   };
 
   return (
@@ -31,12 +41,7 @@ export default function MyProfile() {
         <Text variant="title" style={styles.flex}>
           {t('tabs.profile')}
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('profile.settings')}
-          hitSlop={12}
-          onPress={() => router.push('/settings')}
-        >
+        <Pressable accessibilityRole="button" accessibilityLabel={t('profile.settings')} hitSlop={12} onPress={() => router.push('/settings')}>
           <Ionicons name="settings-outline" size={24} color={colors.text} />
         </Pressable>
       </View>
@@ -49,8 +54,9 @@ export default function MyProfile() {
           profile={profile.data}
           tiers={tiers.data ?? []}
           experience={experience.data ?? []}
-          cityName={cities.data?.find((c) => c.id === profile.data!.home_city_id)?.name}
+          cityName={cities.data?.find((c) => c.id === profile.data!.homeCityId)?.name}
           actions={<Button title={t('profile.edit')} variant="secondary" fullWidth={false} size="md" onPress={() => router.push('/profile/edit')} />}
+          banAction={ban && ban.appealStatus === 'none' ? <Button title={t('profile.appeal')} variant="secondary" size="md" onPress={() => void onAppeal()} loading={appeal.isPending} /> : undefined}
           onExperiencePress={(trackId) => router.push({ pathname: '/profile/experience', params: { trackId } })}
           experienceAction={
             <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push('/profile/experience')}>
@@ -58,6 +64,16 @@ export default function MyProfile() {
                 + {t('profile.addExperience')}
               </Text>
             </Pressable>
+          }
+          footer={
+            <Card padded={false}>
+              <ListRow
+                icon="trending-up-outline"
+                title={t('profile.pointsHistory')}
+                subtitle={points.data?.[0] ? `+${points.data[0].points} · ${points.data[0].trackName}` : t('profile.noPoints')}
+                onPress={() => router.push('/profile/points')}
+              />
+            </Card>
           }
         />
       )}

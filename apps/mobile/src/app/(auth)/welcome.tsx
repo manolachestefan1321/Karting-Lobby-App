@@ -3,9 +3,9 @@ import { Link, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { brand } from '@config/brand';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { Button, CheckeredStripe, Screen, Text } from '@/components/ui';
-import { isAppleSignInAvailable, signInWithApple, signInWithGoogle, signInWithOAuthBrowser } from '@/features/auth/social';
+import { api } from '@/data';
 import { errorKey } from '@/lib/errors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
@@ -13,23 +13,23 @@ import { spacing } from '@/theme/tokens';
 type Provider = 'apple' | 'google' | 'facebook';
 
 export default function Welcome() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [busy, setBusy] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [appleAvailable, setAppleAvailable] = useState(false);
+  // Apple sign-in is offered on iPhones (required by App Store rules). The preview shows it too.
+  const [appleAvailable, setAppleAvailable] = useState(api.kind === 'mock');
 
   useEffect(() => {
-    void isAppleSignInAvailable().then(setAppleAvailable);
+    if (api.kind === 'mock' || Platform.OS !== 'ios') return;
+    void import('expo-apple-authentication').then((m) => m.isAvailableAsync()).then(setAppleAvailable);
   }, []);
 
   const run = async (provider: Provider) => {
     setError(null);
     setBusy(provider);
     try {
-      if (provider === 'apple') await signInWithApple();
-      else if (provider === 'google') await signInWithGoogle();
-      else await signInWithOAuthBrowser('facebook');
+      await api.auth.signInWithProvider(provider);
     } catch (err) {
       const key = errorKey(err);
       setError(t((key === 'errors.generic' ? 'errors.socialFailed' : key) as 'errors.generic'));
@@ -38,18 +38,11 @@ export default function Welcome() {
     }
   };
 
-  const tagline = i18n.language === 'ro' ? brand.tagline.ro : brand.tagline.en;
-
   return (
     <Screen edges={['top', 'bottom']}>
       <View style={styles.hero}>
         <CheckeredStripe />
-        <Text variant="display" style={styles.brand}>
-          {brand.name}
-        </Text>
-        <View style={[styles.speedLine, { backgroundColor: colors.accent }]} />
-        <Text variant="title">{t('auth.welcomeTitle')}</Text>
-        <Text tone="muted">{tagline}</Text>
+        <Wordmark size={68} />
       </View>
 
       <View style={styles.actions}>
@@ -100,16 +93,13 @@ export default function Welcome() {
             </Text>
           </Link>
         </View>
-        {Platform.OS === 'web' ? null : <View style={{ height: spacing.sm }} />}
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { flex: 1, justifyContent: 'center', gap: spacing.md, paddingTop: spacing.xxl },
-  brand: { fontSize: 56, lineHeight: 58, fontStyle: 'italic' },
-  speedLine: { height: 4, width: 96, transform: [{ skewX: '-30deg' }] },
+  hero: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingTop: spacing.xxl },
   actions: { gap: spacing.md },
   divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginVertical: spacing.xs },
   line: { flex: 1, height: StyleSheet.hairlineWidth },

@@ -4,9 +4,8 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Screen, Text } from '@/components/ui';
-import { authRedirectUrl } from '@/features/auth/redirect';
 import { errorKey } from '@/lib/errors';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/data';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 
@@ -19,9 +18,14 @@ export default function VerifyEmail() {
 
   const resend = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: authRedirectUrl() } });
-    setLoading(false);
-    setStatus(error ? t(errorKey(error) as 'errors.generic') : t('auth.emailResent'));
+    try {
+      await api.auth.resendConfirmation(email);
+      setStatus(t('auth.emailResent'));
+    } catch (err) {
+      setStatus(t(errorKey(err) as 'errors.generic'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

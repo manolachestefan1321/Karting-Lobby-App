@@ -1,18 +1,26 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { Linking, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { brand } from '@config/brand';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { Card, ListRow, Screen, SectionHeader, SegmentedControl, Text } from '@/components/ui';
+import { api, type Locale, type NotificationGroup } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
-import type { Locale } from '@/lib/types';
+import { useNotificationPrefs, useSetNotificationPrefs } from '@/features/notifications/hooks';
 import { usePreferences, type ThemePreference } from '@/store/preferences';
+import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
+
+const GROUPS: NotificationGroup[] = ['lobby', 'chat', 'reminders', 'results', 'ranking', 'account'];
 
 export default function Settings() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const { signOut } = useAuth();
   const { locale, theme, setLocale, setTheme } = usePreferences();
+  const prefs = useNotificationPrefs();
+  const setPrefs = useSetNotificationPrefs();
 
   return (
     <Screen>
@@ -47,29 +55,54 @@ export default function Settings() {
         />
       </Card>
 
-      <SectionHeader title={t('settings.legal')} />
+      <SectionHeader title={t('settings.notifications')} />
       <Card padded={false}>
-        <ListRow icon="shield-checkmark-outline" title={t('settings.privacy')} onPress={() => Linking.openURL(brand.privacyUrl)} />
-        <ListRow icon="document-text-outline" title={t('settings.terms')} onPress={() => Linking.openURL(brand.termsUrl)} />
-        <ListRow icon="mail-outline" title={t('settings.contact')} subtitle={brand.supportEmail} onPress={() => Linking.openURL(`mailto:${brand.supportEmail}`)} />
+        {GROUPS.map((g) => (
+          <View key={g} style={styles.prefRow}>
+            <Text style={styles.flex}>{t(`settings.prefs.${g}`)}</Text>
+            <Switch
+              value={g === 'account' ? true : (prefs.data?.[g] ?? true)}
+              disabled={g === 'account' || !prefs.data}
+              onValueChange={(v) => prefs.data && setPrefs.mutate({ ...prefs.data, [g]: v })}
+              trackColor={{ true: colors.accent, false: colors.border }}
+              accessibilityLabel={t(`settings.prefs.${g}`)}
+            />
+          </View>
+        ))}
       </Card>
 
       <SectionHeader title={t('settings.account')} />
       <Card padded={false}>
+        <ListRow icon="receipt-outline" title={t('settings.payments')} onPress={() => router.push('/settings/payments')} />
         <ListRow icon="log-out-outline" title={t('settings.signOut')} chevron={false} onPress={() => void signOut()} />
         <ListRow icon="trash-outline" title={t('settings.deleteAccount')} destructive onPress={() => router.push('/settings/delete-account')} />
       </Card>
 
-      <View style={styles.version}>
-        <Text variant="caption" tone="faint">
-          {brand.name} · {t('settings.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}
+      <SectionHeader title={t('settings.legal')} />
+      <Card padded={false}>
+        <ListRow icon="shield-checkmark-outline" title={t('settings.privacy')} onPress={() => router.push('/legal/privacy')} />
+        <ListRow icon="document-text-outline" title={t('settings.terms')} onPress={() => router.push('/legal/terms')} />
+        <ListRow icon="mail-outline" title={t('settings.contact')} subtitle={brand.supportEmail} onPress={() => void Linking.openURL(`mailto:${brand.supportEmail}`)} />
+      </Card>
+
+      <SectionHeader title={t('settings.about')} />
+      <Card style={styles.about}>
+        <Wordmark size={44} align="center" />
+        <Text variant="caption" tone="faint" align="center">
+          {t('settings.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}
+          {api.kind === 'mock' ? ` · ${t('settings.previewMode')}` : ''}
         </Text>
-      </View>
+        <Text variant="caption" tone="faint" align="center">
+          © {new Date().getFullYear()} {brand.legalEntity}
+        </Text>
+      </Card>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   gap: { gap: spacing.md },
-  version: { alignItems: 'center', paddingVertical: spacing.lg },
+  prefRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, minHeight: 52, gap: spacing.md },
+  flex: { flex: 1 },
+  about: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
 });

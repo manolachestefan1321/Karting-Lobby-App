@@ -5,9 +5,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PGBIN="${PGBIN:-$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -1)}"
-WORK="${TMPDIR:-/tmp}/kartapp-pg-$$"
+WORK="${TMPDIR:-/tmp}/kartup-pg-$$"
 PORT="${PGPORT_TEST:-54329}"
-DB=kartapp_test
+DB=kartup_test
 
 cleanup() { "$PGBIN/pg_ctl" -D "$WORK" -m immediate stop >/dev/null 2>&1 || true; rm -rf "$WORK"; }
 trap cleanup EXIT

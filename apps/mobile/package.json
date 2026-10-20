@@ -1,12 +1,12 @@
 {
-  "name": "@kartapp/mobile",
+  "name": "@kartup/mobile",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",
     "@expo/ui": "~58.0.21",
     "@expo/vector-icons": "^15.0.2",
-    "@kartapp/domain": "*",
+    "@kartup/domain": "*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.2.1",
     "@react-native-google-signin/google-signin": "^16.1.5",
@@ -58,7 +58,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
+    "web": "EXPO_PUBLIC_DATA_SOURCE=mock expo start --web --port 8081",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests"
@@ -71,7 +71,7 @@
       "^@config/(.*)$": "<rootDir>/../../config/$1"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@kartapp/.*|i18next|react-i18next))"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@kartup/.*|i18next|react-i18next))"
     ]
   }
 }

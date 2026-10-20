@@ -14,3 +14,5 @@ export * from './TextField';
 export * from './DateField';
 export * from './OptionSheet';
 export * from './PickerField';
+export * from './Chip';
+export * from './Dialog';

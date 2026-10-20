@@ -1,4 +1,4 @@
-import { profileSchema, type ProfileInput } from '@kartapp/domain';
+import { profileSchema, type ProfileInput } from '@kartup/domain';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Linking, StyleSheet, View } from 'react-native';
@@ -7,7 +7,7 @@ import { brand } from '@config/brand';
 import { Button, Checkbox, DateField, PickerField, Text, TextField } from '@/components/ui';
 import { errorKey } from '@/lib/errors';
 import { zodResolver } from '@/lib/zodResolver';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/data';
 import { spacing } from '@/theme/tokens';
 import { useCities, useMinAge, useSaveProfile } from './api';
 import { AvatarEditor } from './AvatarEditor';
@@ -17,8 +17,8 @@ export function ProfileForm({ profile, submitLabel, onSaved }: { profile: Profil
   const { t } = useTranslation();
   const minAge = useMinAge().data ?? 16;
   const cities = useCities();
-  const save = useSaveProfile(profile.id);
-  const needsTerms = !profile.terms_accepted_at;
+  const save = useSaveProfile();
+  const needsTerms = !profile.termsAcceptedAt;
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [termsError, setTermsError] = useState(false);
 
@@ -26,10 +26,10 @@ export function ProfileForm({ profile, submitLabel, onSaved }: { profile: Profil
   const { control, handleSubmit, watch, formState } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: profile.first_name ?? '',
-      lastName: profile.last_name ?? '',
-      dateOfBirth: profile.date_of_birth ?? '',
-      homeCityId: profile.home_city_id ?? '',
+      firstName: profile.firstName ?? '',
+      lastName: profile.lastName ?? '',
+      dateOfBirth: profile.dateOfBirth ?? '',
+      homeCityId: profile.homeCityId ?? '',
       bio: profile.bio ?? '',
     },
   });
@@ -49,7 +49,7 @@ export function ProfileForm({ profile, submitLabel, onSaved }: { profile: Profil
 
   return (
     <View style={styles.form}>
-      <AvatarEditor userId={profile.id} avatarPath={profile.avatar_path} name={name} />
+      <AvatarEditor avatarUrl={profile.avatarUrl} name={name} />
       <Controller
         control={control}
         name="firstName"

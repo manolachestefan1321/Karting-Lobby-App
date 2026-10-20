@@ -3,7 +3,7 @@ import type { z } from 'zod';
 
 /**
  * Minimal react-hook-form resolver for zod schemas.
- * Error messages are i18n keys produced by @kartapp/domain schemas.
+ * Error messages are i18n keys produced by @kartup/domain schemas.
  */
 export function zodResolver<S extends z.ZodType<FieldValues, FieldValues>>(schema: S): Resolver<z.input<S>, unknown, z.output<S>> {
   return async (values) => {

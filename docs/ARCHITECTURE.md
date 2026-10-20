@@ -1,4 +1,4 @@
-# KartApp: architecture (v1, approved 2026-10-20)
+# KartUP: architecture (v1, approved 2026-10-20)
 
 ## Decisions confirmed by the owner
 | Topic | Decision |
@@ -11,7 +11,7 @@
 | Platform fee | 5 RON per driver, on top of the track price (configurable in `app_config`). Example: an 800 RON track price for 10 drivers means each pays 80 + 5 = 85 RON, you keep 50 RON and the host receives 800 RON. |
 | Time display | Always the track's local time. |
 
-> "KartApp" is a placeholder. All branding (name, slug, bundle IDs, colors, logo paths, support email, legal entity) lives in **`config/brand.ts`**, so renaming means editing one file.
+> App name **KartUP** · slogan **"Find your team & race."** (kept in English in every language). All branding (name, slogan, slug `kartup`, scheme `kartup://`, bundle IDs `com.kartup.app`, colors, logo paths, support email, legal entity) lives in **`config/brand.ts`**. `npm run brand:sync` regenerates the placeholder logo, the email templates and the legal texts from it.
 
 ---
 
@@ -47,6 +47,19 @@
 5. **Times are `timestamptz` (UTC)** everywhere. Each track has an IANA timezone (`Europe/Bucharest`). Session times show in the track's local time, which is the time that matters when you drive there. If the device is in a different zone, a small label shows it.
 
 ---
+
+## 1b. Data layer and the web preview
+
+Screens never talk to a backend directly. They use **`api`** from `apps/mobile/src/data`. This is a set of interfaces (`DataApi` in `data/api.ts`): auth, profiles, places, sessions, payments, results, ranking, notifications, moderation, realtime, location and clock. There are two implementations:
+
+| `EXPO_PUBLIC_DATA_SOURCE` | Implementation | Used for |
+|---|---|---|
+| `mock` (default) | `data/mock`: an in-browser fake server with seeded demo data, persisted in `localStorage`, and a controllable clock | **Web preview** (`npm run web`) and offline demos |
+| `supabase` | `data/supabase`: Supabase + Stripe | Real app (auth, profiles and places are done; the rest is built after the preview is approved) |
+
+The fake server enforces the same rules as the future server, using `packages/domain`. Its `tick()` is the equivalent of the scheduled server job: reminders, auto-cancel, check-in close → no-shows → bans, results finalization → points → rank-ups, and payouts.
+
+**Preview page** (`src/preview`, web + mock only): when the app is opened at `http://localhost:8081`, the outer page shows the **phone frame** (iPhone 393×852 / Android 412×915) with the real app inside an `<iframe>`, plus a **debug panel**. The panel talks to the app over `postMessage`. Native builds never include the panel.
 
 ## 2. Payment design (important, please read)
 
@@ -176,7 +189,7 @@ interface PriceProvider {
 ## 5. Folder structure (monorepo, npm workspaces)
 
 ```
-kartapp/
+kartup/
 ├── config/
 │   └── brand.ts                  # ← name, logo, colors, bundle IDs: change everything here
 ├── apps/

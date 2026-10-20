@@ -51,13 +51,13 @@ export function profileSchema(minAge: number = DEFAULT_MIN_AGE, now?: Date) {
     firstName: name,
     lastName: name,
     dateOfBirth: dateOfBirthSchema(minAge, now),
-    homeCityId: z.uuid('validation.required'),
+    homeCityId: z.string().min(1, 'validation.required'),
     bio: z.string().trim().max(BIO_MAX, 'validation.tooLong').default(''),
   });
 }
 
 export const trackExperienceSchema = z.object({
-  trackId: z.uuid('validation.required'),
+  trackId: z.string().min(1, 'validation.required'),
   level: z.enum(EXPERIENCE_LEVELS),
   bestLapMs: z.number().int().min(5000).max(600000).nullable(),
   sessionsCount: z.number().int().min(0).max(10000),

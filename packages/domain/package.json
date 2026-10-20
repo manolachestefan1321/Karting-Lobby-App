@@ -1,5 +1,5 @@
 {
-  "name": "@kartapp/domain",
+  "name": "@kartup/domain",
   "version": "0.1.0",
   "private": true,
   "description": "Pure TypeScript business rules shared by the app, admin panel and Edge Functions.",

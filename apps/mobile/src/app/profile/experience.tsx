@@ -1,10 +1,11 @@
-import { EXPERIENCE_LEVELS, formatLapTime, parseLapTime, type ExperienceLevel } from '@kartapp/domain';
+import { EXPERIENCE_LEVELS, formatLapTime, parseLapTime, type ExperienceLevel } from '@kartup/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, EmptyState, LoadingState, PickerField, Screen, SegmentedControl, Text, TextField } from '@/components/ui';
-import { useAuth } from '@/features/auth/AuthProvider';
+import { useMyId } from '@/features/auth/AuthProvider';
+import { toast } from '@/features/notifications/BannerHost';
 import { useCities, useDeleteExperience, useTrackExperience, useTracks, useUpsertExperience } from '@/features/profile/api';
 import { errorKey } from '@/lib/errors';
 import { spacing } from '@/theme/tokens';
@@ -12,14 +13,13 @@ import { spacing } from '@/theme/tokens';
 /** Add or edit karting experience for one track. Opened with ?trackId= to edit. */
 export default function ExperienceEditor() {
   const { t } = useTranslation();
-  const { session } = useAuth();
-  const userId = session!.user.id;
+  const userId = useMyId();
   const params = useLocalSearchParams<{ trackId?: string }>();
   const tracks = useTracks();
   const cities = useCities();
   const existing = useTrackExperience(userId);
-  const upsert = useUpsertExperience(userId);
-  const remove = useDeleteExperience(userId);
+  const upsert = useUpsertExperience();
+  const remove = useDeleteExperience();
 
   const [trackId, setTrackId] = useState<string | null>(params.trackId ?? null);
   const [level, setLevel] = useState<ExperienceLevel>('beginner');
@@ -28,12 +28,12 @@ export default function ExperienceEditor() {
   const [lapError, setLapError] = useState<string>();
   const [trackError, setTrackError] = useState<string>();
 
-  const current = existing.data?.find((e) => e.track_id === trackId);
+  const current = existing.data?.find((e) => e.trackId === trackId);
   useEffect(() => {
     if (current) {
       setLevel(current.level);
-      setLap(current.best_lap_ms ? formatLapTime(current.best_lap_ms) : '');
-      setSessions(String(current.sessions_count));
+      setLap(current.bestLapMs ? formatLapTime(current.bestLapMs) : '');
+      setSessions(String(current.sessionsCount));
     }
   }, [current]);
 
@@ -42,7 +42,7 @@ export default function ExperienceEditor() {
       (tracks.data ?? []).map((tr) => ({
         value: tr.id,
         label: tr.name,
-        subtitle: cities.data?.find((c) => c.id === tr.city_id)?.name,
+        subtitle: cities.data?.find((c) => c.id === tr.cityId)?.name,
       })),
     [tracks.data, cities.data],
   );
@@ -65,7 +65,7 @@ export default function ExperienceEditor() {
       { trackId, level, bestLapMs, sessionsCount: count },
       {
         onSuccess: () => router.back(),
-        onError: (e) => Alert.alert(t('common.errorTitle'), t(errorKey(e) as 'errors.generic')),
+        onError: (e) => toast(t(errorKey(e) as 'errors.generic'), 'danger'),
       },
     );
   };
@@ -80,7 +80,7 @@ export default function ExperienceEditor() {
               title={t('profile.removeExperience')}
               variant="danger"
               loading={remove.isPending}
-              onPress={() => remove.mutate(current.track_id, { onSuccess: () => router.back() })}
+              onPress={() => remove.mutate(current.trackId, { onSuccess: () => router.back() })}
             />
           ) : null}
         </>

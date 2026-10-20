@@ -3,8 +3,8 @@ import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
 import { Platform } from 'react-native';
-import { env } from '@/lib/env';
-import { supabase } from '@/lib/supabase';
+import { env } from './env';
+import { supabase } from './client';
 import { authRedirectUrl } from './redirect';
 
 export type SocialResult = 'ok' | 'cancelled';

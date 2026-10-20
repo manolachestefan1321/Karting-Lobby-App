@@ -45,6 +45,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   web: {
     output: 'single',
+    name: brand.name,
+    shortName: brand.name,
+    description: brand.slogan,
+    themeColor: brand.colors.splashBackground,
     favicon: brand.assets.favicon,
   },
   plugins: [

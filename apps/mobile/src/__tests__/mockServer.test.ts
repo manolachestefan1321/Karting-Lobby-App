@@ -60,7 +60,10 @@ describe('join, pay and cancel', () => {
 
   it('releases the authorization (no charge) if the last seat was taken meanwhile', () => {
     const u2 = sessionByHost('u-radu', (t) => t > now()); // 7/8 paid, intermediate+
-    s.mutate(() => s.db.experience.push({ userId: 'u-bianca', trackId: u2.trackId, level: 'advanced', bestLapMs: null, sessionsCount: 1 }));
+    s.mutate(() => {
+      s.db.experience = s.db.experience.filter((e) => !(e.userId === 'u-bianca' && e.trackId === u2.trackId));
+      s.db.experience.push({ userId: 'u-bianca', trackId: u2.trackId, level: 'advanced', bestLapMs: null, sessionsCount: 1 });
+    });
     const intent = s.createIntent(u2.id);
     // someone else grabs the last seat first
     const other = s.createIntent(u2.id, 'u-bianca');
@@ -156,5 +159,16 @@ describe('results', () => {
     expect(s.getResults(p2.id)!.status).toBe('disputed');
     s.adminDecide(p2.id, true);
     expect(s.getResults(p2.id)!.status).toBe('final');
+  });
+});
+
+describe('seeded tracks', () => {
+  it('uses real tracks whose prices are marked "to verify" and link to a source', () => {
+    expect(s.db.tracks.length).toBeGreaterThanOrEqual(8);
+    for (const t of s.db.tracks) {
+      expect(t.price.verified).toBe(false);
+      expect(t.price.sourceUrl).toMatch(/^https:\/\//);
+      expect(Number.isInteger(t.price.perDriverMinor)).toBe(true);
+    }
   });
 });

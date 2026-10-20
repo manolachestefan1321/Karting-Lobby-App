@@ -2,7 +2,7 @@ import { checkinWindow, hostPayoutMinor, participantCancellation, refundDeadline
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Avatar, Button, Card, Chip, confirmDialog, EmptyState, ErrorState, LoadingState, Screen, SectionHeader, Text } from '@/components/ui';
 import { api, type LobbyMember, type PaymentIntentInfo, type RankTier } from '@/data';
@@ -213,6 +213,21 @@ export default function LobbyScreen() {
           <Text variant="caption" tone="faint">
             {t('lobby.priceUpdated', { when: relative(s.priceUpdatedAt, now, locale) })}
           </Text>
+          {!s.track.price.verified ? (
+            <View style={styles.rowWrap}>
+              <Chip label={t('lobby.priceToVerify')} tone="warning" icon="alert-circle-outline" />
+              {s.track.price.sourceUrl ? (
+                <Text variant="caption" tone="accent" onPress={() => void Linking.openURL(s.track.price.sourceUrl!)}>
+                  {t('lobby.priceSource')} ↗
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+          {s.track.price.note ? (
+            <Text variant="caption" tone="muted">
+              {s.track.price.note}
+            </Text>
+          ) : null}
           {isHost ? (
             <Text variant="small" tone="accent">
               {t('lobby.payoutInfo', { amount: fmt(hostPayoutMinor(s.price.trackMinor, ['confirmed'])) })}

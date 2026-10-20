@@ -145,6 +145,8 @@ const ro: Translations = {
     price: 'Preț de pilot',
     priceBreakdown: 'Pistă {{track}} + comision platformă {{fee}}',
     priceUpdated: 'Prețul pistei actualizat {{when}}',
+    priceToVerify: 'Preț de verificat cu pista',
+    priceSource: 'Sursa',
     startsIn: 'Începe în',
     started: 'A început',
     localTime: '{{time}} ora pistei',

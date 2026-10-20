@@ -8,7 +8,7 @@ Start with `npm run web` and open **http://localhost:8081** in Chrome. The phone
 - **Email inbox** shows the sign-up and password-reset emails. "Click the link in the app" opens the link inside the phone.
 - **Reset demo data** starts over. Do this between scenarios if things get confusing. Moving the clock *back* does not undo what already happened, just like in real life.
 
-Session times are generated relative to when the demo data was created. The first time you open the preview, they match the scenarios below.
+The **tracks and prices are real** (looked up on the tracks' websites on 20 Oct 2026) and marked **"to verify"**: see [TRACKS.md](TRACKS.md). People and sessions are fictional. Session times are generated relative to when the demo data was created. The first time you open the preview, they match the scenarios below.
 
 ---
 
@@ -28,24 +28,24 @@ Session times are generated relative to when the demo data was created. The firs
 Use **Signed in as → Andrei Popescu** in the debug panel, or Log in → **Fill in test account** → Log in.
 
 ## 3. Find sessions
-1. **Sessions** tab: change the city at the top (try Constanța or Cluj; Oradea has no tracks, so you'll see the empty state).
+1. **Sessions** tab: change the city at the top (try Constanța or Cluj; Craiova and Oradea have no tracks yet, so you'll see the empty state).
 2. Use the filter chips: date, track, level, free spots.
 3. **My sessions** at the top lists Andrei's active sessions.
 
 ## 4. Join a lobby and pay (fake payment)
-1. In București, open **Velocity Kart Arena · hosted by Maria Ionescu** (tomorrow).
-2. You see the countdown, price (80 RON track + 5 RON fee = **85 RON**), price "last updated", host's note, drivers and chat preview.
-3. Tap **Join & pay 85 RON**. The test payment sheet opens. Tap **Pay 85 RON**. You get a "Seat confirmed" banner and "You're in".
+1. In București, open **VMax Electric Indoor Karting Romexpo · hosted by Maria Ionescu** (tomorrow).
+2. You see the countdown, price (120 RON track + 5 RON fee = **125 RON**), a yellow **"Price to verify with the track"** chip with a link to where the price came from, host's note, drivers and chat preview.
+3. Tap **Join & pay 125 RON**. The test payment sheet opens. Tap **Pay 125 RON**. You get a "Seat confirmed" banner and "You're in".
 4. To test a declined card: on another session, change the card number to `4000 0000 0000 0002`.
-5. To test the race for the last seat: debug panel → session **Circuitul Lacul Morii (host Radu)** (7/8 drivers) → open it in the app → tap Join & pay. **Before** tapping Pay, click **Someone joins & pays** in the panel, then tap Pay. You'll see "The last seat was taken a moment ago. Your card was NOT charged."
+5. To test the race for the last seat: debug panel → session **AMC Kart (host Radu)** (7/8 drivers) → open it in the app → tap Join & pay. **Before** tapping Pay, click **Someone joins & pays** in the panel, then tap Pay. You'll see "The last seat was taken a moment ago. Your card was NOT charged."
 
 ## 5. Cancel before the last hour (refund)
 1. In the Maria lobby you just paid for, the footer shows "Free cancellation until …".
-2. Tap **Cancel my seat** → confirm. You get a "Seat cancelled. 85 RON refunded." banner, and a "Refund issued" alert. **Profile → ⚙ → Payment history** shows the payment as Refunded.
+2. Tap **Cancel my seat** → confirm. You get a "Seat cancelled. 125 RON refunded." banner, and a "Refund issued" alert. **Profile → ⚙ → Payment history** shows the payment as Refunded.
 
 ## 6. Cancel inside the last hour (blocked)
 1. Pay for the Maria session again.
-2. Debug panel → select **Velocity Kart Arena (host Maria)** → **59 min before**.
+2. Debug panel → select **VMax Electric Indoor Karting Romexpo (host Maria)** → **59 min before**.
 3. The footer now says "Cancellation closed: no refunds in the last hour", and the cancel button is gone.
 4. Try **61 min before**: cancelling is allowed again.
 
@@ -53,14 +53,14 @@ Use **Signed in as → Andrei Popescu** in the debug panel, or Log in → **Fill
 Debug panel → select a session you paid for → **2 h before**. A "Race in 2 hours ⏱ … last chance to cancel with a full refund, until HH:MM" banner appears, and the same notification appears in **Alerts**.
 
 ## 8. Host tools and auto-cancel (fewer than 4 drivers)
-1. Select **Pista Nord Speed Park (host Andrei)**. Andrei hosts it with only 3 paid drivers. Open it in the app.
+1. Select **AMC Kart (host Andrei)**, starting in a few hours. Andrei hosts it with only 3 paid drivers. Open it in the app.
 2. You see the warning "Needs at least 4 paid drivers by …".
 3. Remove the unpaid driver (Ioana) with the ⓧ next to her name: removed, no refund needed. Removing a *paid* driver asks for confirmation and refunds them.
 4. Click **3 h before** in the panel. The session is **cancelled automatically** and everyone is refunded ("Session cancelled" banner).
 5. Reset demo data, then instead click **Someone joins & pays** before **3 h before**. With 4 paid drivers it stays on.
 
 ## 9. Check-in, no-show and ban
-1. Select **Velocity Kart Arena (host Vlad)**, starting soon, where Andrei has paid. Open it in the app.
+1. Select **VMax Electric Indoor Karting Romexpo (host Vlad)**, starting soon, where Andrei has paid. Open it in the app.
 2. Click **10 min before**. The "Check-in is open" banner appears and the lobby shows **I'm at the track — check in**.
 3. To test being too far away: set **Simulated GPS → 5 km away** and tap check in. You'll see "You're 5000 m from the track".
 4. **No-show path:** don't check in, and click **16 min after**. You get "No-show: joining blocked" with the ban end time (**1 hour** for the 1st no-show). The lobby says "You were marked as no-show", and the debug panel shows Andrei as BANNED.
@@ -71,13 +71,13 @@ Debug panel → select a session you paid for → **2 h before**. A "Race in 2 h
 9. Bogdan Rusu already has an active ban. Open his profile from any leaderboard to see how a ban shows on a public profile.
 
 ## 10. Enter results (host), points and rank-up
-1. Select **Velocity Kart Arena (host Andrei)**, which finished 2 hours ago. Open it and tap **Enter results**.
+1. Select **VMax Electric Indoor Karting Romexpo (host Andrei)**, which finished 2 hours ago. Open it and tap **Enter results**.
 2. Tap the drivers in finishing order. Optionally type best laps (e.g. `48.512`) and attach a photo of a "timing printout" (any image). Tap **Submit results**.
 3. Debug panel → **Others confirm results**. The results become **Final**, points are awarded, and you get a **"Rank up! 🏆 You are now Club Racer"** banner. Andrei had 966 points, and a win in a 6-driver field adds 81.
 4. Open **View results** to see positions and points per driver. Check **Rankings** and **Profile → Points history**.
 
 ## 11. Confirm or dispute results (participant)
-1. Select **Circuitul Lacul Morii (host Radu)** from yesterday. Its results are posted and waiting for Andrei's confirmation. Open it, then **View results**.
+1. Select **AMC Kart (host Radu)** from yesterday. Its results are posted and waiting for Andrei's confirmation. Open it, then **View results**.
 2. **Confirm results**: everyone has now confirmed, so the results become final and points are added.
 3. Or tap **Dispute**, write a reason, and the results go to admin review. Use **Admin: approve results / reject results** in the debug panel.
 4. Undisputed results also become final automatically after 24 hours: reset, then jump with **+1 day**.

@@ -18,3 +18,21 @@ insert into public.cities (country_code, name, slug, location, timezone) values
   ('RO', 'Craiova',     'craiova',     'SRID=4326;POINT(23.7949 44.3302)', 'Europe/Bucharest'),
   ('RO', 'Oradea',      'oradea',      'SRID=4326;POINT(21.9189 47.0465)', 'Europe/Bucharest')
 on conflict (slug) do nothing;
+
+-- Real karting tracks (details, prices and "to verify" flags are added with the
+-- tracks/prices migration). Coordinates are APPROXIMATE — verify before launch.
+-- Sources: docs/TRACKS.md
+insert into public.tracks (city_id, name, slug, address, location)
+select c.id, t.name, t.slug, t.address, t.location::extensions.geography
+from (values
+  ('bucuresti',   'AMC Kart',                              'amc-kart',               'Șoseaua de Centură nr. 5A, Tunari, Ilfov',            'SRID=4326;POINT(26.1285 44.5465)'),
+  ('bucuresti',   'VMax Electric Indoor Karting Romexpo',  'vmax-romexpo',           'Romexpo, Pavilioanele C4–C5, Bd. Expoziției, București', 'SRID=4326;POINT(26.0628 44.4766)'),
+  ('constanta',   'Tomis Kart Mamaia',                     'tomis-kart-mamaia',      'Parcarea Pavilionului Expozițional, Constanța',        'SRID=4326;POINT(28.6385 44.2049)'),
+  ('cluj-napoca', 'T&T Karting Transilvania (Dej)',        'tt-karting-transilvania','Dej, jud. Cluj',                                      'SRID=4326;POINT(23.8750 47.1430)'),
+  ('timisoara',   'Green Kart Timișoara',                  'green-kart-timisoara',   'Str. Albăstrelelor 6A, Timișoara',                    'SRID=4326;POINT(21.2510 45.7830)'),
+  ('iasi',        'Indoor Karting Calea Chișinăului',      'indoor-karting-iasi',    'Calea Chișinăului, Iași',                             'SRID=4326;POINT(27.6260 47.1560)'),
+  ('brasov',      'Prejmer Raceway',                       'prejmer-raceway',        'Prejmer, jud. Brașov',                                'SRID=4326;POINT(25.7690 45.7270)'),
+  ('brasov',      'Masterkart Ghimbav',                    'masterkart-ghimbav',     'Ghimbav, jud. Brașov',                                'SRID=4326;POINT(25.5070 45.6640)')
+) as t(city_slug, name, slug, address, location)
+join public.cities c on c.slug = t.city_slug
+on conflict (slug) do nothing;

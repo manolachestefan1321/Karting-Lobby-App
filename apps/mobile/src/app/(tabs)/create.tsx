@@ -117,7 +117,7 @@ export default function CreateTab() {
           label={t('create.track')}
           placeholder={t('create.selectTrack')}
           value={trackId}
-          items={(tracks.data ?? []).map((x) => ({ value: x.id, label: x.name, subtitle: `${money(x.price.perDriverMinor, x.price.currency, locale)} · ${x.indoor ? 'Indoor' : 'Outdoor'} · max ${x.maxDrivers}` }))}
+          items={(tracks.data ?? []).map((x) => ({ value: x.id, label: x.name, subtitle: `${money(x.price.perDriverMinor, x.price.currency, locale)}${x.price.verified ? '' : ' (?)'} · ${x.sessionLengthMin} min · ${x.indoor ? 'Indoor' : 'Outdoor'} · max ${x.maxDrivers}` }))}
           onChange={(v) => {
             setTrackId(v);
             const tr = tracks.data?.find((x) => x.id === v);
@@ -132,6 +132,12 @@ export default function CreateTab() {
           <Text variant="caption" tone="faint">
             {t('create.priceUpdated', { when: relative(track.price.updatedAt, now, locale) })} · {track.sessionLengthMin} min · {track.kartTypes.join(', ')}
           </Text>
+          {!track.price.verified ? <Chip label={t('lobby.priceToVerify')} tone="warning" icon="alert-circle-outline" /> : null}
+          {track.price.note ? (
+            <Text variant="caption" tone="muted">
+              {track.price.note}
+            </Text>
+          ) : null}
         </Card>
       ) : null}
 

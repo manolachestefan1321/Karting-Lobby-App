@@ -54,7 +54,7 @@ Wait until it says **"Waiting on http://localhost:8081"**, then open **http://lo
 
 **Test login:** `andrei@kartup.test`, password `kartup123`. On the login screen, the "Fill in test account" button types these in for you. Every demo user has the same password.
 
-All demo data is stored in your browser. **Reset demo data** in the debug panel brings back the starting data. Every person, track and price in the demo is fictional.
+All demo data is stored in your browser. **Reset demo data** in the debug panel brings back the starting data. The **tracks and their prices are real** but marked **"to verify"** (see [docs/TRACKS.md](docs/TRACKS.md)); the people, sessions and results are fictional.
 
 See **[docs/PREVIEW-TESTING.md](docs/PREVIEW-TESTING.md)** for exactly what to click to test each flow.
 

@@ -77,6 +77,10 @@ export interface TrackPrice {
   updatedAt: string;
   source: 'manual' | 'scrape' | 'api';
   sourceUrl: string | null;
+  /** False until someone confirmed the price with the track ("to verify"). */
+  verified: boolean;
+  /** What the price covers / caveats (shown in the app). */
+  note: string | null;
 }
 
 export interface Track {

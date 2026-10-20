@@ -4,7 +4,9 @@
  * (session in 45 min, results waiting, …) always make sense when you reset.
  */
 import { DEFAULT_RULES, pointsFor } from '@kartup/domain';
-import type { City, NotificationPrefs, Track } from '../types';
+import type { City, NotificationPrefs } from '../types';
+import { REAL_TRACKS } from './tracks';
+import { localDateKey, zonedToUtc } from '@/lib/format';
 import { DB_VERSION, type Db, type DbExperience, type DbLedger, type DbMember, type DbPayment, type DbResults, type DbSession, type DbUser } from './db';
 
 export const TEST_PASSWORD = 'kartup123';
@@ -38,58 +40,6 @@ const cities: City[] = [
   { id: 'c-or', name: 'Oradea', slug: 'oradea', countryCode: 'RO', timezone: 'Europe/Bucharest', lat: 47.0465, lng: 21.9189 },
 ];
 
-function track(
-  id: string,
-  cityId: string,
-  name: string,
-  address: string,
-  lat: number,
-  lng: number,
-  o: { price: number; max: number; len: number; indoor: boolean; karts: string[]; hours: string; source: 'manual' | 'scrape'; updatedDaysAgo: number },
-  now: number,
-): Track {
-  return {
-    id,
-    cityId,
-    name,
-    address,
-    lat,
-    lng,
-    website: `https://example.com/${id}`,
-    phone: '+40 700 000 000',
-    openingHours: o.hours,
-    kartTypes: o.karts,
-    sessionLengthMin: o.len,
-    maxDrivers: o.max,
-    timezone: 'Europe/Bucharest',
-    checkinRadiusM: null,
-    indoor: o.indoor,
-    price: {
-      perDriverMinor: o.price * 100,
-      currency: 'RON',
-      updatedAt: new Date(now - o.updatedDaysAgo * DAY).toISOString(),
-      source: o.source,
-      sourceUrl: o.source === 'scrape' ? `https://example.com/${id}/prices` : null,
-    },
-  };
-}
-
-function buildTracks(now: number): Track[] {
-  const daily = 'Mon–Fri 14:00–23:00 · Sat–Sun 10:00–23:00';
-  return [
-    track('t-velocity', 'c-buc', 'Velocity Kart Arena', 'Bd. Iuliu Maniu 100, București', 44.4339, 26.0155, { price: 80, max: 10, len: 12, indoor: true, karts: ['Petrol 270cc'], hours: daily, source: 'scrape', updatedDaysAgo: 1 }, now),
-    track('t-lacul', 'c-buc', 'Circuitul Lacul Morii', 'Str. Lacul Morii 2, București', 44.4495, 26.0345, { price: 95, max: 8, len: 15, indoor: false, karts: ['Petrol 390cc', 'Petrol 270cc'], hours: 'Daily 10:00–21:00 (Apr–Oct)', source: 'manual', updatedDaysAgo: 6 }, now),
-    track('t-nord', 'c-buc', 'Pista Nord Speed Park', 'Șos. București-Ploiești 42, Otopeni', 44.5512, 26.0731, { price: 110, max: 12, len: 15, indoor: false, karts: ['Petrol 390cc', 'Electric'], hours: daily, source: 'scrape', updatedDaysAgo: 2 }, now),
-    track('t-mamaia', 'c-ct', 'Mamaia Kart Circuit', 'Bd. Mamaia 300, Constanța', 44.2470, 28.6215, { price: 75, max: 10, len: 10, indoor: false, karts: ['Petrol 270cc', 'Kids 120cc'], hours: 'Daily 10:00–22:00', source: 'manual', updatedDaysAgo: 12 }, now),
-    track('t-feleac', 'c-cj', 'Feleac Ring', 'DN1 km 470, Feleacu', 46.7104, 23.6127, { price: 90, max: 12, len: 12, indoor: false, karts: ['Petrol 390cc'], hours: 'Wed–Sun 12:00–20:00', source: 'scrape', updatedDaysAgo: 3 }, now),
-    track('t-clujin', 'c-cj', 'Cluj Indoor Karting', 'Str. Fabricii 5, Cluj-Napoca', 46.7801, 23.6122, { price: 70, max: 8, len: 10, indoor: true, karts: ['Electric'], hours: daily, source: 'manual', updatedDaysAgo: 20 }, now),
-    track('t-bega', 'c-tm', 'Bega Kart Center', 'Calea Șagului 150, Timișoara', 45.7299, 21.2133, { price: 65, max: 10, len: 10, indoor: true, karts: ['Petrol 270cc'], hours: daily, source: 'scrape', updatedDaysAgo: 1 }, now),
-    track('t-copou', 'c-is', 'Copou Karting', 'Str. Aeroportului 9, Iași', 47.1785, 27.6201, { price: 60, max: 8, len: 10, indoor: false, karts: ['Petrol 270cc'], hours: 'Daily 11:00–21:00', source: 'manual', updatedDaysAgo: 30 }, now),
-    track('t-poiana', 'c-bv', 'Poiana Kart Track', 'Drumul Poienii 12, Brașov', 45.6177, 25.5688, { price: 85, max: 10, len: 12, indoor: false, karts: ['Petrol 270cc', 'Petrol 390cc'], hours: 'Thu–Sun 10:00–20:00', source: 'manual', updatedDaysAgo: 8 }, now),
-    track('t-craiova', 'c-cv', 'Craiova Kart Park', 'Calea București 220, Craiova', 44.3205, 23.8424, { price: 60, max: 10, len: 10, indoor: true, karts: ['Electric'], hours: daily, source: 'manual', updatedDaysAgo: 15 }, now),
-  ];
-}
-
 const PEOPLE: [string, string, string, string, string][] = [
   // id, first, last, city, date of birth
   [TEST_USER_ID, 'Andrei', 'Popescu', 'c-buc', '1996-03-14'],
@@ -115,7 +65,7 @@ const PEOPLE: [string, string, string, string, string][] = [
 ];
 
 const BIOS = [
-  'Weekend racer, chasing a sub-50 at Velocity.',
+  'Weekend racer, chasing a sub-50 at VMax Romexpo.',
   'Late braker. Early apologizer.',
   'Former rental-kart champion of my office.',
   'Here for the fun and the overtakes.',
@@ -142,7 +92,9 @@ export function seed(realNow: number): Db {
   // Round "now" to the next quarter hour so session times look natural.
   const now = Math.ceil(realNow / (15 * MIN)) * 15 * MIN;
   const iso = (t: number) => new Date(t).toISOString();
-  const tracks = buildTracks(now);
+  const tracks = REAL_TRACKS;
+  /** A plausible opening-hours start time: `days` from now at HH:MM Bucharest time. */
+  const atLocal = (days: number, time: string) => zonedToUtc(localDateKey(new Date(now + days * DAY), 'Europe/Bucharest'), time, 'Europe/Bucharest').getTime();
   const trackById = new Map(tracks.map((t) => [t.id, t]));
   let seq = 1;
   const id = (p: string) => `${p}-${seq++}`;
@@ -269,14 +221,14 @@ export function seed(realNow: number): Db {
   }
 
   // ── History: ~34 finished sessions over the last 100 days ──────────────────
-  const bucTracks = ['t-velocity', 't-lacul', 't-nord'];
+  const bucTracks = ['t-vmax-romexpo', 't-amckart'];
   const others = users.filter((u) => u.id !== TEST_USER_ID);
   let andreiPoints = 0;
   for (let i = 0; i < 34; i++) {
     const daysAgo = 3 + Math.floor((i / 34) * 97) + Math.floor(r() * 2);
-    const start = now - daysAgo * DAY - (2 + Math.floor(r() * 8)) * HOUR;
+    const start = atLocal(-daysAgo, `${String(11 + Math.floor(r() * 10)).padStart(2, '0')}:${r() < 0.5 ? '00' : '30'}`);
     const inBuc = r() < 0.75;
-    const trackId = inBuc ? pick(bucTracks) : pick(['t-mamaia', 't-feleac', 't-clujin', 't-bega', 't-copou', 't-poiana']);
+    const trackId = inBuc ? pick(bucTracks) : pick(['t-tomiskart', 't-tt-transilvania', 't-greenkart-tm', 't-iasi-indoor', 't-prejmer', 't-masterkart']);
     const t = trackById.get(trackId)!;
     const localPool = others.filter((u) => u.homeCityId === t.cityId || r() < 0.08);
     const size = Math.min(localPool.length + 1, 4 + Math.floor(r() * 6));
@@ -303,7 +255,7 @@ export function seed(realNow: number): Db {
   // session (P1: +81 for a win, P2: +60 for 3rd) triggers a visible rank-up.
   const bucLocals = others.filter((u) => u.homeCityId === 'c-buc');
   for (let extra = 0; andreiPoints < 945 && extra < 30; extra++) {
-    const start = now - (5 + extra * 3) * DAY - 5 * HOUR;
+    const start = atLocal(-(5 + extra * 3), '18:00');
     const field = [users[0]!, ...[...bucLocals].sort(() => r() - 0.5).slice(0, 5)];
     const s = addSession(pick(bucTracks), field[1]!.id, start, { flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, payoutSent: true, lobbyClosed: true } });
     let pos = 1;
@@ -316,42 +268,42 @@ export function seed(realNow: number): Db {
   }
 
   // ── Upcoming sessions (relative to now) ──────────────────────────────────────
-  const u1 = addSession('t-velocity', 'u-maria', now + 26 * HOUR, { maxDrivers: 10, note: 'Friendly race, all levels welcome! Arrive 15 min early for the briefing.' });
+  const u1 = addSession('t-vmax-romexpo', 'u-maria', atLocal(1, '19:00'), { maxDrivers: 10, note: 'Friendly race, all levels welcome! Arrive 15 min early for the briefing.' });
   for (const uid of ['u-maria', 'u-elena', 'u-cristian', 'u-bianca', 'u-alex']) addMember(u1, uid, 'confirmed');
   addMember(u1, 'u-diana', 'joined_unpaid');
 
-  const u2 = addSession('t-lacul', 'u-radu', now + 50 * HOUR, { maxDrivers: 8, minSkill: 'intermediate', note: 'Fast group — intermediate drivers and up please.' });
+  const u2 = addSession('t-amckart', 'u-radu', atLocal(2, '18:30'), { maxDrivers: 8, minSkill: 'intermediate', note: 'Fast group — intermediate drivers and up please.' });
   for (const uid of ['u-radu', 'u-mihai', 'u-vlad', 'u-ana', 'u-cristian', 'u-stefan', 'u-alex']) addMember(u2, uid, 'confirmed');
 
-  const u3 = addSession('t-nord', TEST_USER_ID, now + 5 * HOUR, { maxDrivers: 8, note: 'My session — need at least 4 paid drivers or it gets cancelled.' });
+  const u3 = addSession('t-amckart', TEST_USER_ID, now + 5 * HOUR, { maxDrivers: 8, note: 'My session — need at least 4 paid drivers or it gets cancelled.' });
   addMember(u3, TEST_USER_ID, 'confirmed');
   addMember(u3, 'u-elena', 'confirmed');
   addMember(u3, 'u-mihai', 'confirmed');
   addMember(u3, 'u-ioana', 'joined_unpaid');
 
-  const u4 = addSession('t-velocity', 'u-vlad', now + 45 * MIN, { maxDrivers: 10, note: 'After-work sprint. Check in at the reception desk.' });
+  const u4 = addSession('t-vmax-romexpo', 'u-vlad', now + 45 * MIN, { maxDrivers: 10, note: 'After-work sprint. Check in at the reception desk.' });
   for (const uid of ['u-vlad', TEST_USER_ID, 'u-ana', 'u-bogdan', 'u-diana', 'u-stefan']) addMember(u4, uid, 'confirmed');
 
-  const u5 = addSession('t-mamaia', 'u-teodora', now + 30 * HOUR, { maxDrivers: 10, note: 'Sunset session by the sea 🌅' });
+  const u5 = addSession('t-tomiskart', 'u-teodora', atLocal(1, '18:00'), { maxDrivers: 8, note: 'Sunset session by the sea 🌅' });
   for (const uid of ['u-teodora', 'u-raluca', 'u-gabriel', 'u-sorin']) addMember(u5, uid, 'confirmed');
 
-  const u6 = addSession('t-feleac', 'u-larisa', now + 3 * DAY + 2 * HOUR, { maxDrivers: 12, minRankTierId: 2, note: 'Amateur rank and up.' });
+  const u6 = addSession('t-tt-transilvania', 'u-larisa', atLocal(3, '17:00'), { maxDrivers: 12, minRankTierId: 2, note: 'Amateur rank and up.' });
   for (const uid of ['u-larisa', 'u-paul', 'u-sorin', 'u-gabriel', 'u-raluca']) addMember(u6, uid, 'confirmed');
 
-  const u7 = addSession('t-nord', 'u-ana', now + 6 * DAY, { maxDrivers: 12, note: 'Weekend endurance-style: 2 × 15 minutes.' });
+  const u7 = addSession('t-amckart', 'u-ana', atLocal(6, '11:00'), { maxDrivers: 12, note: 'Weekend endurance-style: 2 × 15 minutes.' });
   for (const uid of ['u-ana', 'u-ioana']) addMember(u7, uid, 'confirmed');
 
-  const u8 = addSession('t-velocity', 'u-maria', now + 4 * DAY + 3 * HOUR, { maxDrivers: 10 });
+  const u8 = addSession('t-vmax-romexpo', 'u-maria', atLocal(4, '20:00'), { maxDrivers: 10 });
   for (const uid of ['u-maria', 'u-radu', 'u-mihai', 'u-ana', 'u-vlad', 'u-bogdan', 'u-cristian', 'u-alex', 'u-bianca', 'u-stefan']) addMember(u8, uid, 'confirmed');
 
   // ── Past sessions waiting for something from the test user ─────────────────
   // P1: Andrei hosted 2h ago; check-in done; he must enter the results.
-  const p1 = addSession('t-velocity', TEST_USER_ID, now - 2 * HOUR, { maxDrivers: 10, flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, lobbyClosed: true } });
+  const p1 = addSession('t-vmax-romexpo', TEST_USER_ID, now - 2 * HOUR, { maxDrivers: 10, flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, lobbyClosed: true } });
   for (const uid of [TEST_USER_ID, 'u-maria', 'u-radu', 'u-elena', 'u-alex', 'u-diana']) addMember(p1, uid, 'attended');
 
   // P2: Radu hosted yesterday; results posted; everyone confirmed except Andrei.
   const p2Start = now - 20 * HOUR;
-  const p2 = addSession('t-lacul', 'u-radu', p2Start, { maxDrivers: 8, flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, lobbyClosed: true } });
+  const p2 = addSession('t-amckart', 'u-radu', p2Start, { maxDrivers: 8, flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, lobbyClosed: true } });
   const p2Order = ['u-radu', 'u-vlad', TEST_USER_ID, 'u-mihai', 'u-ana', 'u-stefan', 'u-cristian'];
   for (const uid of p2Order) addMember(p2, uid, 'attended');
   addResults(
@@ -366,7 +318,7 @@ export function seed(realNow: number): Db {
   const say = (s: DbSession, userId: string, body: string, minutesAgo: number) =>
     messages.push({ id: id('m'), sessionId: s.id, userId, body, createdAt: iso(now - minutesAgo * MIN) });
   say(u1, 'u-maria', 'Welcome everyone! Booked the 10-kart slot, pay your share to lock your seat 👍', 600);
-  say(u1, 'u-elena', 'In! First time at Velocity, any tips?', 420);
+  say(u1, 'u-elena', 'In! First time at VMax, any tips?', 420);
   say(u1, 'u-cristian', 'Brake early in the hairpin, the exit matters more.', 400);
   say(u4, 'u-vlad', 'See you all at 7! Reception is on the left.', 180);
   say(u4, 'u-ana', pick(CHAT), 60);
@@ -375,11 +327,10 @@ export function seed(realNow: number): Db {
 
   // ── Experience ────────────────────────────────────────────────────────────────
   const experience: DbExperience[] = [
-    { userId: TEST_USER_ID, trackId: 't-velocity', level: 'advanced', bestLapMs: 49876, sessionsCount: 14 },
-    { userId: TEST_USER_ID, trackId: 't-lacul', level: 'intermediate', bestLapMs: 61234, sessionsCount: 5 },
-    { userId: TEST_USER_ID, trackId: 't-nord', level: 'intermediate', bestLapMs: null, sessionsCount: 2 },
+    { userId: TEST_USER_ID, trackId: 't-vmax-romexpo', level: 'advanced', bestLapMs: 49876, sessionsCount: 14 },
+    { userId: TEST_USER_ID, trackId: 't-amckart', level: 'intermediate', bestLapMs: 61234, sessionsCount: 7 },
   ];
-  for (const u of others) experience.push({ userId: u.id, trackId: bucTracks.includes(pick(bucTracks)) ? pick(bucTracks) : 't-velocity', level: pick(['beginner', 'intermediate', 'advanced'] as const), bestLapMs: Math.round(47000 + r() * 9000), sessionsCount: 1 + Math.floor(r() * 20) });
+  for (const u of others) experience.push({ userId: u.id, trackId: bucTracks.includes(pick(bucTracks)) ? pick(bucTracks) : 't-vmax-romexpo', level: pick(['beginner', 'intermediate', 'advanced'] as const), bestLapMs: Math.round(47000 + r() * 9000), sessionsCount: 1 + Math.floor(r() * 20) });
 
   // ── One active ban (shows on Bogdan's public profile) ───────────────────────
   const noShowId = id('ns');
@@ -407,7 +358,7 @@ export function seed(realNow: number): Db {
       { id: noShowId, userId: 'u-bogdan', sessionId: sessions[1]!.id, createdAt: iso(now - 4 * HOUR), voided: false },
     ],
     notifications: [
-      { id: id('n'), userId: TEST_USER_ID, type: 'results_posted', createdAt: iso(p2Start + HOUR), readAt: null, data: { sessionId: p2.id, trackName: 'Circuitul Lacul Morii' } },
+      { id: id('n'), userId: TEST_USER_ID, type: 'results_posted', createdAt: iso(p2Start + HOUR), readAt: null, data: { sessionId: p2.id, trackName: 'AMC Kart' } },
     ],
     emails: [],
     reports: [],

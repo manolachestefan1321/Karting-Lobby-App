@@ -144,6 +144,8 @@ const en = {
     price: 'Price per driver',
     priceBreakdown: 'Track {{track}} + platform fee {{fee}}',
     priceUpdated: 'Track price updated {{when}}',
+    priceToVerify: 'Price to verify with the track',
+    priceSource: 'Source',
     startsIn: 'Starts in',
     started: 'Started',
     localTime: '{{time}} track time',

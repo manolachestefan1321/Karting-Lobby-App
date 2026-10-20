@@ -19,7 +19,7 @@ const en = {
   },
   tabs: {
     sessions: 'Sessions',
-    leaderboard: 'Leaderboard',
+    leaderboard: 'Rankings',
     create: 'Create',
     notifications: 'Alerts',
     profile: 'Profile',

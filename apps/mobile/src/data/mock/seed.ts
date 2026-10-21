@@ -376,6 +376,12 @@ export function seed(realNow: number): Db {
     experience,
     payouts: [],
   };
+  // Past sessions whose payout already went out: record the host payout (track price × kept seats).
+  for (const s of sessions) {
+    if (!s.flags.payoutSent || s.cancelledAt) continue;
+    const kept = members.filter((m) => m.sessionId === s.id && ['confirmed', 'attended', 'no_show'].includes(m.status)).length;
+    if (kept) db.payouts.push({ sessionId: s.id, hostId: s.hostId, amountMinor: kept * s.trackPriceMinor, createdAt: iso(new Date(s.startsAt).getTime() + DAY) });
+  }
   db.seq = seq;
   return db;
 }

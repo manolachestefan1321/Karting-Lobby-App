@@ -35,6 +35,33 @@ export interface DebugSnapshot {
   testPassword: string;
 }
 
+export interface DemoStats {
+  users: number;
+  onboarded: number;
+  hosts: number;
+  bannedNow: number;
+  sessionsTotal: number;
+  upcoming: number;
+  awaitingResults: number;
+  disputed: number;
+  finished: number;
+  cancelled: number;
+  seatsPaid: number;
+  collectedMinor: number;
+  refundedMinor: number;
+  refunds: number;
+  platformFeesMinor: number;
+  payoutsMinor: number;
+  noShows: number;
+  appealsPending: number;
+  reportsOpen: number;
+  messages: number;
+  notifications: number;
+  pointsAwarded: number;
+  tiers: Record<string, number>;
+  perTrack: { trackId: string; name: string; sessions: number; upcoming: number; seatsPaid: number; revenueMinor: number }[];
+}
+
 export const debug = {
   snapshot(): DebugSnapshot {
     const db = server.db;
@@ -73,6 +100,65 @@ export const debug = {
         .filter((s) => server.phase(s) === 'disputed')
         .map((s) => ({ sessionId: s.id, label: server.track(s.trackId).name })),
       testPassword: TEST_PASSWORD,
+    };
+  },
+
+  /** Demo statistics for the developer menu (what the admin dashboard will show later). */
+  stats(): DemoStats {
+    const db = server.db;
+    const users = db.users.filter((u) => !u.deleted);
+    const phases: Record<string, number> = {};
+    for (const s of db.sessions) {
+      const p = server.phase(s);
+      phases[p] = (phases[p] ?? 0) + 1;
+    }
+    const captured = db.payments.filter((p) => p.status === 'captured');
+    const refunded = db.payments.filter((p) => p.status === 'refunded');
+    const sum = (list: { amountMinor: number }[]) => list.reduce((a, p) => a + p.amountMinor, 0);
+    const perTrack = db.tracks
+      .map((t) => {
+        const sessions = db.sessions.filter((s) => s.trackId === t.id && !s.cancelledAt);
+        const ids = new Set(sessions.map((s) => s.id));
+        return {
+          trackId: t.id,
+          name: t.name,
+          sessions: sessions.length,
+          upcoming: sessions.filter((s) => new Date(s.startsAt).getTime() > server.now().getTime()).length,
+          seatsPaid: db.members.filter((m) => ids.has(m.sessionId) && ['confirmed', 'attended', 'no_show'].includes(m.status)).length,
+          revenueMinor: sum(captured.filter((p) => ids.has(p.sessionId))),
+        };
+      })
+      .sort((a, b) => b.sessions - a.sessions);
+    const tiers: Record<string, number> = {};
+    for (const u of users.filter((x) => x.onboardedAt)) {
+      const key = server.tierFor(server.totalPoints(u.id)).key;
+      tiers[key] = (tiers[key] ?? 0) + 1;
+    }
+    return {
+      users: users.length,
+      onboarded: users.filter((u) => u.onboardedAt).length,
+      hosts: users.filter((u) => u.payoutsEnabled).length,
+      bannedNow: users.filter((u) => server.activeBanOf(u.id)).length,
+      sessionsTotal: db.sessions.length,
+      upcoming: (phases.open ?? 0) + (phases.locked ?? 0) + (phases.checkin ?? 0),
+      awaitingResults: (phases.awaiting_results ?? 0) + (phases.results_pending ?? 0),
+      disputed: phases.disputed ?? 0,
+      finished: phases.final ?? 0,
+      cancelled: phases.cancelled ?? 0,
+      seatsPaid: db.members.filter((m) => ['confirmed', 'attended', 'no_show'].includes(m.status)).length,
+      collectedMinor: sum(captured),
+      refundedMinor: sum(refunded),
+      refunds: refunded.length,
+      platformFeesMinor: captured.reduce((a, p) => a + p.feeMinor, 0),
+      payoutsMinor: db.payouts.reduce((a, p) => a + p.amountMinor, 0),
+      noShows: db.noShows.filter((n) => !n.voided).length,
+      appealsPending: db.bans.filter((b) => b.appeal?.status === 'pending').length,
+      reportsOpen: db.reports.filter((r) => r.status === 'open').length,
+      messages: db.messages.filter((m) => !m.system).length,
+      notifications: db.notifications.length,
+      pointsAwarded: db.ledger.reduce((a, l) => a + l.points, 0),
+      tiers,
+      perTrack,
     };
   },
 

@@ -115,6 +115,7 @@ function RootNavigator() {
           {/* Always reachable: email/OAuth deep links and the legal pages. */}
           <Stack.Screen name="auth/callback" />
           <Stack.Screen name="legal/[doc]" options={header} />
+          <Stack.Screen name="dev" options={header} />
         </Stack>
       ) : null}
       <BannerHost enabled={signedIn} />

@@ -11,7 +11,7 @@ KartUP is a social app for karting: find drivers in your city, join a session lo
 | `supabase/` | Real backend: database, security rules, server functions, email templates. |
 | `config/brand.ts` | Name, slogan, colors and app IDs. Change branding here only. |
 | `legal/` | Privacy policy and terms templates (edit these). |
-| `docs/` | [Architecture](docs/ARCHITECTURE.md) and the [preview testing guide](docs/PREVIEW-TESTING.md). |
+| `docs/` | **[Mac setup, step by step](docs/MAC-SETUP.md)** · [Preview testing guide](docs/PREVIEW-TESTING.md) · [Tracks & prices](docs/TRACKS.md) · [Architecture](docs/ARCHITECTURE.md) |
 
 ## Where we are
 
@@ -20,6 +20,8 @@ KartUP is a social app for karting: find drivers in your city, join a session lo
 ---
 
 ## Run the preview on your Mac
+
+> **New Mac? Follow [docs/MAC-SETUP.md](docs/MAC-SETUP.md)**: it covers everything to install (Xcode, Homebrew, GitHub Desktop) and how to run KartUP in the browser, on the iPhone simulator and on your own iPhone.
 
 You only need to do steps 1 and 2 once.
 

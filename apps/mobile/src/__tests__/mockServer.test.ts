@@ -6,6 +6,8 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { MockServer } from '@/data/mock/server';
 import { TEST_USER_ID } from '@/data/mock/seed';
+import { server } from '@/data/mock';
+import { debug } from '@/data/mock/debug';
 
 const MIN = 60_000;
 let s: MockServer;
@@ -186,5 +188,22 @@ describe('demo data persistence (phones)', () => {
     await second.ready;
     expect(second.db.currentUserId).toBe(TEST_USER_ID);
     expect(second.me().payoutsEnabled).toBe(true);
+  });
+});
+
+describe('developer menu statistics', () => {
+  it('counts money and sessions consistently with the payment flow', () => {
+    server.reset();
+    server.signInAs(TEST_USER_ID);
+    const before = debug.stats();
+    const u1 = server.db.sessions.find((x) => x.hostId === 'u-maria' && new Date(x.startsAt).getTime() > server.now().getTime())!;
+    const intent = server.createIntent(u1.id);
+    server.confirmPayment(intent.paymentId, '4242424242424242');
+    const after = debug.stats();
+    expect(after.collectedMinor - before.collectedMinor).toBe(intent.price.totalMinor);
+    expect(after.platformFeesMinor - before.platformFeesMinor).toBe(500);
+    expect(after.seatsPaid).toBe(before.seatsPaid + 1);
+    expect(after.perTrack.find((t) => t.trackId === u1.trackId)!.seatsPaid).toBeGreaterThan(0);
+    expect(after.users).toBeGreaterThanOrEqual(20);
   });
 });

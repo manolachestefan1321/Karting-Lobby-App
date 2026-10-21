@@ -45,7 +45,7 @@ export default function Welcome() {
         <Wordmark size={68} />
         {api.kind === 'mock' ? (
           <View style={styles.demo}>
-            <Chip label={t('auth.demoBadge')} tone="warning" icon="flask-outline" />
+            <Chip label={t('auth.demoBadge')} tone="warning" icon="flask-outline" onPress={() => router.push('/dev')} accessibilityLabel={t('dev.open')} />
           </View>
         ) : null}
       </View>

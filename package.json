@@ -17,7 +17,9 @@
     "web": "npm run brand:sync -- --skip-images && npm run web --workspace apps/mobile",
     "ios": "cd apps/mobile && npx expo run:ios",
     "iphone": "cd apps/mobile && npx expo run:ios --device --configuration Release",
-    "start": "cd apps/mobile && npx expo start"
+    "start": "cd apps/mobile && npx expo start",
+    "phone": "cd apps/mobile && npx expo start",
+    "phone:tunnel": "cd apps/mobile && npx expo start --tunnel"
   },
   "engines": {
     "node": ">=20"

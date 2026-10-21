@@ -9,6 +9,10 @@ import { brand } from '../../config/brand.ts';
  * builds can be installed next to the production app.
  */
 const variant = process.env.APP_VARIANT ?? 'production';
+// Real Sign in with Apple needs a paid Apple Developer account. In the preview (mock data)
+// it's simulated, so the capability stays off — that lets you install on your own iPhone
+// with a free Apple ID.
+const realBackend = process.env.EXPO_PUBLIC_DATA_SOURCE === 'supabase';
 const suffix = variant === 'production' ? '' : `.${variant}`;
 const nameSuffix = variant === 'production' ? '' : variant === 'development' ? ' (Dev)' : ' (Preview)';
 
@@ -30,7 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: brand.iosBundleId + suffix,
     supportsTablet: false,
-    usesAppleSignIn: true,
+    usesAppleSignIn: realBackend,
     config: { usesNonExemptEncryption: false },
   },
   android: {
@@ -55,7 +59,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-localization',
     'expo-secure-store',
-    'expo-apple-authentication',
+    ...(realBackend ? ['expo-apple-authentication'] : []),
     '@react-native-community/datetimepicker',
     ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }],
     [

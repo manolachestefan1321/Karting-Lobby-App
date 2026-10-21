@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Wordmark } from '@/components/brand/Wordmark';
-import { Button, CheckeredStripe, Screen, Text } from '@/components/ui';
+import { Button, CheckeredStripe, Chip, Screen, Text } from '@/components/ui';
 import { api } from '@/data';
 import { errorKey } from '@/lib/errors';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -43,6 +43,11 @@ export default function Welcome() {
       <View style={styles.hero}>
         <CheckeredStripe />
         <Wordmark size={68} />
+        {api.kind === 'mock' ? (
+          <View style={styles.demo}>
+            <Chip label={t('auth.demoBadge')} tone="warning" icon="flask-outline" />
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.actions}>
@@ -100,6 +105,7 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   hero: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingTop: spacing.xxl },
+  demo: { flexDirection: 'row' },
   actions: { gap: spacing.md },
   divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginVertical: spacing.xs },
   line: { flex: 1, height: StyleSheet.hairlineWidth },

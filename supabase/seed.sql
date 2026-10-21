@@ -26,7 +26,8 @@ insert into public.tracks (city_id, name, slug, address, location)
 select c.id, t.name, t.slug, t.address, t.location::extensions.geography
 from (values
   ('bucuresti',   'AMC Kart',                              'amc-kart',               'Șoseaua de Centură nr. 5A, Tunari, Ilfov',            'SRID=4326;POINT(26.1285 44.5465)'),
-  ('bucuresti',   'VMax Electric Indoor Karting Romexpo',  'vmax-romexpo',           'Romexpo, Pavilioanele C4–C5, Bd. Expoziției, București', 'SRID=4326;POINT(26.0628 44.4766)'),
+  ('bucuresti',   'VMax Electric Indoor Karting Romexpo',  'vmax-romexpo',           'Bd. Mărăști 65–67, Romexpo Pavilion C4–C5, București', 'SRID=4326;POINT(26.0628 44.4766)'),
+  ('bucuresti',   'VMax Karting Titan',                    'vmax-titan',             'Bd. 1 Decembrie 1918 nr. 1J, Sector 3, București',    'SRID=4326;POINT(26.1665 44.4235)'),
   ('constanta',   'Tomis Kart Mamaia',                     'tomis-kart-mamaia',      'Parcarea Pavilionului Expozițional, Constanța',        'SRID=4326;POINT(28.6385 44.2049)'),
   ('cluj-napoca', 'T&T Karting Transilvania (Dej)',        'tt-karting-transilvania','Dej, jud. Cluj',                                      'SRID=4326;POINT(23.8750 47.1430)'),
   ('timisoara',   'Green Kart Timișoara',                  'green-kart-timisoara',   'Str. Albăstrelelor 6A, Timișoara',                    'SRID=4326;POINT(21.2510 45.7830)'),

@@ -174,3 +174,17 @@ describe('seeded tracks', () => {
     }
   });
 });
+
+describe('demo data persistence (phones)', () => {
+  it('keeps the signed-in user and changes after the app restarts', async () => {
+    const first = new MockServer();
+    await first.ready;
+    first.signInAs(TEST_USER_ID);
+    first.setupPayouts();
+    await new Promise((r) => setTimeout(r, 300)); // let the debounced save run
+    const second = new MockServer();
+    await second.ready;
+    expect(second.db.currentUserId).toBe(TEST_USER_ID);
+    expect(second.me().payoutsEnabled).toBe(true);
+  });
+});

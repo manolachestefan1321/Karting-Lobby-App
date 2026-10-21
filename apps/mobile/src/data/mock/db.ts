@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 /**
  * In-memory "database" of the web preview, persisted to localStorage so data
  * survives reloads. Shapes loosely mirror the real Postgres tables.
@@ -195,14 +196,21 @@ export interface Db {
   payouts: DbPayout[];
 }
 
-export const DB_VERSION = 6; // bump when the seed changes: browsers then reload fresh demo data
+export const DB_VERSION = 7; // bump when the seed changes: browsers then reload fresh demo data
 const KEY = 'kartup-preview-db';
 
-export function loadDb(): Db | null {
+/**
+ * Where the demo data is kept:
+ *  - web preview: localStorage (synchronous);
+ *  - iPhone / Android demo: AsyncStorage (asynchronous — loaded with loadDbAsync()).
+ */
+const hasLocalStorage = typeof localStorage !== 'undefined';
+/** On the phone, never write before the saved data was read back (it would be overwritten). */
+let nativeLoaded = hasLocalStorage;
+
+function parse(raw: string | null): Db | null {
+  if (!raw) return null;
   try {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
     const db = JSON.parse(raw) as Db;
     return db.version === DB_VERSION ? db : null;
   } catch {
@@ -210,23 +218,52 @@ export function loadDb(): Db | null {
   }
 }
 
+export function loadDb(): Db | null {
+  if (!hasLocalStorage) return null;
+  try {
+    return parse(localStorage.getItem(KEY));
+  } catch {
+    return null;
+  }
+}
+
+export async function loadDbAsync(): Promise<Db | null> {
+  if (hasLocalStorage) return null;
+  try {
+    return parse(await AsyncStorage.getItem(KEY));
+  } catch {
+    return null;
+  } finally {
+    nativeLoaded = true;
+  }
+}
+
 let timer: ReturnType<typeof setTimeout> | null = null;
 export function saveDb(db: Db) {
-  if (typeof localStorage === 'undefined') return;
+  if (!nativeLoaded) return;
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(db));
-    } catch {
-      // Storage full or blocked — the preview keeps working in memory.
+    const raw = JSON.stringify(db);
+    if (hasLocalStorage) {
+      try {
+        localStorage.setItem(KEY, raw);
+      } catch {
+        // Storage full or blocked — the demo keeps working in memory.
+      }
+    } else {
+      AsyncStorage.setItem(KEY, raw).catch(() => undefined);
     }
   }, 200);
 }
 
 export function clearDb() {
-  try {
-    localStorage.removeItem(KEY);
-  } catch {
-    // ignore
+  if (hasLocalStorage) {
+    try {
+      localStorage.removeItem(KEY);
+    } catch {
+      // ignore
+    }
+  } else {
+    AsyncStorage.removeItem(KEY).catch(() => undefined);
   }
 }

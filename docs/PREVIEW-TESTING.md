@@ -32,6 +32,9 @@ Use **Signed in as → Andrei Popescu** in the debug panel, or Log in → **Fill
 2. Use the filter chips: date, track, level, free spots.
 3. **My sessions** at the top lists Andrei's active sessions.
 
+## 3b. Both VMax tracks
+In București you'll find sessions at **VMax Electric Indoor Karting Romexpo** (hosted by Maria, and the ones used in the steps below) and at **VMax Karting Titan** (hosted by Cristian tomorrow at 20:30, and by Vlad in 3 days for Amateur rank and up). Open the Titan lobby to see its price (100 + 5 = 105 RON) and the chat about the boost button.
+
 ## 4. Join a lobby and pay (fake payment)
 1. In București, open **VMax Electric Indoor Karting Romexpo · hosted by Maria Ionescu** (tomorrow).
 2. You see the countdown, price (120 RON track + 5 RON fee = **125 RON**), a yellow **"Price to verify with the track"** chip with a link to where the price came from, host's note, drivers and chat preview.

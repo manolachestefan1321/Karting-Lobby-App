@@ -221,7 +221,7 @@ export function seed(realNow: number): Db {
   }
 
   // ── History: ~34 finished sessions over the last 100 days ──────────────────
-  const bucTracks = ['t-vmax-romexpo', 't-amckart'];
+  const bucTracks = ['t-vmax-romexpo', 't-vmax-titan', 't-amckart'];
   const others = users.filter((u) => u.id !== TEST_USER_ID);
   let andreiPoints = 0;
   for (let i = 0; i < 34; i++) {
@@ -293,6 +293,13 @@ export function seed(realNow: number): Db {
   const u7 = addSession('t-amckart', 'u-ana', atLocal(6, '11:00'), { maxDrivers: 12, note: 'Weekend endurance-style: 2 × 15 minutes.' });
   for (const uid of ['u-ana', 'u-ioana']) addMember(u7, uid, 'confirmed');
 
+  const t1 = addSession('t-vmax-titan', 'u-cristian', atLocal(1, '20:30'), { maxDrivers: 10, note: 'Electric karts with boost — first time at Titan for most of us, come try it!' });
+  for (const uid of ['u-cristian', 'u-bianca', 'u-diana', 'u-stefan', 'u-elena', 'u-alex']) addMember(t1, uid, 'confirmed');
+  addMember(t1, 'u-ioana', 'joined_unpaid');
+
+  const t2 = addSession('t-vmax-titan', 'u-vlad', atLocal(3, '19:00'), { maxDrivers: 10, minRankTierId: 2, note: 'Mini Grand Prix format, Amateur rank and up.' });
+  for (const uid of ['u-vlad', 'u-mihai', 'u-radu', 'u-ana']) addMember(t2, uid, 'confirmed');
+
   const u8 = addSession('t-vmax-romexpo', 'u-maria', atLocal(4, '20:00'), { maxDrivers: 10 });
   for (const uid of ['u-maria', 'u-radu', 'u-mihai', 'u-ana', 'u-vlad', 'u-bogdan', 'u-cristian', 'u-alex', 'u-bianca', 'u-stefan']) addMember(u8, uid, 'confirmed');
 
@@ -323,12 +330,16 @@ export function seed(realNow: number): Db {
   say(u4, 'u-vlad', 'See you all at 7! Reception is on the left.', 180);
   say(u4, 'u-ana', pick(CHAT), 60);
   say(u4, 'u-stefan', pick(CHAT), 30);
+  say(t1, 'u-cristian', 'Booked 20:30 at Titan, 10 karts. Pay your seat to lock it in 🔋', 240);
+  say(t1, 'u-bianca', 'Is the boost button on the steering wheel?', 200);
+  say(t1, 'u-cristian', 'Yes, right thumb. Use it on the long straight!', 190);
   say(u3, 'u-elena', 'Can we get one more driver? Asking my brother.', 90);
 
   // ── Experience ────────────────────────────────────────────────────────────────
   const experience: DbExperience[] = [
     { userId: TEST_USER_ID, trackId: 't-vmax-romexpo', level: 'advanced', bestLapMs: 49876, sessionsCount: 14 },
     { userId: TEST_USER_ID, trackId: 't-amckart', level: 'intermediate', bestLapMs: 61234, sessionsCount: 7 },
+    { userId: TEST_USER_ID, trackId: 't-vmax-titan', level: 'intermediate', bestLapMs: 44912, sessionsCount: 4 },
   ];
   for (const u of others) experience.push({ userId: u.id, trackId: bucTracks.includes(pick(bucTracks)) ? pick(bucTracks) : 't-vmax-romexpo', level: pick(['beginner', 'intermediate', 'advanced'] as const), bestLapMs: Math.round(47000 + r() * 9000), sessionsCount: 1 + Math.floor(r() * 20) });
 

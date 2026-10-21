@@ -57,7 +57,7 @@ import type {
   SessionResults,
   UserSummary,
 } from '../types';
-import { clearDb, loadDb, saveDb, type Db, type DbBan, type DbMember, type DbSession, type DbUser } from './db';
+import { clearDb, loadDb, loadDbAsync, saveDb, type Db, type DbBan, type DbMember, type DbSession, type DbUser } from './db';
 import { DEFAULT_PREFS, seed, TEST_PASSWORD } from './seed';
 
 export const RANK_TIERS: RankTier[] = [
@@ -104,10 +104,19 @@ export class MockServer {
   private notificationListeners = new Set<(n: AppNotification) => void>();
   private authListeners = new Set<(event: 'signed_in' | 'signed_out' | 'password_recovery') => void>();
 
+  /** Resolves once saved demo data has been read back (instant on the web, async on phones). */
+  ready: Promise<void>;
+
   constructor() {
     this.db = loadDb() ?? seed(Date.now());
     this.tick();
     this.save();
+    this.ready = loadDbAsync().then((stored) => {
+      if (stored) this.db = stored;
+      this.tick();
+      this.save();
+      if (stored) this.emit();
+    });
   }
 
   // ───────────────────────────── infrastructure ─────────────────────────────

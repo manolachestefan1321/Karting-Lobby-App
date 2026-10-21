@@ -68,6 +68,7 @@ const ro: Translations = {
     callbackFailed: 'Linkul nu este valid sau a expirat.',
     previewHint: 'Cont de test (previzualizare): {{email}} · parola {{password}}',
     useTestAccount: 'Completează contul de test',
+    demoBadge: 'Versiune demo',
   },
   onboarding: {
     title: 'Creează-ți profilul de pilot',
@@ -426,7 +427,7 @@ const ro: Translations = {
     contact: 'Contactează suportul',
     about: 'Despre',
     version: 'Versiunea {{version}}',
-    previewMode: 'Previzualizare web · date demo',
+    previewMode: 'Versiune demo · date demo',
   },
   deleteAccount: {
     title: 'Șterge-ți contul',

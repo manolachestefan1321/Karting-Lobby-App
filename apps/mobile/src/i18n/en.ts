@@ -67,6 +67,7 @@ const en = {
     callbackFailed: 'This link is invalid or has expired.',
     previewHint: 'Preview test account: {{email}} · password {{password}}',
     useTestAccount: 'Fill in test account',
+    demoBadge: 'Demo version',
   },
   onboarding: {
     title: 'Set up your driver profile',
@@ -425,7 +426,7 @@ const en = {
     contact: 'Contact support',
     about: 'About',
     version: 'Version {{version}}',
-    previewMode: 'Web preview · demo data',
+    previewMode: 'Demo version · demo data',
   },
   deleteAccount: {
     title: 'Delete your account',

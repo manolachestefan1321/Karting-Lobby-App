@@ -65,11 +65,13 @@ export const mockApi: DataApi = {
     subscribe: (cb) => server.on('clock', cb),
   },
   auth: {
-    getUser: () =>
-      call(() => {
+    getUser: async () => {
+      await server.ready;
+      return call(() => {
         const u = server.db.currentUserId ? server.user(server.db.currentUserId) : undefined;
         return u && !u.deleted ? { id: u.id, email: u.email, provider: u.provider } : null;
-      }),
+      });
+    },
     onChange: (cb) =>
       server.onAuth((event) => {
         const u = server.db.currentUserId ? server.user(server.db.currentUserId) : undefined;

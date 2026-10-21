@@ -32,7 +32,10 @@ from (values
   ('timisoara',   'Green Kart Timișoara',                  'green-kart-timisoara',   'Str. Albăstrelelor 6A, Timișoara',                    'SRID=4326;POINT(21.2510 45.7830)'),
   ('iasi',        'Indoor Karting Calea Chișinăului',      'indoor-karting-iasi',    'Calea Chișinăului, Iași',                             'SRID=4326;POINT(27.6260 47.1560)'),
   ('brasov',      'Prejmer Raceway',                       'prejmer-raceway',        'Prejmer, jud. Brașov',                                'SRID=4326;POINT(25.7690 45.7270)'),
-  ('brasov',      'Masterkart Ghimbav',                    'masterkart-ghimbav',     'Ghimbav, jud. Brașov',                                'SRID=4326;POINT(25.5070 45.6640)')
+  ('brasov',      'Masterkart Ghimbav',                    'masterkart-ghimbav',     'Ghimbav, jud. Brașov',                                'SRID=4326;POINT(25.5070 45.6640)'),
+  ('timisoara',   'Red Motor',                             'red-motor',              'Str. Ovidiu Cotruș 30, Timișoara',                    'SRID=4326;POINT(21.2620 45.7745)'),
+  ('craiova',     'Drift Karting Craiova',                 'drift-karting-craiova',  'Fosta Regie de Tutun, Craiova (to verify)',           'SRID=4326;POINT(23.8150 44.3245)'),
+  ('oradea',      'Krea Karting',                          'krea-karting',           'Str. Rampei 11, Oradea',                              'SRID=4326;POINT(21.9430 47.0580)')
 ) as t(city_slug, name, slug, address, location)
 join public.cities c on c.slug = t.city_slug
 on conflict (slug) do nothing;

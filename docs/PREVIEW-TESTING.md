@@ -28,7 +28,7 @@ The **tracks and prices are real** (looked up on the tracks' websites on 20 Oct 
 Use **Signed in as → Andrei Popescu** in the debug panel, or Log in → **Fill in test account** → Log in.
 
 ## 3. Find sessions
-1. **Sessions** tab: change the city at the top (try Constanța or Cluj; Craiova and Oradea have no tracks yet, so you'll see the empty state).
+1. **Sessions** tab: change the city at the top. Every city now has at least one real track. Cities where nobody has created a session yet (e.g. Craiova, Oradea, Iași) show the empty state with a **Create a session** button.
 2. Use the filter chips: date, track, level, free spots.
 3. **My sessions** at the top lists Andrei's active sessions.
 

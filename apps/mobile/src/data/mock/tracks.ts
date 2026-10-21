@@ -173,14 +173,71 @@ const SEEDS: Seed[] = [
     sourceUrl: 'https://www.fasport.ro/karting/Brasov/Masterkart.html',
     priceNote: '10 min, adult 9 CP kart (6.5 CP: 35 lei). Undated listing — likely outdated.',
   },
+  {
+    id: 't-redmotor',
+    cityId: 'c-tm',
+    name: 'Red Motor',
+    address: 'Str. Ovidiu Cotruș 30, Timișoara',
+    lat: 45.7745,
+    lng: 21.2620,
+    website: 'https://redmotor.ro',
+    phone: '0724 338 387',
+    openingHours: 'See website (to verify)',
+    kartTypes: ['Petrol', 'Electric (kids)'],
+    sessionLengthMin: 10,
+    maxDrivers: 12,
+    checkinRadiusM: null,
+    indoor: false,
+    priceLei: 70,
+    sourceUrl: 'https://redmotor.ro/preturi/',
+    priceNote: '"Sprint" 10 min without qualifying. Grand Prix 12 min: 89 lei; Grand Prix 18 min: 135 lei. 720 m outdoor track. Price page layout is unclear — confirm by phone.',
+  },
+  {
+    id: 't-drift-craiova',
+    cityId: 'c-cv',
+    name: 'Drift Karting Craiova',
+    address: 'Fosta Regie de Tutun, Craiova (to verify)',
+    lat: 44.3245,
+    lng: 23.8150,
+    website: 'https://www.facebook.com/driftkartingtrack/',
+    phone: null,
+    openingHours: 'Sat–Sun 10:00–19:00, walk-in only (to verify)',
+    kartTypes: ['Drift karts'],
+    sessionLengthMin: 10,
+    maxDrivers: 8,
+    checkinRadiusM: null,
+    indoor: false,
+    priceLei: 50,
+    sourceUrl: 'https://www.findglocal.com/RO/Craiova/220699854755572/Drift-Karting',
+    priceNote: '10 min. Older listings say 20 lei — the 50 lei price is the most recent found. No reservations (walk-in only): check if group sessions can be booked.',
+  },
+  {
+    id: 't-krea-oradea',
+    cityId: 'c-or',
+    name: 'Krea Karting',
+    address: 'Str. Rampei 11, Oradea',
+    lat: 47.0580,
+    lng: 21.9430,
+    website: 'https://www.kreakarting.ro',
+    phone: '0747 056 701',
+    openingHours: 'To verify',
+    kartTypes: ['Single kart', 'Two-seater', 'Racing kart'],
+    sessionLengthMin: 10,
+    maxDrivers: 8,
+    checkinRadiusM: null,
+    indoor: false,
+    priceLei: 50,
+    sourceUrl: 'https://www.kreakarting.ro/tarife.html',
+    priceNote: 'Priced per 5-minute block: single kart 25 lei / 5 min (racing kart 30 lei / 5 min) → 10 min = 50 lei. Package: 20 min for 80 lei.',
+  },
 ];
 
 /**
- * Tracks found without a published price (not seeded — add them once a price is known):
- *  - Red Motor, Str. Ovidiu Cotruș 30, Timișoara (720 m outdoor) · +40 724 338 387
- *  - Karting Isac, Str. Ioan Slavici 71, Timișoara · 0256 221 875
+ * Tracks found but not seeded (no current price — add them once a price is known):
+ *  - Karting Isac, Str. Ioan Slavici 71, Timișoara · 0256 221 875 (only price found: 25 lei / 10 min in 2011)
+ *  - VMax Electric Indoor Karting Timișoara (vmaxtimisoara.ro, ~80–90 lei / 8 min) — address not found
  *  - KiKi Karting Constanța
- * No tracks were found for Craiova and Oradea.
+ *  - Municipal electric track in Parcul Nicolae Romanescu, Craiova (2022 reports: 50–55 lei / 5 min) — may be closed
  */
 export const REAL_TRACKS: Track[] = SEEDS.map(({ priceLei, sourceUrl, priceNote, ...t }) => ({
   ...t,

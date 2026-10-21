@@ -16,13 +16,15 @@ The data lives in `apps/mobile/src/data/mock/tracks.ts`. The same list will seed
 | Indoor Karting Calea Chișinăului | Iași | **80 lei** | 8 min | [Ziarul de Iași](https://www.ziaruldeiasi.ro/stiri/un-fost-pilot-de-formula-2-si-a-extins-afacerile-in-iasi-pista-de-karting-acoperita-pe-calea-chisinaului--375021.html) | "From 80 lei / 8 min" in an article about 3 years old. **Confirm the name, that it's still open, and the price.** |
 | Prejmer Raceway | Prejmer (Brașov county) | **60 lei** | 10 min | [prejmer-raceway.com](https://prejmer-raceway.com/pasionati.php) | Adult arrive & drive. |
 | Masterkart Ghimbav | Ghimbav (Brașov county) | **50 lei** | 10 min | [faSport](https://www.fasport.ro/karting/Brasov/Masterkart.html) | 9 CP adult kart (6.5 CP = 35 lei). Undated listing, probably outdated. |
+| Red Motor | Timișoara | **70 lei** | 10 min | [redmotor.ro/preturi](https://redmotor.ro/preturi/) | "Sprint" 10 min without qualifying. Grand Prix 12 min = 89 lei, 18 min = 135 lei. 720 m outdoor. The price page layout is jumbled, so confirm by phone: 0724 338 387. *(looked up 21 Oct)* |
+| Drift Karting Craiova | Craiova | **50 lei** | 10 min | [findglocal listing](https://www.findglocal.com/RO/Craiova/220699854755572/Drift-Karting) · [Facebook](https://www.facebook.com/driftkartingtrack/) | Sat–Sun 10:00–19:00, walk-in only. Older listings say 20 lei. **Address uncertain** (former Regia de Tutun site). Check whether groups can book. *(looked up 21 Oct)* |
+| Krea Karting | Oradea | **50 lei** | 10 min | [kreakarting.ro/tarife](https://www.kreakarting.ro/tarife.html) | Priced per 5-minute block: 25 lei / 5 min for a single kart, 30 lei / 5 min for a racing kart, so 10 min = 50 lei. Package: 20 min for 80 lei. Str. Rampei 11, 0747 056 701. *(looked up 21 Oct)* |
 
-## Found, but not seeded (no price published)
-- **Red Motor**, Str. Ovidiu Cotruș 30, Timișoara: 720 m outdoor track, +40 724 338 387.
-- **Karting Isac**, Str. Ioan Slavici 71, Timișoara: 0256 221 875 / 0722 348 274.
-- **KiKi Karting Constanța**.
-
-No tracks were found for **Craiova** or **Oradea**, so those cities show the "no sessions / no tracks" empty state in the preview.
+## Found, but not seeded (no current price or address)
+- **Karting Isac**, Str. Ioan Slavici 71, Timișoara: the only price found is 25 lei / 10 min from a [2011 article](https://www.opiniatimisoarei.ro/kartingul-hobby-pentru-adulti-sport-de-performanta-pentru-copii/14/05/2011). Phone 0256 221 875.
+- **VMax Electric Indoor Karting Timișoara** ([vmaxtimisoara.ro](https://vmaxtimisoara.ro/preturi/)): about 80–90 lei / 8 min, but no address in the results.
+- **KiKi Karting Constanța**: no price found.
+- **Municipal electric track, Parcul Nicolae Romanescu, Craiova**: 2022–2023 reports say 50–55 lei / 5 min ([CraiovaForum](https://www.craiovaforum.ro/stiri/actualitate/pista-de-karting-electric-de-la-craiova-a-fost-inaugurata-tarife-reduse-pentru-studenti-si-elevi.html)). It may be closed.
 
 ## How prices stay current later
 With the real backend, each track gets a `PriceProvider`. It is either *scrape*, reading the price page on a daily schedule, or *manual*, where an admin types the price. The app always shows when the price was last updated. A price an admin has confirmed becomes `verified: true`, and the "to verify" chip disappears.

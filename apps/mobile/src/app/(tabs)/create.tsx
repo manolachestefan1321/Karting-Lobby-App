@@ -117,7 +117,7 @@ export default function CreateTab() {
           label={t('create.track')}
           placeholder={t('create.selectTrack')}
           value={trackId}
-          items={(tracks.data ?? []).map((x) => ({ value: x.id, label: x.name, subtitle: `${money(x.price.perDriverMinor, x.price.currency, locale)}${x.price.verified ? '' : ' (?)'} · ${x.sessionLengthMin} min · ${x.indoor ? 'Indoor' : 'Outdoor'} · max ${x.maxDrivers}` }))}
+          items={(tracks.data ?? []).map((x) => ({ value: x.id, label: x.name, subtitle: `${money(x.price.perDriverMinor, x.price.currency, locale)}${x.price.verified ? '' : ' (?)'} · ${x.sessionLengthMin} min · ${x.indoor ? t('create.indoor') : t('create.outdoor')} · ${t('create.maxShort', { count: x.maxDrivers })}` }))}
           onChange={(v) => {
             setTrackId(v);
             const tr = tracks.data?.find((x) => x.id === v);

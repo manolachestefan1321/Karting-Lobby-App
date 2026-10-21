@@ -720,7 +720,7 @@ export class MockServer {
     const digits = card.replace(/\D/g, '');
     return this.mutate(() => {
       if (digits === '4000000000000002' || digits === '4000000000009995') {
-        p.status = 'failed';
+        // Like a Stripe PaymentIntent after a decline: stays open so the user can retry with another card.
         return { status: 'declined' } as const;
       }
       p.status = 'authorized';

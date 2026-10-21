@@ -19,7 +19,7 @@ import { DialogHost, ErrorState, Screen } from '@/components/ui';
 import { api } from '@/data';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { BannerHost } from '@/features/notifications/BannerHost';
-import { detectDeviceLocale, initI18n } from '@/i18n';
+import { detectDeviceLocale, i18n, initI18n } from '@/i18n';
 import { DebugBridge } from '@/preview/DebugBridge';
 import { PreviewHost } from '@/preview/PreviewHost';
 import { isPreviewHost } from '@/preview/protocol';
@@ -44,8 +44,12 @@ function usePreferencesReady() {
   useEffect(() => {
     if (hydrated && !locale) setLocale(detectDeviceLocale());
   }, [hydrated, locale, setLocale]);
-  // Synchronous on purpose: translations must be ready before the first screen renders.
-  if (hydrated && locale) initI18n(locale);
+  // First init is synchronous: translations must be ready before the first screen renders.
+  if (hydrated && locale && !i18n.isInitialized) initI18n(locale);
+  // Later language switches (Settings) happen after render, never during it.
+  useEffect(() => {
+    if (locale && i18n.isInitialized && i18n.language !== locale) void i18n.changeLanguage(locale);
+  }, [locale]);
   return hydrated && !!locale;
 }
 

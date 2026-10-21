@@ -56,6 +56,8 @@ describe('join, pay and cancel', () => {
     const intent = s.createIntent(u1.id);
     expect(s.confirmPayment(intent.paymentId, '4000 0000 0000 0002')).toEqual({ status: 'declined' });
     expect(s.member(u1.id, TEST_USER_ID)?.status).toBe('joined_unpaid');
+    // retrying the same payment with a working card succeeds
+    expect(s.confirmPayment(intent.paymentId, '4242 4242 4242 4242')).toEqual({ status: 'seat_confirmed' });
   });
 
   it('releases the authorization (no charge) if the last seat was taken meanwhile', () => {

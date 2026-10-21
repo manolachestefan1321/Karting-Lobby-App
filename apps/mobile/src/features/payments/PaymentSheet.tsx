@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Button, Text } from '@/components/ui';
 import { api, type PaymentIntentInfo, type PaymentOutcome } from '@/data';
+import { errorText } from '@/lib/errors';
 import { money } from '@/lib/format';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, spacing } from '@/theme/tokens';
@@ -31,6 +32,7 @@ export function PaymentSheet({
   const [card, setCard] = useState('4242 4242 4242 4242');
   const [busy, setBusy] = useState(false);
   const [declined, setDeclined] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (!intent) return null;
   const p = intent.price;
   const fmt = (m: number) => money(m, p.currency, i18n.language);
@@ -38,11 +40,14 @@ export function PaymentSheet({
   const pay = async () => {
     setBusy(true);
     setDeclined(false);
+    setError(null);
     try {
       const outcome = await api.payments.confirm(intent, card);
       await qc.invalidateQueries();
       if (outcome.status === 'declined') setDeclined(true);
       else onResult(outcome);
+    } catch (err) {
+      setError(errorText(err, t as never, i18n.language));
     } finally {
       setBusy(false);
     }
@@ -100,9 +105,9 @@ export function PaymentSheet({
         <Text variant="caption" tone="faint">
           {t('payment.testCards')}
         </Text>
-        {declined ? (
+        {declined || error ? (
           <Text tone="danger" accessibilityLiveRegion="polite">
-            {t('payment.declined')}
+            {error ?? t('payment.declined')}
           </Text>
         ) : null}
 

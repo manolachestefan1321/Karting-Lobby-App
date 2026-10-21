@@ -65,6 +65,8 @@ export default function Settings() {
               disabled={g === 'account' || !prefs.data}
               onValueChange={(v) => prefs.data && setPrefs.mutate({ ...prefs.data, [g]: v })}
               trackColor={{ true: colors.accent, false: colors.border }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor={colors.border}
               accessibilityLabel={t(`settings.prefs.${g}`)}
             />
           </View>

@@ -11,7 +11,7 @@ import { useCities, useRankTiers, useSetupPayouts, useTracks } from '@/features/
 import { useCreateSession } from '@/features/sessions/hooks';
 import { useRulesOrDefault } from '@/features/sessions/rules';
 import { errorText } from '@/lib/errors';
-import { formatDay, localDateKey, money, relative, zonedToUtc } from '@/lib/format';
+import { formatDay, money, nextDays, relative, zonedToUtc } from '@/lib/format';
 import { useNow } from '@/lib/live';
 import { usePreferences } from '@/store/preferences';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -50,10 +50,10 @@ export default function CreateTab() {
 
   const days = useMemo(
     () =>
-      Array.from({ length: 14 }, (_, i) => {
-        const d = new Date(now.getTime() + i * 86_400_000);
-        return { key: localDateKey(d, tz), label: i === 0 ? t('create.days.today') : i === 1 ? t('create.days.tomorrow') : formatDay(d, tz, locale) };
-      }),
+      nextDays(now, tz, 14).map(({ key, noon }, i) => ({
+        key,
+        label: i === 0 ? t('create.days.today') : i === 1 ? t('create.days.tomorrow') : formatDay(noon, tz, locale),
+      })),
     [now.toDateString(), tz, locale], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const earliest = now.getTime() + (rules.autoCancelBeforeMinutes + 60) * 60_000;

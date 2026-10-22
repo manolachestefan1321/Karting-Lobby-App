@@ -26,6 +26,19 @@ export function localDateKey(iso: string | Date, timeZone: string) {
 }
 
 /** Short relative label: "in 2 h 5 min", "5 min ago". */
+/**
+ * The next `count` calendar days in `timeZone`, starting today, as "YYYY-MM-DD" keys
+ * plus noon of each day (safe to format). Steps by calendar day, not by 24 hours:
+ * on daylight-saving days (23 or 25 hours long) adding 24 h can skip or repeat a day.
+ */
+export function nextDays(now: Date, timeZone: string, count: number): { key: string; noon: Date }[] {
+  const [y, m, d] = localDateKey(now, timeZone).split('-').map(Number) as [number, number, number];
+  return Array.from({ length: count }, (_, i) => {
+    const key = new Date(Date.UTC(y, m - 1, d + i)).toISOString().slice(0, 10);
+    return { key, noon: zonedToUtc(key, '12:00', timeZone) };
+  });
+}
+
 export function relative(target: Date | string, now: Date, locale: string) {
   const diff = new Date(target).getTime() - now.getTime();
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' });

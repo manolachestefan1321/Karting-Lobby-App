@@ -10,7 +10,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useCities, useRankTiers, useTracks } from '@/features/profile/api';
 import { phaseOf, SessionCard } from '@/features/sessions/components';
 import { useMySessions, useSessions } from '@/features/sessions/hooks';
-import { formatDay, localDateKey } from '@/lib/format';
+import { formatDay, localDateKey, nextDays } from '@/lib/format';
 import { useNow } from '@/lib/live';
 import { usePreferences } from '@/store/preferences';
 import { spacing } from '@/theme/tokens';
@@ -43,12 +43,10 @@ export default function SessionsTab() {
 
   // Next 7 days as date chips (in the city's time zone).
   const days = useMemo(() => {
-    const out: { key: string; label: string }[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(now.getTime() + i * 86_400_000);
-      out.push({ key: localDateKey(d, tz), label: i === 0 ? t('sessions.today') : i === 1 ? t('sessions.tomorrow') : formatDay(d, tz, i18n.language) });
-    }
-    return out;
+    return nextDays(now, tz, 7).map(({ key, noon }, i) => ({
+      key,
+      label: i === 0 ? t('sessions.today') : i === 1 ? t('sessions.tomorrow') : formatDay(noon, tz, i18n.language),
+    }));
   }, [now.toDateString(), tz, i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // "My sessions": upcoming seats + anything that still needs my action.

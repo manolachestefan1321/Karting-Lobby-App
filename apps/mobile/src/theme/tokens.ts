@@ -1,14 +1,12 @@
 import { brand } from '@config/brand';
 
 /**
- * Design tokens — 60 / 30 / 10 color rule:
- *  - 60% main color   #F5E6CC (cream): screen backgrounds and cards;
- *  - 30% secondary    #181818 (near-black): text, tab bar, secondary buttons, controls;
- *  - 10% accent       #E00000 (red, from config/brand.ts): primary buttons, selections, highlights.
- * The dark theme has its own palette (below).
- * Body text contrast is ≥ 4.5:1 (WCAG AA); red text uses a slightly deeper red for that.
+ * Design tokens.
+ * Light theme: background #E2DAC2 (cream), text / tab bar / secondary buttons #181818,
+ * main color #EC4624 (primary buttons, selections), red "danger" buttons #F39120.
+ * Dark theme: its own palette (below).
+ * Body text contrast is ≥ 4.5:1 (WCAG AA); small colored text uses deeper shades for that.
  */
-const MAIN = '#F5E6CC';
 const SECONDARY = '#181818';
 
 const shared: Record<'accent' | 'accentPressed' | 'onAccent' | 'success' | 'warning' | 'danger', string> = {
@@ -23,25 +21,33 @@ const shared: Record<'accent' | 'accentPressed' | 'onAccent' | 'success' | 'warn
 export const lightColors: Record<string, string> & typeof shared & {
   background: string; surface: string; surfaceAlt: string; border: string; text: string;
   textMuted: string; textFaint: string; overlay: string; accentText: string;
+  /** Readable text version of `danger` (the button color can be too light for small text). */
+  dangerText: string;
+  onDanger: string;
   /** The 30% color: tab bar, secondary buttons, segmented controls. */
   secondary: string; onSecondary: string; onSecondaryMuted: string;
 } = {
   ...shared,
-  background: MAIN,
-  surface: '#FBF3E4',
-  surfaceAlt: '#EEDCBB',
-  border: '#D6C19C',
+  // Light theme: background #E2DAC2, main color #EC4624, red (danger) buttons #F39120.
+  accent: '#EC4624',
+  accentPressed: '#C8361A',
+  accentText: '#B3301A', // deeper shade so small red-orange text stays readable on cream
+  danger: '#F39120',
+  dangerText: '#9A5208',
+  onDanger: SECONDARY,
+  background: '#E2DAC2',
+  surface: '#EDE7D7',
+  surfaceAlt: '#D5CAAC',
+  border: '#C2B591',
   text: SECONDARY,
-  textMuted: '#4A4236',
-  textFaint: '#6B6050',
+  textMuted: '#45403A',
+  textFaint: '#62594C',
   overlay: 'rgba(24,24,24,0.45)',
-  accentText: '#B80000',
   success: '#1B7A35',
-  warning: '#8A5A00',
-  danger: '#B80000',
+  warning: '#7F5300',
   secondary: SECONDARY,
-  onSecondary: MAIN,
-  onSecondaryMuted: '#B9AD98',
+  onSecondary: '#E2DAC2',
+  onSecondaryMuted: '#ADA48F',
 };
 
 /**
@@ -58,6 +64,8 @@ export const darkColors: typeof lightColors = {
   accentText: '#F39120',
   success: '#4FBBBC',
   danger: '#EC4624',
+  dangerText: '#EC4624',
+  onDanger: '#222A2A',
   warning: '#F3B33D',
   background: '#222A2A',
   // Cards sit a step lighter than the background so they stay visible.

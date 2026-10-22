@@ -31,7 +31,7 @@ export function Button({
     primary: { bg: colors.accent, pressed: colors.accentPressed, fg: colors.onAccent, border: colors.accent },
     secondary: { bg: colors.secondary, pressed: colors.textMuted, fg: colors.onSecondary, border: colors.secondary },
     ghost: { bg: 'transparent', pressed: colors.surfaceAlt, fg: colors.text, border: 'transparent' },
-    danger: { bg: 'transparent', pressed: colors.surfaceAlt, fg: colors.danger, border: colors.danger },
+    danger: { bg: colors.danger, pressed: colors.dangerText, fg: colors.onDanger, border: colors.danger },
   }[variant];
 
   return (

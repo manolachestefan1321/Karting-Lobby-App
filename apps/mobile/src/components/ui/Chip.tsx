@@ -23,7 +23,9 @@ export function Chip({
   const { colors } = useTheme();
   const toneColor = tone === 'success' ? colors.success : tone === 'warning' ? colors.warning : tone === 'danger' ? colors.danger : tone === 'accent' ? colors.accent : null;
   const bg = selected ? colors.accent : toneColor ? 'transparent' : colors.surfaceAlt;
-  const fg = selected ? colors.onAccent : toneColor ?? colors.text;
+  // Text uses the readable shade of the tone; the border keeps the exact color.
+  const textTone = tone === 'danger' ? colors.dangerText : tone === 'accent' ? colors.accentText : toneColor;
+  const fg = selected ? colors.onAccent : textTone ?? colors.text;
   return (
     <Pressable
       accessibilityRole={onPress ? 'button' : 'text'}

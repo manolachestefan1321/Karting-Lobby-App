@@ -15,7 +15,7 @@ export function Text({ variant = 'body', tone = 'default', align, style, ...rest
     muted: colors.textMuted,
     faint: colors.textFaint,
     accent: colors.accentText,
-    danger: colors.danger,
+    danger: colors.dangerText,
     success: colors.success,
     onAccent: colors.onAccent,
   }[tone];

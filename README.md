@@ -7,7 +7,7 @@ KartUP is a social app for karting: find drivers in your city, join a session lo
 | Folder | What it is |
 |---|---|
 | `apps/mobile` | The app (Expo / React Native). The same code runs on iPhone, Android and as the web preview. |
-| `packages/domain` | Business rules with tests: prices, refunds, bans, points, results. |
+| `packages/domain` | Business rules with tests: prices, refunds, bans, km/XP and ranks, results. |
 | `supabase/` | Real backend: database, security rules, server functions, email templates. |
 | `config/brand.ts` | Name, slogan, colors and app IDs. Change branding here only. |
 | `legal/` | Privacy policy and terms templates (edit these). |

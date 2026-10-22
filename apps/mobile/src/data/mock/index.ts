@@ -10,13 +10,14 @@ function getServer(): MockServer {
   if (!instance) {
     instance = new MockServer();
     // The real backend runs its scheduled jobs every minute; the preview re-checks often.
-    setInterval(() => {
+    const timer = setInterval(() => {
       const s = instance!;
       const fingerprint = () => `${s.db.notifications.length}|${s.db.sessions.map((x) => JSON.stringify(x.flags) + x.cancelledAt).join()}`;
       const before = fingerprint();
       s.tick();
       if (fingerprint() !== before) s.emit();
     }, 5000);
+    (timer as { unref?: () => void }).unref?.(); // don't keep test runners alive
   }
   return instance;
 }
@@ -127,12 +128,13 @@ export const mockApi: DataApi = {
           server.db.experience = server.db.experience.filter((e) => !(e.userId === me.id && e.trackId === trackId));
         });
       }),
-    pointsHistory: (userId) => call(() => server.pointsHistory(userId)),
+    progressHistory: (userId) => call(() => server.progressHistory(userId)),
+    selfReport: (input) => call(() => server.selfReport(input)),
     setupPayouts: () => call(() => server.setupPayouts()),
     appealBan: (banId, message) => call(() => server.appealBan(banId, message)),
   },
   places: {
-    rules: () => call(() => RULES),
+    rules: () => call(() => ({ ...RULES, demoInstantResults: server.db.instantResults })),
     cities: () => call(() => server.db.cities),
     tracks: (cityId) => call(() => server.db.tracks.filter((t) => !cityId || t.cityId === cityId).sort((a, b) => a.name.localeCompare(b.name))),
     track: (trackId) => call(() => server.db.tracks.find((t) => t.id === trackId) ?? null),
@@ -180,6 +182,12 @@ export const mockApi: DataApi = {
   ranking: {
     leaderboard: (scope) => call(() => server.leaderboard(scope)),
     seasons: () => call(() => server.seasons()),
+  },
+  admin: {
+    pendingSelfReports: () => call(() => server.pendingSelfReports()),
+    reviewSelfReport: (id, approve) => call(() => server.reviewSelfReport(id, approve)),
+    setOfficialEvent: (sessionId, official) => call(() => server.setOfficialEvent(sessionId, official)),
+    sessions: () => call(() => server.adminSessions()),
   },
   notifications: {
     list: () =>

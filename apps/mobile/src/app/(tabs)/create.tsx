@@ -188,7 +188,7 @@ export default function CreateTab() {
       <View style={styles.wrapChips}>
         <Chip label={t('create.anyRank')} selected={minRank === null} onPress={() => setMinRank(null)} />
         {(tiers.data ?? []).slice(1).map((tier) => (
-          <Chip key={tier.id} label={t(`ranks.${tier.key}` as 'ranks.rookie')} selected={minRank === tier.id} onPress={() => setMinRank(tier.id)} />
+          <Chip key={tier.id} label={tier.name} selected={minRank === tier.id} onPress={() => setMinRank(tier.id)} />
         ))}
       </View>
 

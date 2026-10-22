@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Avatar, Card, Chip, EmptyState, ErrorState, LoadingState, Screen, SegmentedControl, Text } from '@/components/ui';
-import type { LeaderboardEntry, LeaderboardScope } from '@/data';
+import type { LeaderboardEntry, LeaderboardScope, RankTier } from '@/data';
 import { useAuth, useMyId } from '@/features/auth/AuthProvider';
 import { useCities, useRankTiers, useTracks } from '@/features/profile/api';
 import { RankBadge } from '@/features/profile/ProfileView';
@@ -69,6 +69,9 @@ export default function LeaderboardTab() {
         {kind === 'track' && (tracks.data ?? []).map((x) => <Chip key={x.id} label={x.name} selected={trackId === x.id} onPress={() => setTrackId(x.id)} />)}
         {kind === 'season' && (seasons.data ?? []).map((s) => <Chip key={s} label={monthLabel(s)} selected={season === s} onPress={() => setSeason(s)} />)}
       </ScrollView>
+      <Text variant="caption" tone="muted">
+        {kind === 'season' ? t('leaderboard.seasonHint') : t('leaderboard.allTimeHint')}
+      </Text>
 
       {mine ? (
         <Card style={[styles.mine, { borderColor: colors.accent }]}>
@@ -77,7 +80,7 @@ export default function LeaderboardTab() {
           </Text>
           <Text variant="title">#{mine.position}</Text>
           <Text variant="heading" tone="accent">
-            {t('common.pts', { count: mine.points })}
+            {mine.xp.toLocaleString(i18n.language)} XP
           </Text>
         </Card>
       ) : null}
@@ -99,7 +102,7 @@ export default function LeaderboardTab() {
   );
 }
 
-function Row({ e, me, tier }: { e: LeaderboardEntry; me: boolean; tier?: { id: number; key: string; min_points: number; color: string } }) {
+function Row({ e, me, tier }: { e: LeaderboardEntry; me: boolean; tier?: RankTier }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const name = `${e.user.firstName} ${e.user.lastName}`;
@@ -108,7 +111,7 @@ function Row({ e, me, tier }: { e: LeaderboardEntry; me: boolean; tier?: { id: n
     <Pressable
       onPress={() => router.push(me ? '/profile' : `/user/${e.user.id}`)}
       accessibilityRole="button"
-      accessibilityLabel={`${e.position}. ${name}, ${e.points}`}
+      accessibilityLabel={`${e.position}. ${name}, ${e.xp} XP`}
       style={({ pressed }) => [styles.row, me && { backgroundColor: colors.surfaceAlt }, pressed && { opacity: 0.8 }]}
     >
       <Text variant="title" style={[styles.pos, medal ? { color: medal } : null]}>
@@ -123,11 +126,16 @@ function Row({ e, me, tier }: { e: LeaderboardEntry; me: boolean; tier?: { id: n
         <View style={styles.meta}>
           {tier ? <RankBadge tier={tier} small /> : null}
           <Text variant="caption" tone="muted">
-            {e.sessions} {t('leaderboard.sessions')} · {e.wins} {t('leaderboard.wins')}
+            {Math.round(e.km)} km · {e.sessions} {t('leaderboard.sessions')} · {e.wins} {t('leaderboard.wins')}
           </Text>
         </View>
       </View>
-      <Text variant="heading">{e.points}</Text>
+      <View style={styles.xp}>
+        <Text variant="heading">{e.xp.toLocaleString()}</Text>
+        <Text variant="caption" tone="muted">
+          {t('leaderboard.xp')}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -141,5 +149,6 @@ const styles = StyleSheet.create({
   mine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   pos: { width: 30, textAlign: 'center', fontStyle: 'italic' },
+  xp: { alignItems: 'flex-end' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
 });

@@ -17,23 +17,23 @@ import {
   checkinWindow,
   DEFAULT_MIN_AGE,
   DEFAULT_RULES,
+  fastestLapUserIds,
   hostPayoutMinor,
   hostRemoval,
   isNoShow,
   isOldEnough,
   joinIsNonRefundable,
   participantCancellation,
+  MAX_LAPS,
   participantPrice,
-  pointsFor,
-  rankProgress,
   reminderDue,
   resultsDeadline,
   resultsStatus,
   sessionPhase,
   validateFinishingOrder,
-  withinDailyCap,
   type ExperienceLevel,
 } from '@kartup/domain';
+import { zonedToUtc } from '@/lib/format';
 import { ApiError, type Topic } from '../api';
 import type {
   AppNotification,
@@ -49,26 +49,24 @@ import type {
   NotificationType,
   PaymentIntentInfo,
   PaymentOutcome,
-  PointsEntry,
   Profile,
+  ProgressEntry,
   PublicProfile,
-  RankTier,
+  SelfReport,
+  SelfReportInput,
   SessionFilters,
   SessionResults,
   UserSummary,
 } from '../types';
-import { clearDb, loadDb, loadDbAsync, saveDb, type Db, type DbBan, type DbMember, type DbSession, type DbUser } from './db';
+import { RANK_TIERS } from '../ranks';
+import { clearDb, loadDb, loadDbAsync, saveDb, type Db, type DbBan, type DbLedger, type DbMember, type DbSession, type DbUser } from './db';
+import { rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
 import { DEFAULT_PREFS, seed, TEST_PASSWORD } from './seed';
 
-export const RANK_TIERS: RankTier[] = [
-  { id: 1, key: 'rookie', min_points: 0, color: '#8A8F98' },
-  { id: 2, key: 'amateur', min_points: 250, color: '#3FA34D' },
-  { id: 3, key: 'clubRacer', min_points: 1000, color: '#2F7DE1' },
-  { id: 4, key: 'pro', min_points: 3000, color: '#9B51E0' },
-  { id: 5, key: 'elite', min_points: 7500, color: '#E10600' },
-];
+export { RANK_TIERS };
 
-export const RULES: AppRules = { ...DEFAULT_RULES, minAge: DEFAULT_MIN_AGE };
+/** `demoInstantResults` here is only the default; the live value is `db.instantResults`. */
+export const RULES: AppRules = { ...DEFAULT_RULES, minAge: DEFAULT_MIN_AGE, demoInstantResults: true };
 
 const GROUP: Record<NotificationType, NotificationGroup> = {
   lobby_joined: 'lobby',
@@ -86,6 +84,7 @@ const GROUP: Record<NotificationType, NotificationGroup> = {
   results_confirmed: 'results',
   results_disputed: 'results',
   rank_up: 'ranking',
+  self_report_reviewed: 'results',
   ban_started: 'account',
   ban_ended: 'account',
   appeal_resolved: 'account',
@@ -208,11 +207,22 @@ export class MockServer {
   paidCount(sessionId: string) {
     return this.membersOf(sessionId).filter((m) => KEPT.includes(m.status)).length;
   }
-  totalPoints(userId: string) {
-    return this.db.ledger.filter((l) => l.userId === userId).reduce((a, l) => a + l.points, 0);
+  ledgerOf(userId: string): DbLedger[] {
+    return this.db.ledger.filter((l) => l.userId === userId);
   }
-  tierFor(points: number) {
-    return rankProgress(points, RANK_TIERS).current;
+  /** Lifetime km / XP / tracks from VERIFIED results only. */
+  totals(userId: string) {
+    return totalsOf(this.ledgerOf(userId));
+  }
+  /** Highest rank reached (stored, never goes down). */
+  rankOf(userId: string) {
+    return RANK_TIERS[(this.user(userId)?.rankTierId ?? 1) - 1]!;
+  }
+  isAdmin(userId: string | null | undefined) {
+    return !!userId && this.user(userId)?.role === 'admin';
+  }
+  private assertAdmin(userId: string | null | undefined) {
+    if (!this.isAdmin(userId)) throw new ApiError('admin_only');
   }
   noShowCount(userId: string) {
     return this.db.noShows.filter((n) => n.userId === userId && !n.voided).length;
@@ -251,9 +261,9 @@ export class MockServer {
   // ───────────────────────────── mappers ─────────────────────────────
   summary(userId: string): UserSummary {
     const u = this.user(userId);
-    const points = this.totalPoints(userId);
-    if (!u || u.deleted) return { id: userId, firstName: 'Deleted', lastName: 'user', avatarUrl: null, rankTierId: 1, totalPoints: 0 };
-    return { id: u.id, firstName: u.firstName ?? '', lastName: u.lastName ?? '', avatarUrl: u.avatarUrl, rankTierId: this.tierFor(points).id, totalPoints: points };
+    if (!u || u.deleted) return { id: userId, firstName: 'Deleted', lastName: 'user', avatarUrl: null, rankTierId: 1, totalXp: 0, totalKm: 0 };
+    const t = this.totals(userId);
+    return { id: u.id, firstName: u.firstName ?? '', lastName: u.lastName ?? '', avatarUrl: u.avatarUrl, rankTierId: u.rankTierId, totalXp: t.xp, totalKm: t.km };
   }
   banInfo(b: DbBan | null): BanInfo | null {
     if (!b) return null;
@@ -279,16 +289,16 @@ export class MockServer {
   publicProfile(userId: string): PublicProfile | null {
     const u = this.user(userId);
     if (!u || u.deleted || !u.onboardedAt) return null;
-    const ledger = this.db.ledger.filter((l) => l.userId === userId);
+    const totals = this.totals(userId);
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(this.now());
     return {
       ...this.summary(userId),
       bio: u.bio,
       homeCityId: u.homeCityId,
       age: u.dateOfBirth ? ageOn(u.dateOfBirth, today) : null,
-      sessionsRaced: ledger.length,
-      tracksRaced: new Set(ledger.map((l) => l.trackId)).size,
-      wins: ledger.filter((l) => l.position === 1).length,
+      sessionsRaced: totals.sessions,
+      tracksRaced: totals.tracks,
+      wins: totals.wins,
       noShowCount: this.noShowCount(userId),
       createdAt: u.createdAt,
       activeBan: this.banInfo(this.activeBanOf(userId)),
@@ -307,6 +317,7 @@ export class MockServer {
       minRankTierId: s.minRankTierId,
       minSkill: s.minSkill,
       note: s.note,
+      isOfficialEvent: s.isOfficialEvent,
       cancelledAt: s.cancelledAt,
       cancelledBy: s.cancelledBy,
       price: participantPrice(s.trackPriceMinor, s.feeMinor, s.currency),
@@ -407,6 +418,7 @@ export class MockServer {
       termsAcceptedAt: acceptedTerms ? this.iso() : null,
       onboardedAt: null,
       payoutsEnabled: false,
+      rankTierId: 1,
       createdAt: this.iso(),
       prefs: { ...DEFAULT_PREFS },
       blocked: [],
@@ -534,14 +546,99 @@ export class MockServer {
       b.appeal = { message: message.trim().slice(0, 1000), status: 'pending', createdAt: this.iso() };
     });
   }
-  pointsHistory(userId: string): PointsEntry[] {
-    return this.db.ledger
-      .filter((l) => l.userId === userId)
-      .map((l) => {
-        const s = this.session(l.sessionId);
-        return { id: l.id, sessionId: l.sessionId, trackName: this.track(l.trackId).name, date: s.startsAt, position: l.position, fieldSize: l.fieldSize, points: l.points };
-      })
-      .sort((a, b) => ms(b.date) - ms(a.date));
+  /** Verified results + (for your own history) your self-reports that are still unverified. */
+  progressHistory(userId: string): ProgressEntry[] {
+    const verified: ProgressEntry[] = this.ledgerOf(userId).map((l) => ({
+      id: l.id,
+      sessionId: l.sessionId,
+      trackId: l.trackId,
+      trackName: this.track(l.trackId).name,
+      date: l.date,
+      position: l.position,
+      fieldSize: l.fieldSize,
+      laps: l.laps,
+      bestLapMs: l.bestLapMs,
+      verification: 'verified',
+      source: l.source,
+      xp: l.xp,
+      km: l.meters / 1000,
+      breakdown: l.breakdown,
+      review: l.selfReportId ? 'approved' : null,
+    }));
+    const unverified: ProgressEntry[] =
+      userId === this.db.currentUserId
+        ? this.db.selfReports
+            .filter((r) => r.userId === userId && r.status !== 'approved')
+            .map((r) => ({
+              id: r.id,
+              sessionId: null,
+              trackId: r.trackId,
+              trackName: this.track(r.trackId).name,
+              date: r.date,
+              position: r.position,
+              fieldSize: r.fieldSize,
+              laps: r.laps,
+              bestLapMs: r.bestLapMs,
+              verification: 'unverified',
+              source: 'self',
+              xp: null,
+              km: null,
+              breakdown: null,
+              review: r.status,
+            }))
+        : [];
+    return [...verified, ...unverified].sort((a, b) => ms(b.date) - ms(a.date));
+  }
+
+  /** Self-reported result: stored as UNVERIFIED — no km/XP/rank until an admin approves it. */
+  selfReport(input: SelfReportInput) {
+    const u = this.me();
+    const t = this.db.tracks.find((x) => x.id === input.trackId);
+    if (!t) throw new ApiError('not_found');
+    const ok = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
+    if (!ok(input.fieldSize, 1, 30) || !ok(input.position, 1, input.fieldSize)) throw new ApiError('results_bad_positions');
+    if (!ok(input.laps, 1, MAX_LAPS)) throw new ApiError('results_bad_laps');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new ApiError('invalid_date');
+    const dayStart = zonedToUtc(input.date, '00:00', t.timezone).getTime();
+    const now = this.now().getTime();
+    if (dayStart > now || dayStart < now - 366 * 24 * 3_600_000) throw new ApiError('invalid_date');
+    // Stored at noon that day (or now, for a race earlier today).
+    const date = new Date(Math.min(zonedToUtc(input.date, '12:00', t.timezone).getTime(), now));
+    this.mutate(() => {
+      this.db.selfReports.push({
+        id: this.nextId('sr'),
+        userId: u.id,
+        trackId: t.id,
+        date: date.toISOString(),
+        position: input.position,
+        fieldSize: input.fieldSize,
+        laps: input.laps,
+        bestLapMs: input.bestLapMs,
+        status: 'pending',
+        createdAt: this.iso(),
+        reviewedBy: null,
+        reviewedAt: null,
+      });
+    });
+  }
+
+  /** Adds a verified result to the ledger and handles a rank-up. */
+  private addVerified(r: VerifiedResult) {
+    const row = scoreResult(this.db.ledger, r, this.nextId('l'), this.iso());
+    this.db.ledger.push(row);
+    this.applyRank(r.userId);
+    return row;
+  }
+  /** Ranks are permanent: only ever move up. */
+  private applyRank(userId: string) {
+    const u = this.user(userId);
+    if (!u) return;
+    const t = this.totals(userId);
+    const reached = rankIdFor(t);
+    if (reached > u.rankTierId) {
+      u.rankTierId = reached;
+      this.notify(userId, 'rank_up', { rank: RANK_TIERS[reached - 1]!.key, rankId: reached, xp: t.xp, km: Math.round(t.km * 10) / 10 });
+    }
   }
 
   // ───────────────────────────── sessions ─────────────────────────────
@@ -576,7 +673,7 @@ export class MockServer {
     if (ban) throw new ApiError('banned', { until: ban.endsAt ?? '' });
     if (s.cancelledAt) throw new ApiError('session_cancelled');
     if (!canJoinAt(ms(s.startsAt), this.now())) throw new ApiError('session_started');
-    if (s.minRankTierId && this.tierFor(this.totalPoints(u.id)).id < s.minRankTierId) throw new ApiError('rank_too_low');
+    if (s.minRankTierId && this.rankOf(u.id).id < s.minRankTierId) throw new ApiError('rank_too_low');
     if (s.minSkill) {
       const exp = this.db.experience.find((e) => e.userId === u.id && e.trackId === s.trackId);
       const level = exp?.level ?? 'beginner';
@@ -603,6 +700,7 @@ export class MockServer {
         minRankTierId: input.minRankTierId,
         minSkill: input.minSkill,
         note: input.note.trim().slice(0, 300),
+        isOfficialEvent: false,
         cancelledAt: null,
         cancelledBy: null,
         cancelReason: null,
@@ -843,22 +941,34 @@ export class MockServer {
   getResults(sessionId: string): SessionResults | null {
     const r = this.resultsOf(sessionId);
     if (!r) return null;
-    const pointsByUser = new Map(this.db.ledger.filter((l) => l.sessionId === sessionId).map((l) => [l.userId, l.points]));
+    const rows = new Map(this.db.ledger.filter((l) => l.sessionId === sessionId).map((l) => [l.userId, l]));
     return {
       sessionId,
       submittedBy: r.submittedBy,
       submittedAt: r.submittedAt,
       deadline: r.deadline,
       status: this.resultsState(sessionId) ?? 'pending',
+      source: r.source,
       printoutUrl: r.printoutUrl,
-      entries: [...r.entries].sort((a, b) => a.position - b.position).map((e) => ({ ...e, points: pointsByUser.get(e.userId) ?? null })),
+      entries: [...r.entries]
+        .sort((a, b) => a.position - b.position)
+        .map((e) => {
+          const l = rows.get(e.userId);
+          return { ...e, xp: l?.xp ?? null, km: l ? l.meters / 1000 : null, breakdown: l?.breakdown ?? null };
+        }),
       responses: r.responses,
     };
   }
-  submitResults(sessionId: string, entries: { userId: string; position: number; bestLapMs: number | null }[], printoutUrl: string | null) {
+  /**
+   * The lobby organizer enters results for their own session: VERIFIED once final
+   * (after the 24 h confirm/dispute window — or at once in the demo). A KartUP admin
+   * can enter results for any session: final immediately.
+   */
+  submitResults(sessionId: string, entries: { userId: string; position: number; laps: number; bestLapMs: number | null }[], printoutUrl: string | null) {
     const me = this.me();
     const s = this.session(sessionId);
-    if (s.hostId !== me.id) throw new ApiError('not_host');
+    const asAdmin = s.hostId !== me.id && this.isAdmin(me.id);
+    if (s.hostId !== me.id && !asAdmin) throw new ApiError('not_host');
     if (s.cancelledAt) throw new ApiError('session_cancelled');
     if (!checkinClosed(ms(s.startsAt), this.now(), RULES)) throw new ApiError('results_too_early');
     if (this.resultsOf(sessionId)) throw new ApiError('results_exist');
@@ -872,13 +982,16 @@ export class MockServer {
         submittedBy: me.id,
         submittedAt: submittedAt.toISOString(),
         deadline: resultsDeadline(submittedAt, RULES).toISOString(),
+        source: asAdmin ? 'admin' : 'organizer',
         printoutUrl,
-        entries,
+        entries: entries.map((e) => ({ userId: e.userId, position: e.position, laps: e.laps, bestLapMs: e.bestLapMs })),
         responses: [],
         adminDecision: null,
         finalizedAt: null,
       });
-      for (const uid of attended) if (uid !== me.id) this.notify(uid, 'results_posted', this.sessionData(s));
+      // Admin results, and every result in the demo (so rank-ups show live): final at once.
+      if (asAdmin || this.db.instantResults) this.finalize(sessionId);
+      else for (const uid of attended) if (uid !== me.id) this.notify(uid, 'results_posted', this.sessionData(s));
     });
   }
   respondResults(sessionId: string, response: 'confirm' | 'dispute', comment: string | null, userId = this.me().id) {
@@ -901,23 +1014,29 @@ export class MockServer {
       r.adminDecision = approve ? 'approved' : 'rejected';
     });
   }
+  /** Results became final → they are VERIFIED: km + XP for every classified driver. */
   private finalize(sessionId: string) {
     const r = this.resultsOf(sessionId)!;
     const s = this.session(sessionId);
     const t = this.track(s.trackId);
-    const start = ms(s.startsAt);
-    const localDay = (x: number) => new Intl.DateTimeFormat('en-CA', { timeZone: t.timezone }).format(x);
-    const season = localDay(start).slice(0, 7);
     r.finalizedAt = this.iso();
+    const fastest = r.entries.length > 1 ? fastestLapUserIds(r.entries) : [];
     for (const e of r.entries) {
-      const before = this.totalPoints(e.userId);
-      const today = this.db.ledger.filter((l) => l.userId === e.userId && localDay(ms(this.session(l.sessionId).startsAt)) === localDay(start)).length;
-      const points = withinDailyCap(today, RULES.points) ? pointsFor(e.position, r.entries.length, RULES.points) : 0;
-      this.db.ledger.push({ id: this.nextId('l'), userId: e.userId, sessionId, trackId: t.id, cityId: t.cityId, season, points, position: e.position, fieldSize: r.entries.length, createdAt: this.iso() });
-      this.notify(e.userId, 'results_confirmed', { ...this.sessionData(s), points, position: e.position });
-      const oldTier = this.tierFor(before);
-      const newTier = this.tierFor(before + points);
-      if (newTier.id > oldTier.id) this.notify(e.userId, 'rank_up', { rank: newTier.key, points: before + points });
+      const row = this.addVerified({
+        userId: e.userId,
+        sessionId,
+        track: t,
+        date: s.startsAt,
+        position: e.position,
+        fieldSize: r.entries.length,
+        laps: e.laps,
+        bestLapMs: e.bestLapMs,
+        fastestLap: fastest.includes(e.userId),
+        officialEvent: s.isOfficialEvent,
+        source: r.source,
+        verifiedBy: r.submittedBy,
+      });
+      this.notify(e.userId, 'results_confirmed', { ...this.sessionData(s), xp: row.xp, km: Math.round(row.meters / 100) / 10, position: e.position });
       // Keep self-reported experience in sync with verified sessions.
       const exp = this.db.experience.find((x) => x.userId === e.userId && x.trackId === t.id);
       if (exp) {
@@ -941,18 +1060,19 @@ export class MockServer {
     const rows = this.db.ledger.filter((l) =>
       scope.kind === 'city' ? l.cityId === scope.cityId : scope.kind === 'track' ? l.trackId === scope.trackId : scope.kind === 'season' ? l.season === scope.season : true,
     );
-    const by = new Map<string, { points: number; sessions: number; wins: number }>();
+    const by = new Map<string, { xp: number; km: number; sessions: number; wins: number }>();
     for (const l of rows) {
       const u = this.user(l.userId);
       if (!u || u.deleted) continue;
-      const a = by.get(l.userId) ?? { points: 0, sessions: 0, wins: 0 };
-      a.points += l.points;
+      const a = by.get(l.userId) ?? { xp: 0, km: 0, sessions: 0, wins: 0 };
+      a.xp += l.xp;
+      a.km += l.meters / 1000;
       a.sessions += 1;
       a.wins += l.position === 1 ? 1 : 0;
       by.set(l.userId, a);
     }
     return [...by.entries()]
-      .sort((a, b) => b[1].points - a[1].points || b[1].wins - a[1].wins)
+      .sort((a, b) => b[1].xp - a[1].xp || b[1].wins - a[1].wins)
       .map(([userId, a], i) => ({ position: i + 1, user: this.summary(userId), ...a }));
   }
   seasons(): string[] {
@@ -1022,6 +1142,77 @@ export class MockServer {
         this.notify(b.userId, 'ban_ended', {});
       }
     }
+  }
+
+  // ───────────────────────────── admin ─────────────────────────────
+  pendingSelfReports(actorId = this.me().id): SelfReport[] {
+    this.assertAdmin(actorId);
+    return this.db.selfReports
+      .filter((r) => r.status === 'pending')
+      .sort((a, b) => ms(a.createdAt) - ms(b.createdAt))
+      .map((r) => ({
+        id: r.id,
+        user: this.summary(r.userId),
+        trackId: r.trackId,
+        trackName: this.track(r.trackId).name,
+        date: r.date,
+        position: r.position,
+        fieldSize: r.fieldSize,
+        laps: r.laps,
+        bestLapMs: r.bestLapMs,
+        status: r.status,
+        createdAt: r.createdAt,
+      }));
+  }
+  /**
+   * ONLY admins can approve self-reports — not lobby organizers — so friends can't
+   * farm XP by approving each other. Approved → verified → km + XP.
+   */
+  reviewSelfReport(id: string, approve: boolean, actorId = this.me().id) {
+    this.assertAdmin(actorId);
+    const r = this.db.selfReports.find((x) => x.id === id);
+    if (!r) throw new ApiError('not_found');
+    if (r.status !== 'pending') throw new ApiError('already_reviewed');
+    if (r.userId === actorId) throw new ApiError('cannot_review_own');
+    this.mutate(() => {
+      r.status = approve ? 'approved' : 'rejected';
+      r.reviewedBy = actorId;
+      r.reviewedAt = this.iso();
+      const t = this.track(r.trackId);
+      if (approve) {
+        this.addVerified({
+          userId: r.userId,
+          sessionId: null,
+          track: t,
+          date: r.date,
+          position: r.position,
+          fieldSize: r.fieldSize,
+          laps: r.laps,
+          bestLapMs: r.bestLapMs,
+          fastestLap: false,
+          officialEvent: false,
+          source: 'self',
+          verifiedBy: actorId,
+          selfReportId: r.id,
+        });
+      }
+      this.notify(r.userId, 'self_report_reviewed', { approved: approve ? 1 : 0, trackName: t.name });
+    });
+  }
+  setOfficialEvent(sessionId: string, official: boolean, actorId = this.me().id) {
+    this.assertAdmin(actorId);
+    const s = this.session(sessionId);
+    if (this.resultsOf(sessionId)) throw new ApiError('results_exist');
+    this.mutate(() => {
+      s.isOfficialEvent = official;
+    });
+  }
+  adminSessions(actorId = this.me().id): KartSession[] {
+    this.assertAdmin(actorId);
+    return this.db.sessions
+      .filter((s) => ['open', 'locked', 'checkin', 'awaiting_results'].includes(this.phase(s)))
+      .sort((a, b) => ms(a.startsAt) - ms(b.startsAt))
+      .map((s) => this.kartSession(s));
   }
 
   // ───────────────────────────── admin (used by the debug panel) ─────────────────────────────

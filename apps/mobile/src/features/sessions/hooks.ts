@@ -52,7 +52,7 @@ export const useSendMessage = () => useAction(({ id, body }: { id: string; body:
 export const useCreateSession = () => useAction((input: CreateSessionInput) => api.sessions.create(input));
 export const useSubmitResults = () =>
   useAction(
-    ({ id, entries, printoutUri }: { id: string; entries: { userId: string; position: number; bestLapMs: number | null }[]; printoutUri: string | null }) =>
+    ({ id, entries, printoutUri }: { id: string; entries: { userId: string; position: number; laps: number; bestLapMs: number | null }[]; printoutUri: string | null }) =>
       api.results.submit(id, { entries, printoutUri }),
   );
 export const useRespondResults = () =>

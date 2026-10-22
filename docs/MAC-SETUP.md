@@ -143,10 +143,11 @@ In the app (iPhone, simulator or browser), you can open it two ways:
 - on the welcome screen, tap the yellow **"Demo version"** badge.
 
 What it has:
-- **Statistics:** users, hosts, banned users, sessions (upcoming / awaiting results / finished / cancelled / disputed), paid seats, money collected, **your platform fees**, paid to hosts, refunds, no-shows, appeals, reports, chat messages, notifications, points, drivers per rank, and a **per-track** table (sessions, seats, revenue).
+- **Statistics:** users, hosts, banned users, sessions (upcoming / awaiting results / finished / cancelled / disputed), paid seats, money collected, **your platform fees**, paid to hosts, refunds, no-shows, appeals, reports, chat messages, notifications, XP awarded, km driven, drivers per rank (8 ranks), and a **per-track** table (sessions, seats, revenue).
 - **Time:** move the demo clock (−1 h, +15 min, +1 h, +6 h, +1 day, back to real time).
 - **Signed in as:** switch to any demo user, or sign out. **Simulated GPS:** at the track / 5 km away.
 - **Session:** pick a session, open its lobby, jump the clock (3 h before, 2 h before, 61 / 59 min before, 10 min before, 16 min after, +25 h), make other drivers join, pay, cancel, chat or check in, confirm or dispute results, approve as admin, or have the track cancel.
+- **Progression & admin:** "Results final immediately (demo)" switch, sign in as the admin, mark an official event, approve or reject self-reported results.
 - **Ban appeals:** approve or reject.
 - **Email inbox:** open the link from sign-up and password-reset emails.
 - **Reset demo data.**

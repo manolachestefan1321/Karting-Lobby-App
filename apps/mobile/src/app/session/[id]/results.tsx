@@ -1,13 +1,14 @@
 import { formatLapTime, parseLapTime } from '@kartup/domain';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Avatar, Button, Card, Chip, EmptyState, LoadingState, promptDialog, Screen, SectionHeader, Text } from '@/components/ui';
 import type { LobbyMember } from '@/data';
-import { useMyId } from '@/features/auth/AuthProvider';
+import { useAuth, useMyId } from '@/features/auth/AuthProvider';
+import { Breakdown } from '@/features/profile/Breakdown';
 import { toast } from '@/features/notifications/BannerHost';
 import { phaseOf } from '@/features/sessions/components';
 import { useMembers, useRespondResults, useResults, useSession, useSubmitResults } from '@/features/sessions/hooks';
@@ -23,6 +24,7 @@ export default function ResultsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, i18n } = useTranslation();
   const myId = useMyId();
+  const { profile } = useAuth();
   const now = useNow(10_000);
   const rules = useRulesOrDefault();
   const session = useSession(id);
@@ -34,9 +36,10 @@ export default function ResultsScreen() {
   if (!s) return <EmptyState icon="flag-outline" title={t('errors.not_found')} />;
   const phase = phaseOf(s, now, rules);
   const isHost = s.host.id === myId;
+  const isAdmin = profile?.role === 'admin';
 
   if (!results.data) {
-    if (isHost && phase === 'awaiting_results') return <EnterResults sessionId={id} members={members.data ?? []} />;
+    if ((isHost || isAdmin) && phase === 'awaiting_results') return <EnterResults sessionId={id} members={members.data ?? []} asAdmin={!isHost} instant={rules.demoInstantResults} />;
     return (
       <Screen scroll={false}>
         <EmptyState icon="time-outline" title={t('results.notAvailable')} body={phase === 'awaiting_results' ? t('lobby.resultsWaiting') : undefined} />
@@ -91,8 +94,15 @@ function ViewResults({ sessionId, members, isHost, locale }: { sessionId: string
       <Text variant="title">{t('results.title')}</Text>
       <View style={styles.row}>
         <Chip label={statusText} tone={tone} />
-        <Chip label={t('results.confirmations', { confirmed, total: respondents.length })} />
+        {results.source === 'admin' ? (
+          <Chip label={t('results.enteredByAdmin')} />
+        ) : results.status !== 'final' || results.responses.length ? (
+          <Chip label={t('results.confirmations', { confirmed, total: respondents.length })} />
+        ) : null}
       </View>
+      <Text variant="small" tone="muted">
+        {results.status === 'final' ? t('results.verifiedNote') : t('results.pendingNote')}
+      </Text>
       {mine ? <Text tone="muted">{mine.response === 'confirm' ? t('results.youConfirmed') : t('results.youDisputed')}</Text> : null}
 
       <Card padded={false}>
@@ -110,16 +120,21 @@ function ViewResults({ sessionId, members, isHost, locale }: { sessionId: string
                 <Text variant="bodyStrong" numberOfLines={1}>
                   {name}
                 </Text>
-                {e.bestLapMs ? (
-                  <Text variant="caption" tone="muted">
-                    {t('results.bestLap')} {formatLapTime(e.bestLapMs)}
-                  </Text>
-                ) : null}
-              </View>
-              {e.points !== null ? (
-                <Text variant="heading" tone="accent">
-                  {t('results.pointsGained', { points: e.points })}
+                <Text variant="caption" tone="muted">
+                  {t('results.lapsShort', { count: e.laps })}
+                  {e.bestLapMs ? ` · ${t('results.bestLap')} ${formatLapTime(e.bestLapMs)}` : ''}
                 </Text>
+                {e.breakdown ? <Breakdown b={e.breakdown} /> : null}
+              </View>
+              {e.xp !== null ? (
+                <View style={styles.gain}>
+                  <Text variant="heading" tone="accent">
+                    {t('results.xpGained', { xp: e.xp })}
+                  </Text>
+                  <Text variant="caption" tone="muted">
+                    {t('results.kmGained', { km: Math.round((e.km ?? 0) * 10) / 10 })}
+                  </Text>
+                </View>
               ) : null}
             </View>
           );
@@ -143,27 +158,27 @@ function ViewResults({ sessionId, members, isHost, locale }: { sessionId: string
   );
 }
 
-function EnterResults({ sessionId, members }: { sessionId: string; members: LobbyMember[] }) {
+function EnterResults({ sessionId, members, asAdmin, instant }: { sessionId: string; members: LobbyMember[]; asAdmin: boolean; instant: boolean }) {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const submit = useSubmitResults();
   const attended = members.filter((m) => m.status === 'attended');
   const [order, setOrder] = useState<string[]>([]);
-  const [laps, setLaps] = useState<Record<string, string>>({});
+  const [bestLaps, setBestLaps] = useState<Record<string, string>>({});
+  const [lapCounts, setLapCounts] = useState<Record<string, string>>({});
   const [printout, setPrintout] = useState<string | null>(null);
   const remaining = attended.filter((m) => !order.includes(m.id));
   const byId = new Map(members.map((m) => [m.id, m]));
 
   const onSubmit = () => {
-    const entries = order.map((userId, i) => ({ userId, position: i + 1, bestLapMs: laps[userId] ? parseLapTime(laps[userId]!) : null }));
-    if (Object.entries(laps).some(([, v]) => v.trim() && parseLapTime(v) === null)) return toast(t('validation.lapTime'), 'danger');
+    if (order.some((uid) => !/^\d{1,3}$/.test(lapCounts[uid] ?? ''))) return toast(t('results.lapsRequired'), 'danger');
+    if (Object.entries(bestLaps).some(([, v]) => v.trim() && parseLapTime(v) === null)) return toast(t('validation.lapTime'), 'danger');
+    const entries = order.map((userId, i) => ({ userId, position: i + 1, laps: Number(lapCounts[userId]), bestLapMs: bestLaps[userId] ? parseLapTime(bestLaps[userId]!) : null }));
     submit.mutate(
       { id: sessionId, entries, printoutUri: printout },
       {
-        onSuccess: () => {
-          toast(t('results.submitted'));
-          router.back();
-        },
+        // The screen switches to the submitted results (with XP and km once final).
+        onSuccess: () => toast(t('results.submitted')),
         onError: (e) => toast(errorText(e, t as never, i18n.language), 'danger'),
       },
     );
@@ -173,6 +188,7 @@ function EnterResults({ sessionId, members }: { sessionId: string; members: Lobb
     <Screen footer={<Button title={t('results.submit')} onPress={onSubmit} disabled={remaining.length > 0 || order.length === 0} loading={submit.isPending} />}>
       <Text variant="title">{t('results.enterTitle')}</Text>
       <Text tone="muted">{t('results.enterHint')}</Text>
+      {asAdmin ? <Chip label={t('results.adminEntry')} tone="accent" /> : null}
 
       {order.length ? (
         <Card padded={false}>
@@ -187,8 +203,18 @@ function EnterResults({ sessionId, members }: { sessionId: string; members: Lobb
                   {m.firstName} {m.lastName}
                 </Text>
                 <TextInput
-                  value={laps[uid] ?? ''}
-                  onChangeText={(v) => setLaps((l) => ({ ...l, [uid]: v }))}
+                  value={lapCounts[uid] ?? ''}
+                  onChangeText={(v) => setLapCounts((l) => ({ ...l, [uid]: v.replace(/[^0-9]/g, '') }))}
+                  placeholder={t('results.laps')}
+                  placeholderTextColor={colors.textFaint}
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  accessibilityLabel={`${t('results.laps')} ${m.firstName}`}
+                  style={[styles.lapsInput, { color: colors.text, borderColor: colors.border }]}
+                />
+                <TextInput
+                  value={bestLaps[uid] ?? ''}
+                  onChangeText={(v) => setBestLaps((l) => ({ ...l, [uid]: v }))}
                   placeholder={t('results.lapPlaceholder')}
                   placeholderTextColor={colors.textFaint}
                   accessibilityLabel={`${t('results.bestLap')} ${m.firstName}`}
@@ -235,7 +261,7 @@ function EnterResults({ sessionId, members }: { sessionId: string; members: Lobb
         }}
       />
       <Text variant="caption" tone="muted">
-        {t('results.submitHint')}
+        {asAdmin ? t('results.adminEntry') : instant ? t('results.submitHintDemo') : t('results.submitHint')}
       </Text>
     </Screen>
   );
@@ -243,9 +269,11 @@ function EnterResults({ sessionId, members }: { sessionId: string; members: Lobb
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  flex: { flex: 1 },
+  flex: { flex: 1, gap: 2 },
   entry: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   pos: { width: 28, textAlign: 'center', fontStyle: 'italic' },
+  lapsInput: { width: 56, minHeight: 38, borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.sm, fontSize: 15, textAlign: 'center' },
+  gain: { alignItems: 'flex-end' },
   lapInput: { width: 96, minHeight: 38, borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.sm, fontSize: 15 },
   reset: { padding: spacing.md, alignItems: 'flex-end' },
   pool: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

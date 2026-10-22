@@ -9,24 +9,43 @@ import { formatDateTime } from '@/lib/format';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 
+/** Rank badge (rank names are the same in every language). */
 export function RankBadge({ tier, small }: { tier: RankTier; small?: boolean }) {
-  const { t } = useTranslation();
   return (
-    <View style={[styles.badge, small && styles.badgeSmall, { backgroundColor: tier.color }]}>
+    <View style={[styles.badge, small && styles.badgeSmall, { backgroundColor: tier.color }]} accessibilityLabel={tier.name}>
       <Text variant="label" style={[styles.badgeText, small && { fontSize: 11, lineHeight: 14 }]}>
-        {t(`ranks.${tier.key}` as 'ranks.rookie')}
+        {tier.name}
       </Text>
     </View>
   );
 }
 
+const km1 = (km: number) => (Math.round(km * 10) / 10).toLocaleString();
+
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <View style={styles.stat} accessible accessibilityLabel={`${label}: ${value}`}>
       <Text variant="stat">{value}</Text>
-      <Text variant="caption" tone="muted" style={styles.statLabel} numberOfLines={1}>
+      <Text variant="caption" tone="muted" style={styles.statLabel} numberOfLines={2} align="center">
         {label}
       </Text>
+    </View>
+  );
+}
+
+/** One of the two thresholds (km or XP) to the next rank. */
+function Threshold({ label, value, note, progress, color }: { label: string; value: string; note: string; progress: number; color: string }) {
+  return (
+    <View style={styles.gapXs}>
+      <View style={styles.rowBetween}>
+        <Text variant="small">
+          {label} · <Text variant="small" tone="muted">{value}</Text>
+        </Text>
+        <Text variant="caption" tone={progress >= 1 ? 'success' : 'muted'}>
+          {note}
+        </Text>
+      </View>
+      <ProgressBar progress={progress} color={color} label={`${label}: ${value}`} />
     </View>
   );
 }
@@ -80,7 +99,7 @@ export function ProfileView({
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const name = `${profile.firstName} ${profile.lastName}`;
-  const progress = tiers.length ? rankProgress(profile.totalPoints, tiers) : null;
+  const progress = tiers.length ? rankProgress(profile.totalKm, profile.totalXp, tiers, profile.rankTierId - 1) : null;
   const since = new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(new Date(profile.createdAt));
 
   return (
@@ -122,8 +141,8 @@ export function ProfileView({
       <BanCard profile={profile} action={banAction} />
 
       <Card style={styles.statsCard}>
-        <Stat label={t('profile.points')} value={profile.totalPoints} />
-        <Stat label={t('profile.sessions')} value={profile.sessionsRaced} />
+        <Stat label={t('profile.totalKm')} value={km1(profile.totalKm)} />
+        <Stat label={t('profile.totalXp')} value={profile.totalXp.toLocaleString()} />
         <Stat label={t('profile.tracks')} value={profile.tracksRaced} />
         <Stat label={t('profile.wins')} value={profile.wins} />
       </Card>
@@ -135,10 +154,32 @@ export function ProfileView({
               {t('profile.rank')}
             </Text>
             <Text variant="small" tone="muted">
-              {progress.next ? t('profile.pointsToNext', { points: progress.pointsToNext, rank: t(`ranks.${progress.next.key}` as 'ranks.rookie') }) : t('profile.maxRank')}
+              {progress.next ? t('profile.nextRank', { rank: progress.next.name }) : t('profile.maxRank')}
             </Text>
           </View>
-          <ProgressBar progress={progress.progress} color={progress.current.color} label={t('profile.rank')} />
+          {progress.next ? (
+            <>
+              <Threshold
+                label={t('profile.distance')}
+                value={`${km1(profile.totalKm)} / ${progress.next.minKm} km`}
+                note={progress.kmToNext > 0 ? t('profile.kmToNext', { km: km1(progress.kmToNext) }) : t('profile.thresholdMet')}
+                progress={progress.kmProgress}
+                color={progress.next.color}
+              />
+              <Threshold
+                label={t('profile.experiencePoints')}
+                value={`${profile.totalXp.toLocaleString()} / ${progress.next.minXp.toLocaleString()} XP`}
+                note={progress.xpToNext > 0 ? t('profile.xpToNext', { xp: progress.xpToNext.toLocaleString() }) : t('profile.thresholdMet')}
+                progress={progress.xpProgress}
+                color={progress.next.color}
+              />
+              <Text variant="caption" tone="faint">
+                {t('profile.bothNeeded')} {t('profile.rankPermanent')}
+              </Text>
+            </>
+          ) : (
+            <ProgressBar progress={1} color={progress.current.color} label={t('profile.rank')} />
+          )}
         </Card>
       ) : null}
 
@@ -194,6 +235,7 @@ const styles = StyleSheet.create({
   stat: { alignItems: 'center', flex: 1 },
   statLabel: { textTransform: 'uppercase', letterSpacing: 0.8 },
   gapSm: { gap: spacing.sm },
+  gapXs: { gap: spacing.xs },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
   expRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1, gap: 2 },

@@ -6,10 +6,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useReducer, useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Chip, confirmDialog, EmptyState, PickerField, Screen, SectionHeader, Text } from '@/components/ui';
 import { api } from '@/data';
+import { RANK_TIERS } from '@/data/ranks';
 import { toast } from '@/features/notifications/BannerHost';
 import { errorText } from '@/lib/errors';
 import { formatDateTime, money } from '@/lib/format';
@@ -40,6 +42,7 @@ export default function DeveloperMenu() {
   const refresh = useRefreshOnChange();
   const now = useNow(1000);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const qc = useQueryClient();
 
   if (!demo) {
     return (
@@ -71,7 +74,6 @@ export default function DeveloperMenu() {
   };
 
   const offsetMin = Math.round(snap.offsetMs / 60000);
-  const tierOrder = ['rookie', 'amateur', 'clubRacer', 'pro', 'elite'];
 
   return (
     <Screen>
@@ -117,15 +119,16 @@ export default function DeveloperMenu() {
         <Stat label={t('dev.reports')} value={stats.reportsOpen} />
         <Stat label={t('dev.messages')} value={stats.messages} />
         <Stat label={t('dev.notifications')} value={stats.notifications} />
-        <Stat label={t('dev.points')} value={stats.pointsAwarded} />
+        <Stat label={t('dev.xp')} value={stats.xpAwarded.toLocaleString()} />
+        <Stat label={t('dev.km')} value={stats.kmDriven.toLocaleString()} />
       </Grid>
       <Card style={styles.gapSm}>
         <Text variant="label" tone="muted">
           {t('dev.ranks')}
         </Text>
         <View style={styles.wrap}>
-          {tierOrder.map((k) => (
-            <Chip key={k} label={`${t(`ranks.${k}` as 'ranks.rookie')}: ${stats.tiers[k] ?? 0}`} />
+          {RANK_TIERS.map((r) => (
+            <Chip key={r.key} label={`${r.name}: ${stats.tiers[r.key] ?? 0}`} />
           ))}
         </View>
       </Card>
@@ -249,6 +252,55 @@ export default function DeveloperMenu() {
           </View>
         </Card>
       ) : null}
+
+      {/* ── Progression & admin ─────────────────────────────── */}
+      <SectionHeader title={t('dev.progression')} />
+      <Card style={styles.gapSm}>
+        <View style={styles.emailRow}>
+          <View style={styles.flex}>
+            <Text variant="bodyStrong">{t('dev.instantResults')}</Text>
+            <Text variant="caption" tone="muted">
+              {snap.instantResults ? t('dev.instantResultsOn') : t('dev.instantResultsOff')}
+            </Text>
+          </View>
+          <Switch
+            value={snap.instantResults}
+            onValueChange={(on) => {
+              run(() => demo.setInstantResults(on));
+              void qc.invalidateQueries({ queryKey: ['rules'] });
+            }}
+            accessibilityLabel={t('dev.instantResults')}
+          />
+        </View>
+        <View style={styles.wrap}>
+          <Chip label={t('dev.signInAdmin')} icon="shield-checkmark" onPress={() => run(() => demo.switchUser(snap.adminUserId))} />
+          {selected ? (
+            <Chip
+              label={`${t('dev.toggleOfficial')}${snap.officialSessionIds.includes(selected.id) ? ' ✓' : ''}`}
+              icon="trophy"
+              onPress={() => run(() => demo.toggleOfficial(selected.id))}
+            />
+          ) : null}
+        </View>
+        <Text variant="label" tone="muted">
+          {t('dev.selfReports')}
+        </Text>
+        {snap.selfReports.length === 0 ? (
+          <Text tone="muted">{t('dev.noSelfReports')}</Text>
+        ) : (
+          snap.selfReports.map((r) => (
+            <View key={r.id} style={styles.gapXs}>
+              <Text>
+                <Text variant="bodyStrong">{r.userName}</Text> · {r.label}
+              </Text>
+              <View style={styles.wrap}>
+                <Chip label={t('dev.approveReport')} tone="success" onPress={() => run(() => demo.reviewSelfReport(r.id, true))} />
+                <Chip label={t('dev.rejectReport')} tone="danger" onPress={() => run(() => demo.reviewSelfReport(r.id, false))} />
+              </View>
+            </View>
+          ))
+        )}
+      </Card>
 
       {/* ── Appeals ────────────────────────────────────────── */}
       {snap.appeals.length ? (

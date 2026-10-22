@@ -73,20 +73,23 @@ Debug panel → select a session you paid for → **2 h before**. A "Race in 2 h
 8. **Happy path:** Reset, jump to **10 min before**, check in, then **16 min after**. No ban.
 9. Bogdan Rusu already has an active ban. Open his profile from any leaderboard to see how a ban shows on a public profile.
 
-## 10. Enter results (host), points and rank-up
+## 10. Enter results (host), km, XP and rank-up
+Andrei is a **Club Racer** sitting just below **Contender** (150 km and 2,500 XP): about 149 km and 2,480–2,495 XP. Check **Profile**: two progress bars (km and XP), both almost full.
 1. Select **VMax Electric Indoor Karting Romexpo (host Andrei)**, which finished 2 hours ago. Open it and tap **Enter results**.
-2. Tap the drivers in finishing order. Optionally type best laps (e.g. `48.512`) and attach a photo of a "timing printout" (any image). Tap **Submit results**.
-3. Debug panel → **Others confirm results**. The results become **Final**, points are awarded, and you get a **"Rank up! 🏆 You are now Club Racer"** banner. Andrei had 966 points, and a win in a 6-driver field adds 81.
-4. Open **View results** to see positions and points per driver. Check **Rankings** and **Profile → Points history**.
+2. Tap the drivers in finishing order. For **every** driver type the **laps** completed (e.g. `12`). The **best lap** is optional (e.g. `48.512`). You can also attach a photo of a "timing printout" (any image). Tap **Submit results**.
+3. **Demo mode: results are final immediately** (no 24-hour wait), so a full-screen **RANK UP · Contender** celebration appears right away. Any finishing position works, as long as Andrei has at least 2 laps.
+4. Open **View results**: every driver shows **+XP** and **km**, with the breakdown (participation, position, podium, fastest lap, personal best, new track). Check **Profile** (new badge, the bars now point to **Pro**) and **Profile → Race history**.
+
+Want the real 24-hour confirm/dispute window? Developer menu → **Progression & admin** → switch off **Results final immediately (demo)**. Then entered results stay "waiting for confirmations" until everyone confirms or 24 hours pass, and only then give km and XP.
 
 ## 11. Confirm or dispute results (participant)
-1. Select **AMC Kart (host Radu)** from yesterday. Its results are posted and waiting for Andrei's confirmation. Open it, then **View results**.
-2. **Confirm results**: everyone has now confirmed, so the results become final and points are added.
+1. Select **AMC Kart (host Radu)** from yesterday. Its results were posted before the demo started and are waiting for Andrei's confirmation. Open it, then **View results**.
+2. **Confirm results**: everyone has now confirmed, so the results become final (verified) and km and XP are added. If you haven't done step 10 yet, this also ranks Andrei up.
 3. Or tap **Dispute**, write a reason, and the results go to admin review. Use **Admin: approve results / reject results** in the debug panel.
 4. Undisputed results also become final automatically after 24 hours: reset, then jump with **+1 day**.
 
 ## 12. Leaderboards
-**Rankings** tab: Global / City / Track / Season (month). It updates live: finish a session in another tab and watch the points change.
+**Rankings** tab: Global (all-time XP) / City / Track / **Season** (XP earned that month only). Each row shows the driver's permanent **rank badge**, km, sessions and wins. Seasons restart every month; ranks never go down. It updates live: finish a session in another tab and watch the XP change.
 
 ## 13. Chat, report and block
 1. Open any lobby you're in → chat card → type a message.
@@ -102,3 +105,42 @@ Debug panel → select a session you paid for → **2 h before**. A "Race in 2 h
 ## 15. Notifications and settings
 - **Alerts** tab: all notifications, unread dots, tap to open the related screen, "Mark all read". The tab shows an unread badge.
 - **Settings**: language, theme, notification switches (payments/refunds/bans can't be switched off), payment history, privacy policy and terms (in-app), About (wordmark and slogan), Log out, Delete account.
+
+## 16. Ranks, self-reported results and the admin
+**The 8 ranks** (km **and** XP both needed): Rookie 0/0 · Amateur 25 km/300 XP · Club Racer 75/1,000 · Contender 150/2,500 · Pro 300/5,000 · Apex 500/9,000 · Ace 800/15,000 · Veteran 1,200/25,000. They are set in `config/progression.ts`.
+
+The demo has drivers in every rank: **Cristian** (Veteran), **Radu** (Ace), **Vlad** (Apex), **Maria / Mihai** (Pro), **Ana / Ștefan / Larisa** (Contender), **Andrei / Elena / Alex / Paul / Sorin** (Club Racer), **Bianca / Diana / Gabriel / Raluca** (Amateur), **Ioana / Bogdan / Teodora** (Rookie). Their history is a mix of lobby sessions and older results imported from the tracks' timing sheets at VMax Romexpo, VMax Titan and AMC Kart. You see rank badges in lobbies, on leaderboards and on profiles.
+
+**Self-reported result (unverified):**
+1. **Profile → Add a race result**. Pick a track, date, position, number of drivers, laps and (optionally) best lap. **Save**.
+2. **Profile → Race history** shows it with an **Unverified · Waiting for an admin** label and **no km or XP**. Andrei also already has one waiting (VMax Titan).
+
+**Only admins can approve it, not lobby organizers** (so friends can't farm XP for each other):
+1. Developer menu → **Progression & admin** → **Sign in as admin** (Irina Vasile, `admin@kartup.test`, password `kartup123`).
+2. **Profile → ⚙ Settings → Admin tools** → **Self-reported results** → **Approve** or **Reject**. Approving adds the km and XP (and can rank the driver up).
+   - Shortcut: the Developer menu's **Approve (as admin)** buttons do the same without switching user.
+3. Switch back to Andrei: the result is now **Verified · Self-reported**, with XP.
+
+**Admin tools** also let you:
+- mark an upcoming session as an **Official KartUP event** (XP × 1.5); one is already set up (**KartUP Cup**, VMax Romexpo, in 5 days);
+- enter results for **any** session that is waiting for results (they're final immediately).
+
+## Lap lengths to verify before launch
+Distance (km) = laps × lap length, so these numbers matter. **All are marked "to verify"** in the app (the lobby shows "Lap 700 m (to verify)"). Please confirm each with the track and tell me the correct values. The track websites couldn't be opened directly, so these come from search results, news articles and listings.
+
+| Track | Used in app | Source | Confidence / notes |
+|---|---|---|---|
+| AMC Kart (Tunari) | **1,240 m** | [AMC Kart Facebook](https://www.facebook.com/AMCKART/videos/10158334153981713/) · [Adevărul](https://adevarul.ro/stiri-locale/bucuresti/viteza-si-adrenalina-la-karting-1378954.html) | High: the operator says 1,240 m, CIK-FIA certified (some directories say 1,250 m) |
+| VMax Romexpo | **700 m** | [vmaxromexpo.ro/evenimente](https://vmaxromexpo.ro/evenimente/) · [kart-map](https://www.kart-map.com/en/circuits/vmax-karting-romexpo) | Medium: event pages say 700 m, the English homepage says 600 m, the gift page lists 700/650/500 m layouts. **Which layout is used?** |
+| VMax Titan | **600 m** | [PGKart (track builder)](https://www.pgkart.com/en/works/vmax-karting-titan/) | Medium-high: "600 linear m"; the official site page still shows "0 M" |
+| Tomis Kart Mamaia | **450 m** | [TripAdvisor](https://www.tripadvisor.com/Attraction_Review-g295396-d6826040-Reviews-Tomis_Kart_Constanta_Karting-Constanta_Constanta_County_Southeast_Romania.html) | **Low**: other listings say 300, 250 or 200 m. TripAdvisor marks it **temporarily closed**. |
+| T&T Karting Transilvania (Dej) | **800 m** | [Someșeanul (2020)](https://someseanul.ro/tt-karting-transilvania-si-a-deschis-azi-portile-langa-dej-video/) | Medium-high: opening article, 800 m long |
+| Green Kart Timișoara | **150 m** | none found | **Estimate**: small venue, listings mention kids' karts |
+| Indoor Karting Calea Chișinăului (Iași) | **600 m** | [Ziarul de Iași](https://www.ziaruldeiasi.ro/stiri/un-fost-pilot-de-formula-2-si-a-extins-afacerile-in-iasi-pista-de-karting-acoperita-pe-calea-chisinaului--375021.html) | Medium-high: 600 m multi-level (VMax Iași, 2023); operator may have changed |
+| Prejmer Raceway | **1,250 m** | [ProSport](https://www.prosport.ro/?p=5792394) | Medium: planned spec, 14 corners |
+| Masterkart Ghimbav | **1,050 m** | [autostiri.ro](https://autostiri.ro/masterkart-circuitul-de-agrement-din-ghimbav-brasov/) · [fasport](https://www.fasport.ro/karting/Brasov/Masterkart.html) | Medium: long layout 1,050 m, short 950 m (one listing says 900 m) |
+| Red Motor (Timișoara) | **720 m** | [RaceFacer](https://www.racefacer.com/en/karting-tracks/redmotor) | **Conflict**: RaceFacer says 720 m, but the operator's homepage reportedly shows an **indoor 420 m** track. Ask which one sessions use. |
+| Drift Karting Craiova | **300 m** | none found | **Estimate** |
+| Krea Karting (Oradea) | **350 m** | none found | **Estimate**. Several listings say **permanently closed**. Check before launch. |
+
+To change a value, edit `lapLengthM` in `apps/mobile/src/data/mock/tracks.ts` (demo). In the real version it goes in the `tracks.lap_length_m` column, and an admin sets "verified" once confirmed.

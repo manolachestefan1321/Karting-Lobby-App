@@ -19,6 +19,7 @@ import { DialogHost, ErrorState, Screen } from '@/components/ui';
 import { api } from '@/data';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { BannerHost } from '@/features/notifications/BannerHost';
+import { RankUpCelebration } from '@/components/brand/RankUpCelebration';
 import { detectDeviceLocale, i18n, initI18n } from '@/i18n';
 import { DebugBridge } from '@/preview/DebugBridge';
 import { PreviewHost } from '@/preview/PreviewHost';
@@ -104,7 +105,9 @@ function RootNavigator() {
             <Stack.Screen name="session/[id]/chat" options={header} />
             <Stack.Screen name="session/[id]/results" options={header} />
             <Stack.Screen name="profile/edit" options={header} />
-            <Stack.Screen name="profile/points" options={header} />
+            <Stack.Screen name="profile/history" options={header} />
+            <Stack.Screen name="profile/self-report" options={{ ...header, presentation: 'modal' }} />
+            <Stack.Screen name="admin/index" options={header} />
             <Stack.Screen name="profile/experience" options={{ ...header, presentation: 'modal' }} />
             <Stack.Screen name="user/[id]" options={header} />
             <Stack.Screen name="settings/index" options={header} />
@@ -119,6 +122,7 @@ function RootNavigator() {
         </Stack>
       ) : null}
       <BannerHost enabled={signedIn} />
+      <RankUpCelebration enabled={signedIn} />
       <DialogHost />
       {api.kind === 'mock' ? <DebugBridge /> : null}
       <AnimatedSplash ready={ready} />

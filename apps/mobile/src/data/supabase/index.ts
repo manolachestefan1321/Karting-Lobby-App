@@ -5,7 +5,8 @@
  */
 import { DEFAULT_MIN_AGE, DEFAULT_RULES } from '@kartup/domain';
 import { ApiError, type DataApi } from '../api';
-import type { City, Profile, PublicProfile, RankTier, Track } from '../types';
+import { RANK_TIERS } from '../ranks';
+import type { City, Profile, PublicProfile, Track } from '../types';
 import { publicStorageUrl, supabase } from './client';
 import { authRedirectUrl } from './redirect';
 import { signInWithApple, signInWithGoogle, signInWithOAuthBrowser, signOutEverywhere } from './social';
@@ -51,7 +52,9 @@ function toPublic(r: Row): PublicProfile {
     lastName: r.last_name,
     avatarUrl: publicStorageUrl('avatars', r.avatar_path),
     rankTierId: r.rank_tier_id,
-    totalPoints: r.total_points,
+    // Columns added by the progression migration in the real-version phase.
+    totalXp: r.total_xp ?? 0,
+    totalKm: (r.total_meters ?? 0) / 1000,
     bio: r.bio,
     homeCityId: r.home_city_id,
     age: r.age,
@@ -157,7 +160,8 @@ export const supabaseApi: DataApi = {
     upsertExperience: async (i) =>
       wrap((await supabase.from('track_experience').upsert({ user_id: await uid(), track_id: i.trackId, level: i.level, best_lap_ms: i.bestLapMs, sessions_count: i.sessionsCount })).error),
     deleteExperience: async (trackId) => wrap((await supabase.from('track_experience').delete().eq('user_id', await uid()).eq('track_id', trackId)).error),
-    pointsHistory: notImplemented,
+    progressHistory: notImplemented,
+    selfReport: notImplemented,
     setupPayouts: notImplemented,
     appealBan: notImplemented,
   },
@@ -165,7 +169,7 @@ export const supabaseApi: DataApi = {
     rules: async () => {
       const { data } = await supabase.from('app_config').select('key, value');
       const minAge = data?.find((r: Row) => r.key === 'min_age')?.value;
-      return { ...DEFAULT_RULES, minAge: typeof minAge === 'number' ? minAge : DEFAULT_MIN_AGE };
+      return { ...DEFAULT_RULES, minAge: typeof minAge === 'number' ? minAge : DEFAULT_MIN_AGE, demoInstantResults: false };
     },
     cities: async () => {
       const { data, error } = await supabase.from('cities').select('id, name, slug, country_code, timezone').order('name');
@@ -174,11 +178,8 @@ export const supabaseApi: DataApi = {
     },
     tracks: async (): Promise<Track[]> => notImplemented(),
     track: async () => notImplemented(),
-    rankTiers: async () => {
-      const { data, error } = await supabase.from('rank_tiers').select('*').order('min_points');
-      wrap(error);
-      return data as RankTier[];
-    },
+    // Ranks come from config/progression.ts (the database keeps a copy for its own checks).
+    rankTiers: async () => RANK_TIERS,
   },
   sessions: {
     list: notImplemented,
@@ -199,6 +200,7 @@ export const supabaseApi: DataApi = {
   payments: { createIntent: notImplemented, confirm: notImplemented, history: notImplemented },
   results: { get: notImplemented, submit: notImplemented, respond: notImplemented },
   ranking: { leaderboard: notImplemented, seasons: notImplemented },
+  admin: { pendingSelfReports: notImplemented, reviewSelfReport: notImplemented, setOfficialEvent: notImplemented, sessions: notImplemented },
   notifications: {
     list: notImplemented,
     markAllRead: notImplemented,

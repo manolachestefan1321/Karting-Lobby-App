@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, ErrorState, ListRow, Card, LoadingState, promptDialog, Screen, Text } from '@/components/ui';
 import { useMyId } from '@/features/auth/AuthProvider';
 import { toast } from '@/features/notifications/BannerHost';
-import { useAppealBan, useCities, usePointsHistory, usePublicProfile, useRankTiers, useTrackExperience } from '@/features/profile/api';
+import { useAppealBan, useCities, useProgressHistory, usePublicProfile, useRankTiers, useTrackExperience } from '@/features/profile/api';
 import { ProfileView } from '@/features/profile/ProfileView';
 import { errorText } from '@/lib/errors';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -18,7 +18,7 @@ export default function MyProfile() {
   const profile = usePublicProfile(userId);
   const tiers = useRankTiers();
   const experience = useTrackExperience(userId);
-  const points = usePointsHistory(userId);
+  const history = useProgressHistory(userId);
   const cities = useCities();
   const appeal = useAppealBan();
 
@@ -69,10 +69,15 @@ export default function MyProfile() {
             <Card padded={false}>
               <ListRow
                 icon="trending-up-outline"
-                title={t('profile.pointsHistory')}
-                subtitle={points.data?.[0] ? `+${points.data[0].points} · ${points.data[0].trackName}` : t('profile.noPoints')}
-                onPress={() => router.push('/profile/points')}
+                title={t('profile.raceHistory')}
+                subtitle={
+                  history.data?.[0]
+                    ? `${history.data[0].xp !== null ? `+${history.data[0].xp} XP` : t('profile.unverified')} · ${history.data[0].trackName}`
+                    : t('profile.noRaces')
+                }
+                onPress={() => router.push('/profile/history')}
               />
+              <ListRow icon="add-circle-outline" title={t('profile.addRace')} subtitle={t('profile.unverified')} onPress={() => router.push('/profile/self-report')} />
             </Card>
           }
         />

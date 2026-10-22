@@ -6,6 +6,8 @@
  * ⚠️ Coordinates are APPROXIMATE (from the address) — check them on a map before
  *    launch, because check-in uses them (300 m radius).
  * ⚠️ maxDrivers is an estimate where the track doesn't publish it.
+ * ⚠️ lapLengthM (used for km) is "to verify" for EVERY track: sources disagree or
+ *    there is none. The list with sources is in docs/PREVIEW-TESTING.md.
  *
  * Sources and what to check for each track: docs/TRACKS.md
  */
@@ -14,7 +16,7 @@ import type { Track } from '../types';
 const LOOKED_UP = '2026-10-20T12:00:00.000Z';
 const TZ = 'Europe/Bucharest';
 
-type Seed = Omit<Track, 'price' | 'timezone'> & {
+type Seed = Omit<Track, 'price' | 'timezone' | 'lapLengthVerified'> & {
   priceLei: number;
   sourceUrl: string;
   priceNote: string;
@@ -36,6 +38,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 12,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 1240,
     priceLei: 100,
     sourceUrl: 'https://www.amckart.ro/pricing/',
     priceNote: '10 min, 6.5 CP kart, non-member (13 CP kart: 120 lei). Members −10 lei. Balaclava 15 lei extra.',
@@ -55,6 +58,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 10,
     checkinRadiusM: null,
     indoor: true,
+    lapLengthM: 700,
     priceLei: 120,
     sourceUrl: 'https://vmaxromexpo.ro/categorie-produs/pachete-sesiuni/',
     priceNote: '1-session package bought online, balaclava included. Event page also lists 50 lei (Mon–Fri) / 70 lei (weekend) per extra session.',
@@ -74,6 +78,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 10,
     checkinRadiusM: null,
     indoor: true,
+    lapLengthM: 600,
     priceLei: 100,
     sourceUrl: 'https://vmaxtitan.ro/en/shop/',
     priceNote: '1-session package bought online, balaclava included (3 sessions: 190 lei). Price page also lists 70–90 lei per adult session (member/non-member columns unclear). Mini Grand Prix 10 min: 90–120 lei.',
@@ -93,9 +98,10 @@ const SEEDS: Seed[] = [
     maxDrivers: 8,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 450,
     priceLei: 30,
     sourceUrl: 'https://www.infopensiuni.ro/cazare-mamaia/obiective-turistice-mamaia/clubul-de-karting-tomis-kart-mamaia_9641',
-    priceNote: '6 min adult race (≈200 m track). Another listing says 25 lei / 10 min — sources disagree.',
+    priceNote: '6 min adult race. Another listing says 25 lei / 10 min — sources disagree.',
   },
   {
     id: 't-tt-transilvania',
@@ -112,6 +118,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 12,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 800,
     priceLei: 75,
     sourceUrl: 'https://kartingtransilvania.ro/orar-si-tarife/',
     priceNote: '10 min, GX 270 kart (GX 200: 65 lei, GX 390: 95 lei). Prices valid for online bookings only.',
@@ -131,6 +138,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 8,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 150,
     priceLei: 40,
     sourceUrl: 'https://greenkart.ro/',
     priceNote: '10 min: 30 lei Tue–Fri, 40 lei weekend (weekend price used). Check whether adult karts are offered — listings mention children.',
@@ -150,6 +158,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 8,
     checkinRadiusM: null,
     indoor: true,
+    lapLengthM: 600,
     priceLei: 80,
     sourceUrl: 'https://www.ziaruldeiasi.ro/stiri/un-fost-pilot-de-formula-2-si-a-extins-afacerile-in-iasi-pista-de-karting-acoperita-pe-calea-chisinaului--375021.html',
     priceNote: '"From 80 lei for 8 minutes" in a ~3-year-old news article — likely outdated. Confirm name, address and price.',
@@ -169,6 +178,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 10,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 1250,
     priceLei: 60,
     sourceUrl: 'https://prejmer-raceway.com/pasionati.php',
     priceNote: 'Adult arrive & drive, 10 min.',
@@ -188,6 +198,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 8,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 1050,
     priceLei: 50,
     sourceUrl: 'https://www.fasport.ro/karting/Brasov/Masterkart.html',
     priceNote: '10 min, adult 9 CP kart (6.5 CP: 35 lei). Undated listing — likely outdated.',
@@ -207,6 +218,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 12,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 720,
     priceLei: 70,
     sourceUrl: 'https://redmotor.ro/preturi/',
     priceNote: '"Sprint" 10 min without qualifying. Grand Prix 12 min: 89 lei; Grand Prix 18 min: 135 lei. 720 m outdoor track. Price page layout is unclear — confirm by phone.',
@@ -226,6 +238,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 8,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 300,
     priceLei: 50,
     sourceUrl: 'https://www.findglocal.com/RO/Craiova/220699854755572/Drift-Karting',
     priceNote: '10 min. Older listings say 20 lei — the 50 lei price is the most recent found. No reservations (walk-in only): check if group sessions can be booked.',
@@ -245,6 +258,7 @@ const SEEDS: Seed[] = [
     maxDrivers: 8,
     checkinRadiusM: null,
     indoor: false,
+    lapLengthM: 350,
     priceLei: 50,
     sourceUrl: 'https://www.kreakarting.ro/tarife.html',
     priceNote: 'Priced per 5-minute block: single kart 25 lei / 5 min (racing kart 30 lei / 5 min) → 10 min = 50 lei. Package: 20 min for 80 lei.',
@@ -261,6 +275,8 @@ const SEEDS: Seed[] = [
 export const REAL_TRACKS: Track[] = SEEDS.map(({ priceLei, sourceUrl, priceNote, ...t }) => ({
   ...t,
   timezone: TZ,
+  // Every lap length is "to verify" — list + sources in docs/PREVIEW-TESTING.md.
+  lapLengthVerified: false,
   price: {
     perDriverMinor: priceLei * 100,
     currency: 'RON',

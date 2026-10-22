@@ -37,12 +37,12 @@
 └──────────────────────────┘
 ```
 
-**Why Supabase and not Firebase:** everything in the spec is relational (sessions ↔ bookings ↔ payments ↔ results ↔ points ↔ bans). It needs transactional seat allocation, server-side rules and SQL leaderboards. Postgres + RLS covers this better than Firestore. Firebase has no clear advantage for any requirement here, so **no switch**.
+**Why Supabase and not Firebase:** everything in the spec is relational (sessions ↔ bookings ↔ payments ↔ results ↔ XP ↔ bans). It needs transactional seat allocation, server-side rules and SQL leaderboards. Postgres + RLS covers this better than Firestore. Firebase has no clear advantage for any requirement here, so **no switch**.
 
 ### Main principles
-1. **The server is the source of truth.** Money, seats, cancellations, check-in, bans, results and points change only through Edge Functions or `SECURITY DEFINER` SQL functions. RLS makes these tables read-only for clients.
-2. **Business rules are pure TypeScript** in `packages/domain` (refund window, ban ladder, points formula, results-confirmation state machine, check-in window). Edge Functions import this code to enforce the rules. The app imports it only for display (for example, "you can cancel with refund until 18:00"). Unit tests run against this package.
-3. **Tunable values live in config tables, not in code:** `app_config` (min age, check-in radius, fees, reminder times), `ban_ladder`, `points_config`, `rank_tiers`. Admins can edit them in the panel.
+1. **The server is the source of truth.** Money, seats, cancellations, check-in, bans, results, km and XP change only through Edge Functions or `SECURITY DEFINER` SQL functions. RLS makes these tables read-only for clients.
+2. **Business rules are pure TypeScript** in `packages/domain` (refund window, ban ladder, km/XP and rank rules, results-confirmation state machine, check-in window). Edge Functions import this code to enforce the rules. The app imports it only for display (for example, "you can cancel with refund until 18:00"). Unit tests run against this package.
+3. **Tunable values live in config tables, not in code:** `app_config` (min age, check-in radius, fees, reminder times) and `ban_ladder`. Admins can edit them in the panel. Ranks and XP values live in `config/progression.ts` (one file to rename or rebalance).
 4. **Money is stored as integers in minor units** (bani). Currency is stored on every row, RON by default.
 5. **Times are `timestamptz` (UTC)** everywhere. Each track has an IANA timezone (`Europe/Bucharest`). Session times show in the track's local time, which is the time that matters when you drive there. If the device is in a different zone, a small label shows it.
 
@@ -57,7 +57,7 @@ Screens never talk to a backend directly. They use **`api`** from `apps/mobile/s
 | `mock` (default) | `data/mock`: an in-browser fake server with seeded demo data, persisted in `localStorage`, and a controllable clock | **Web preview** (`npm run web`) and offline demos |
 | `supabase` | `data/supabase`: Supabase + Stripe | Real app (auth, profiles and places are done; the rest is built after the preview is approved) |
 
-The fake server enforces the same rules as the future server, using `packages/domain`. Its `tick()` is the equivalent of the scheduled server job: reminders, auto-cancel, check-in close → no-shows → bans, results finalization → points → rank-ups, and payouts.
+The fake server enforces the same rules as the future server, using `packages/domain`. Its `tick()` is the equivalent of the scheduled server job: reminders, auto-cancel, check-in close → no-shows → bans, results finalization → km/XP → rank-ups, and payouts.
 
 **Preview page** (`src/preview`, web + mock only): when the app is opened at `http://localhost:8081`, the outer page shows the **phone frame** (iPhone 393×852 / Android 412×915) with the real app inside an `<iframe>`, plus a **debug panel**. The panel talks to the app over `postMessage`. Native builds never include the panel.
 
@@ -93,7 +93,7 @@ The fake server enforces the same rules as the future server, using `packages/do
 |---|---|
 | `profiles` | `id` (= auth.users.id), `first_name`, `last_name`, `date_of_birth`, `home_city_id`, `bio`, `avatar_path`, `locale`, `theme`, `role` (`user`/`admin`), `deleted_at` |
 | `track_experience` | `user_id`, `track_id`, `level` (beginner/intermediate/advanced), `best_lap_ms`, `sessions_count` (self-reported, plus a count verified from finalized sessions) |
-| `user_stats` | `user_id`, `total_points`, `sessions_raced`, `tracks_raced`, `wins`, `no_show_count`, `rank_tier_id`. Maintained by triggers and used by leaderboards and Realtime. |
+| `user_stats` | `user_id`, `total_xp`, `total_meters`, `sessions_raced`, `tracks_raced`, `wins`, `no_show_count`, `rank_tier_id`. Maintained by triggers and used by leaderboards and Realtime. |
 | `push_tokens` | `user_id`, `expo_token`, `platform` |
 | `notification_prefs` | `user_id`, one boolean per notification type |
 | `blocks` | `blocker_id`, `blocked_id` (Apple requires blocking for apps with user-generated content) |
@@ -124,36 +124,52 @@ The fake server enforces the same rules as the future server, using `packages/do
 | Table | Key columns |
 |---|---|
 | `session_results` | `session_id`, `submitted_by`, `submitted_at`, `printout_path`, `confirm_deadline` (submitted + 24h), `status` (`pending`/`disputed`/`final`/`rejected`) |
-| `result_entries` | `session_id`, `user_id`, `position`, `best_lap_ms` |
+| `result_entries` | `session_id`, `user_id`, `position`, `laps`, `best_lap_ms` |
 | `result_responses` | `session_id`, `user_id`, `response` (`confirm`/`dispute`), `comment` |
-| `points_config` (config) | formula parameters (see below) |
-| `rank_tiers` (config) | `name_key`, `min_points`, `color`, `sort` |
-| `seasons` | `id` (e.g. `2026-11`), `starts_at`, `ends_at` |
-| `points_ledger` | `user_id`, `session_id`, `season_id`, `city_id`, `track_id`, `points`, `position`, `field_size`, `reason`. Append-only. Leaderboards are SUM queries and views over this table. |
+| `rank_tiers` (copy of `config/progression.ts`) | `key`, `name`, `min_km`, `min_xp`, `color`, `sort` |
+| `self_reported_results` | `user_id`, `track_id`, `raced_on`, `position`, `field_size`, `laps`, `best_lap_ms`, `status` (`pending`/`approved`/`rejected`), `reviewed_by` (must be an **admin**). Unverified: no progression until approved. |
+| `progression_ledger` | `user_id`, `session_id` (null for timing-sheet imports / approved self-reports), `track_id`, `city_id`, `raced_at`, `season` (`YYYY-MM`), `position`, `field_size`, `laps`, `best_lap_ms`, `meters`, `xp`, `breakdown jsonb`, `source` (`organizer`/`admin`/`timing_sheet`/`self`), `verified_by`. Append-only, **verified results only**. Leaderboards and totals are SUMs over this table. |
+| `user_stats` (extra columns) | `total_xp`, `total_meters`, `tracks_visited`, `rank_tier_id` = highest rank reached (**never lowered**) |
+| `tracks` (extra columns) | `lap_length_m`, `lap_length_verified` |
+| `sessions` (extra column) | `is_official_event` (admin only) |
 
 ### Moderation & ops
 `reports` (`reporter_id`, `target_type` profile/message, `target_id`, `reason`, `status`), `notifications` (in-app inbox: `user_id`, `type`, `payload`, `read_at`, `push_sent_at`), `app_config` (key/value jsonb), `admin_audit_log`.
 
-### Points formula (proposal, all parameters in `points_config`)
+### Rank progression (config: `config/progression.ts`, rules: `packages/domain/src/progression.ts`)
+Only **verified** results count: entered by the lobby organizer (verified once final, after the 24 h confirm/dispute window), entered by an admin, imported from a track's timing sheet, or self-reported **and approved by an admin**. Organizers can't approve self-reports (stops XP farming between friends). Self-reported results show in history as unverified and give nothing.
 ```
-N   = number of classified drivers (min_field_size = 3 to award points)
-pos = finishing position (1 = winner)
-s   = (N − pos) / (N − 1)              # 1.0 for the winner, 0.0 for last place
-m   = 1 + field_bonus · ln(N / 3)      # bigger field → bigger multiplier
-points = round(participation + base · s · m)
-defaults: participation = 10, base = 50, field_bonus = 0.6
+session meters = laps × track lap length;   total km = Σ meters / 1000
+XP (N = classified drivers):
+  participation                       +25
+  position  round(150 × (N − pos) / (N − 1))    (0 when N = 1)
+  podium    P1 +50 · P2 +30 · P3 +15            (only when N ≥ 4)
+  fastest lap of the session          +20       (shared if tied)
+  new personal best at that track     +15       (needs an earlier lap there)
+  first session at a new track        +30       (once per track)
+  official KartUP event               total × 1.5
+rank = highest rank whose km AND XP thresholds are both met; stored, never lowered
 ```
-Examples: winning a 3-driver race = 60 pts, winning an 8-driver race ≈ 89, winning a 12-driver race ≈ 102, last place = 10.
-Anti-farming: points only for results that are final and for drivers marked `attended`, at most 3 ranked sessions per user per day (configurable).
+| Rank | km | XP |
+|---|---|---|
+| Rookie | 0 | 0 |
+| Amateur | 25 | 300 |
+| Club Racer | 75 | 1,000 |
+| Contender | 150 | 2,500 |
+| Pro | 300 | 5,000 |
+| Apex | 500 | 9,000 |
+| Ace | 800 | 15,000 |
+| Veteran | 1,200 | 25,000 |
 
-### Default rank tiers
-Rookie 0 · Amateur 250 · Club Racer 1 000 · Pro 3 000 · Elite 7 500. These can be edited in the admin panel.
+Rank names are the same in every language. Seasonal leaderboards (XP earned in a month) are separate from the permanent rank. Demo mode only: results become final as soon as they're entered (switchable in the developer menu), so rank-ups show live.
+
+**Demo isolation:** demo users, history and self-reports exist only in `apps/mobile/src/data/mock`. `supabase/seed.sql` has none (a test checks this), and `metro.config.js` replaces `src/data/mock` with empty modules in builds with `EXPO_PUBLIC_DATA_SOURCE=supabase`.
 
 ### Key RLS rules (summary)
 - Reference data (`tracks`, `cities`, prices, `rank_tiers`, configs): anyone signed in can read. Only admins can write.
 - `profiles`: anyone signed in can read public columns, through a `public_profiles` view that hides `date_of_birth` and shows age only. You can update only your own row.
 - `sessions`: anyone can read. Clients create sessions only through the `create_session()` RPC, which validates the track limit, bans and future start time.
-- `lobby_members`, `payments`, `refunds`, `bans`, `no_shows`, `points_ledger`: **clients cannot write to these at all.** Only Edge Functions and RPCs write them.
+- `lobby_members`, `payments`, `refunds`, `bans`, `no_shows`, `progression_ledger`, `self_reported_results` (except inserting your own): **clients cannot write to these at all.** Only Edge Functions and RPCs write them.
 - `chat_messages`: only lobby members can read or insert. Blocked users' messages are filtered out.
 - pgTAP tests in `supabase/tests/` check each rule with real users that have different roles.
 
@@ -172,7 +188,7 @@ Rookie 0 · Amateur 250 · Club Racer 1 000 · Pro 3 000 · Elite 7 500. These c
 | `submit-results` / `respond-results` | app | host submits the results, participants confirm or dispute |
 | `delete-account` | app | anonymizes the profile, keeps payment records for accounting, deletes the auth user |
 | `refresh-prices` | pg_cron daily | runs each track's `PriceProvider` and caches the results in `track_prices` |
-| `tick` | pg_cron every minute | 2h reminders, closing check-in → no-shows → bans, ban-ended notices, finalizing results after 24h, awarding points, minimum-drivers auto-cancel |
+| `tick` | pg_cron every minute | 2h reminders, closing check-in → no-shows → bans, ban-ended notices, finalizing results after 24h, awarding km/XP, minimum-drivers auto-cancel |
 | `send-push` | internal | reads `notifications`, applies user prefs, sends through Expo Push, cleans invalid tokens |
 
 **PriceProvider interface** (`supabase/functions/_shared/prices/`):
@@ -213,7 +229,7 @@ kartup/
 │   └── admin/                    # Next.js admin panel + public /privacy and /terms pages
 ├── packages/
 │   ├── domain/                   # pure TS business rules + Vitest unit tests
-│   │   └── src/ refunds.ts, bans.ts, points.ts, ranks.ts, results.ts, checkin.ts, money.ts
+│   │   └── src/ refunds.ts, bans.ts, progression.ts, results.ts, checkin.ts, money.ts
 │   └── db-types/                 # generated Supabase TypeScript types
 ├── supabase/
 │   ├── migrations/               # schema, RLS, functions, triggers, cron jobs

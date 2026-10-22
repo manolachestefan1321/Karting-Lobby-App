@@ -17,7 +17,7 @@ const GROUPS: NotificationGroup[] = ['lobby', 'chat', 'reminders', 'results', 'r
 export default function Settings() {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const { locale, theme, setLocale, setTheme } = usePreferences();
   const prefs = useNotificationPrefs();
   const setPrefs = useSetNotificationPrefs();
@@ -76,6 +76,7 @@ export default function Settings() {
       <SectionHeader title={t('settings.account')} />
       <Card padded={false}>
         <ListRow icon="receipt-outline" title={t('settings.payments')} onPress={() => router.push('/settings/payments')} />
+        {profile?.role === 'admin' ? <ListRow icon="shield-checkmark-outline" title={t('settings.admin')} onPress={() => router.push('/admin')} /> : null}
         {api.kind === 'mock' ? <ListRow icon="construct-outline" title={t('dev.open')} subtitle={t('settings.previewMode')} onPress={() => router.push('/dev')} /> : null}
         <ListRow icon="log-out-outline" title={t('settings.signOut')} chevron={false} onPress={() => void signOut()} />
         <ListRow icon="trash-outline" title={t('settings.deleteAccount')} destructive onPress={() => router.push('/settings/delete-account')} />

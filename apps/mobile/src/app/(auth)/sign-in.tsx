@@ -10,8 +10,10 @@ import { api, ApiError } from '@/data';
 import { errorKey } from '@/lib/errors';
 import { zodResolver } from '@/lib/zodResolver';
 import { spacing } from '@/theme/tokens';
+import { TEST_EMAIL, TEST_PASSWORD } from '@/data/mock/seed';
 
-const TEST = { email: 'andrei@kartup.test', password: 'kartup123' };
+// Demo login (an empty module in real-backend builds, where this hint is never shown).
+const TEST = { email: TEST_EMAIL, password: TEST_PASSWORD };
 
 export default function SignIn() {
   const { t } = useTranslation();

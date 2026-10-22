@@ -15,6 +15,13 @@ describe('finishing order validation', () => {
   it('rejects gaps or shared positions', () => {
     expect(validateFinishingOrder([{ userId: 'a', position: 1 }, { userId: 'b', position: 1 }, { userId: 'c', position: 3 }], attended)).toEqual({ ok: false, reason: 'bad_positions' });
   });
+  it('checks laps are whole numbers between 0 and 500', () => {
+    const order = (laps: number) => [{ userId: 'a', position: 1, laps: 12 }, { userId: 'b', position: 2, laps }, { userId: 'c', position: 3, laps: 11 }];
+    expect(validateFinishingOrder(order(0), attended)).toEqual({ ok: true });
+    expect(validateFinishingOrder(order(-1), attended)).toEqual({ ok: false, reason: 'bad_laps' });
+    expect(validateFinishingOrder(order(10.5), attended)).toEqual({ ok: false, reason: 'bad_laps' });
+    expect(validateFinishingOrder(order(501), attended)).toEqual({ ok: false, reason: 'bad_laps' });
+  });
 });
 
 describe('results confirmation', () => {

@@ -10,12 +10,16 @@ export type ResultsStatus = 'pending' | 'disputed' | 'final';
 export interface ResultEntry {
   userId: string;
   position: number;
+  /** Laps completed (used for the driver's km). */
+  laps?: number;
   bestLapMs?: number | null;
 }
 
+export const MAX_LAPS = 500;
+
 export type OrderValidation =
   | { ok: true }
-  | { ok: false; reason: 'empty' | 'missing_driver' | 'unknown_driver' | 'duplicate_driver' | 'bad_positions' };
+  | { ok: false; reason: 'empty' | 'missing_driver' | 'unknown_driver' | 'duplicate_driver' | 'bad_positions' | 'bad_laps' };
 
 /** Positions must be exactly 1..N, one per attended driver, nobody missing or extra. */
 export function validateFinishingOrder(entries: readonly ResultEntry[], attendedUserIds: readonly string[]): OrderValidation {
@@ -26,6 +30,7 @@ export function validateFinishingOrder(entries: readonly ResultEntry[], attended
   if (attendedUserIds.some((id) => !ids.includes(id))) return { ok: false, reason: 'missing_driver' };
   const positions = entries.map((e) => e.position).sort((a, b) => a - b);
   if (positions.some((p, i) => p !== i + 1)) return { ok: false, reason: 'bad_positions' };
+  if (entries.some((e) => e.laps !== undefined && (!Number.isInteger(e.laps) || e.laps < 0 || e.laps > MAX_LAPS))) return { ok: false, reason: 'bad_laps' };
   return { ok: true };
 }
 

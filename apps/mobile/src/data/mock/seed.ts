@@ -3,15 +3,77 @@
  * price here is made up. Times are generated relative to "now" so the scenarios
  * (session in 45 min, results waiting, …) always make sense when you reset.
  */
-import { DEFAULT_RULES, pointsFor } from '@kartup/domain';
+import { DEFAULT_RULES, fastestLapUserIds, sessionXp } from '@kartup/domain';
+import { RANKS, XP_RULES } from '@config/progression';
 import type { City, NotificationPrefs } from '../types';
 import { REAL_TRACKS } from './tracks';
 import { localDateKey, zonedToUtc } from '@/lib/format';
 import { DB_VERSION, type Db, type DbExperience, type DbLedger, type DbMember, type DbPayment, type DbResults, type DbSession, type DbUser } from './db';
+import { rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
 
 export const TEST_PASSWORD = 'kartup123';
 export const TEST_EMAIL = 'andrei@kartup.test';
 export const TEST_USER_ID = 'u-andrei';
+/** Demo admin: approves self-reported results, marks official events. */
+export const ADMIN_EMAIL = 'admin@kartup.test';
+export const ADMIN_USER_ID = 'u-admin';
+
+/**
+ * DEMO ONLY — the rank each fake driver ends up in (index into RANKS: 0 = Rookie …
+ * 7 = Veteran), so every rank is visible in the demo. This never reaches the real
+ * database: the real seed (supabase/seed.sql) has no users or results.
+ */
+export const TARGET_RANK: Record<string, number> = {
+  [TEST_USER_ID]: 2, // Club Racer, just below Contender: finishing one session ranks him up
+  'u-cristian': 7,
+  'u-radu': 6,
+  'u-vlad': 5,
+  'u-maria': 4,
+  'u-mihai': 4,
+  'u-ana': 3,
+  'u-stefan': 3,
+  'u-larisa': 3,
+  'u-elena': 2,
+  'u-alex': 2,
+  'u-paul': 2,
+  'u-sorin': 2,
+  'u-bianca': 1,
+  'u-diana': 1,
+  'u-gabriel': 1,
+  'u-raluca': 1,
+  'u-bogdan': 0,
+  'u-teodora': 0,
+  'u-ioana': 0,
+};
+
+/**
+ * Andrei sits just below Contender (150 km / 2,500 XP) on BOTH: any finish in a
+ * waiting session (≥ 2 laps, ≥ 25 XP) crosses both thresholds → rank-up celebration.
+ */
+const ANDREI_WINDOW: [{ km: number; xp: number }, { km: number; xp: number }] = [
+  { km: 148.65, xp: 2476 },
+  { km: 149.6, xp: 2496 },
+];
+
+/** Range of lifetime km / XP a demo driver is generated into (inside their target rank). */
+function targetWindow(userId: string): [{ km: number; xp: number }, { km: number; xp: number }] {
+  if (userId === TEST_USER_ID) return ANDREI_WINDOW;
+  const k = TARGET_RANK[userId] ?? 0;
+  if (userId === 'u-ioana' || userId === ADMIN_USER_ID || !(userId in TARGET_RANK)) return [{ km: 0, xp: 0 }, { km: 0, xp: 0 }]; // brand new
+  if (k === 0) return [{ km: 4, xp: 60 }, { km: 20, xp: 280 }];
+  const cur = RANKS[k]!;
+  const next = RANKS[k + 1];
+  if (!next) return [{ km: cur.minKm + 50, xp: cur.minXp + 1000 }, { km: cur.minKm + 250, xp: cur.minXp + 5000 }];
+  const at = (f: number) => ({ km: cur.minKm + f * (next.minKm - cur.minKm), xp: Math.round(cur.minXp + f * (next.minXp - cur.minXp)) });
+  return [at(0.25), at(0.75)];
+}
+
+/** Scores a driver's results in date order (new-track and personal-best bonuses depend on order). */
+function scoreAll(list: readonly VerifiedResult[]): DbLedger[] {
+  const out: DbLedger[] = [];
+  for (const v of [...list].sort((a, b) => a.date.localeCompare(b.date))) out.push(scoreResult(out, v, '', v.date));
+  return out;
+}
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -62,6 +124,7 @@ const PEOPLE: [string, string, string, string, string][] = [
   ['u-gabriel', 'Gabriel', 'Ene', 'c-is', '1994-02-02'],
   ['u-raluca', 'Raluca', 'Pavel', 'c-bv', '1997-12-24'],
   ['u-stefan', 'Ștefan', 'Oprea', 'c-buc', '1999-05-05'],
+  [ADMIN_USER_ID, 'Irina', 'Vasile', 'c-buc', '1990-04-12'],
 ];
 
 const BIOS = [
@@ -101,7 +164,7 @@ export function seed(realNow: number): Db {
 
   const users: DbUser[] = PEOPLE.map(([uid, first, last, city, dob], i) => ({
     id: uid,
-    email: `${first.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')}@kartup.test`,
+    email: uid === ADMIN_USER_ID ? ADMIN_EMAIL : `${first.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')}@kartup.test`,
     password: TEST_PASSWORD,
     provider: 'email',
     emailConfirmed: true,
@@ -110,12 +173,13 @@ export function seed(realNow: number): Db {
     lastName: last,
     dateOfBirth: dob,
     homeCityId: city,
-    bio: uid === TEST_USER_ID ? BIOS[0]! : pick(BIOS),
+    bio: uid === TEST_USER_ID ? BIOS[0]! : uid === ADMIN_USER_ID ? 'KartUP team · results & official events.' : pick(BIOS),
     avatarUrl: null,
     locale: 'en',
-    role: 'user',
+    role: uid === ADMIN_USER_ID ? 'admin' : 'user',
     termsAcceptedAt: iso(now - 200 * DAY),
     onboardedAt: iso(now - (200 - i) * DAY),
+    rankTierId: 1, // set from the generated history below
     payoutsEnabled: ['u-maria', 'u-radu', 'u-vlad', 'u-teodora', 'u-larisa', 'u-ana', TEST_USER_ID].includes(uid),
     createdAt: iso(now - (200 - i * 5) * DAY),
     prefs: { ...DEFAULT_PREFS },
@@ -126,7 +190,6 @@ export function seed(realNow: number): Db {
   const members: DbMember[] = [];
   const payments: DbPayment[] = [];
   const results: DbResults[] = [];
-  const ledger: DbLedger[] = [];
   const messages: Db['messages'] = [];
 
   function addSession(trackId: string, hostId: string, startsAt: number, o: Partial<DbSession> = {}): DbSession {
@@ -140,6 +203,7 @@ export function seed(realNow: number): Db {
       minRankTierId: o.minRankTierId ?? null,
       minSkill: o.minSkill ?? null,
       note: o.note ?? '',
+      isOfficialEvent: o.isOfficialEvent ?? false,
       cancelledAt: null,
       cancelledBy: null,
       cancelReason: null,
@@ -186,86 +250,111 @@ export function seed(realNow: number): Db {
     });
   }
 
-  function addResults(s: DbSession, order: string[], submittedAt: number, final: boolean, responses: DbResults['responses'] = []) {
-    const start = new Date(s.startsAt).getTime();
-    const entries = order.map((userId, i) => ({ userId, position: i + 1, bestLapMs: Math.round(46000 + i * 700 + r() * 2500) }));
+  /** Results entered by the organizer. Final ones were verified; their km/XP come from the history below. */
+  function addResults(s: DbSession, entries: DbResults['entries'], submittedAt: number, final: boolean, responses: DbResults['responses'] = []) {
     results.push({
       sessionId: s.id,
       submittedBy: s.hostId,
       submittedAt: iso(submittedAt),
       deadline: iso(submittedAt + DEFAULT_RULES.resultsConfirmHours * HOUR),
+      source: 'organizer',
       printoutUrl: null,
       entries,
       responses,
       adminDecision: null,
       finalizedAt: final ? iso(submittedAt + 2 * HOUR) : null,
     });
-    if (final) {
-      const t = trackById.get(s.trackId)!;
-      const season = new Intl.DateTimeFormat('en-CA', { timeZone: t.timezone, year: 'numeric', month: '2-digit' }).format(start).slice(0, 7);
-      for (const e of entries) {
-        ledger.push({
-          id: id('l'),
-          userId: e.userId,
-          sessionId: s.id,
-          trackId: t.id,
-          cityId: t.cityId,
-          season,
-          points: pointsFor(e.position, entries.length, DEFAULT_RULES.points),
-          position: e.position,
-          fieldSize: entries.length,
-          createdAt: iso(submittedAt + 2 * HOUR),
-        });
-      }
-    }
   }
 
-  // ── History: ~34 finished sessions over the last 100 days ──────────────────
+  // ── Race history ───────────────────────────────────────────────────────────
+  // 1) ~24 lobby sessions over the last 60 days at VMax Romexpo, VMax Titan and AMC
+  //    (results entered by the organizer, final = verified);
+  // 2) older results imported from the tracks' timing sheets, generated per driver
+  //    until they land inside their target rank (see TARGET_RANK).
   const bucTracks = ['t-vmax-romexpo', 't-vmax-titan', 't-amckart'];
-  const others = users.filter((u) => u.id !== TEST_USER_ID);
-  let andreiPoints = 0;
-  for (let i = 0; i < 34; i++) {
-    const daysAgo = 3 + Math.floor((i / 34) * 97) + Math.floor(r() * 2);
-    const start = atLocal(-daysAgo, `${String(11 + Math.floor(r() * 10)).padStart(2, '0')}:${r() < 0.5 ? '00' : '30'}`);
-    const inBuc = r() < 0.75;
-    const trackId = inBuc ? pick(bucTracks) : pick(['t-tomiskart', 't-tt-transilvania', 't-greenkart-tm', 't-iasi-indoor', 't-prejmer', 't-masterkart']);
+  const target = (uid: string) => TARGET_RANK[uid] ?? 0;
+  /** Lower = faster. Higher ranks drive faster, with a little randomness. */
+  const pace = new Map(users.map((u) => [u.id, 1.14 - 0.018 * target(u.id) + r() * 0.03]));
+  const lapMsAt = (trackId: string, userId: string, slower = 0) => {
     const t = trackById.get(trackId)!;
-    const localPool = others.filter((u) => u.homeCityId === t.cityId || r() < 0.08);
-    const size = Math.min(localPool.length + 1, 4 + Math.floor(r() * 6));
-    const drivers = [...localPool].sort(() => r() - 0.5).slice(0, size);
-    const includeAndrei = inBuc && andreiPoints < 900 && r() < 0.7;
-    if (includeAndrei) drivers[drivers.length - 1] = users[0]!;
-    if (drivers.length < 3) continue;
-    const s = addSession(trackId, drivers[0]!.id, start, { flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, payoutSent: true, lobbyClosed: true } });
-    const order = [...drivers].sort(() => r() - 0.5).map((u) => u.id);
-    // Keep Andrei's total in a range where finishing one of the waiting sessions ranks him up.
-    if (includeAndrei) {
-      const idx = order.indexOf(TEST_USER_ID);
-      order.splice(idx, 1);
-      let pos = Math.floor(r() * order.length);
-      while (pos < order.length && andreiPoints + pointsFor(pos + 1, order.length + 1, DEFAULT_RULES.points) > 960) pos++;
-      order.splice(pos, 0, TEST_USER_ID);
-      andreiPoints += pointsFor(pos + 1, order.length, DEFAULT_RULES.points);
-    }
+    const base = (t.lapLengthM / (t.indoor ? 14 : 16.5)) * 1000;
+    return Math.round(base * pace.get(userId)! * (1 + slower + r() * 0.02));
+  };
+  const lapsIn = (trackId: string, lapMs: number) => Math.max(1, Math.floor((trackById.get(trackId)!.sessionLengthMin * 60_000) / (lapMs * 1.07)));
+  const inputs = new Map<string, VerifiedResult[]>(users.map((u) => [u.id, []]));
+
+  const racers = users.filter((u) => u.homeCityId === 'c-buc' && u.role === 'user' && target(u.id) >= 2 && u.id !== 'u-bogdan');
+  for (let i = 0; i < 24; i++) {
+    const daysAgo = 3 + Math.floor((i / 24) * 57) + Math.floor(r() * 2);
+    const start = atLocal(-daysAgo, `${String(11 + Math.floor(r() * 10)).padStart(2, '0')}:${r() < 0.5 ? '00' : '30'}`);
+    const trackId = bucTracks[i % 3]!;
+    const t = trackById.get(trackId)!;
+    let drivers = [...racers].filter((u) => u.id !== TEST_USER_ID).sort(() => r() - 0.5).slice(0, 4 + Math.floor(r() * 5));
+    if (r() < 0.6) drivers = [users.find((u) => u.id === TEST_USER_ID)!, ...drivers.slice(1)];
+    const official = i === 7; // one past official KartUP event (XP × 1.5)
+    const s = addSession(trackId, drivers[0]!.id, start, { isOfficialEvent: official, note: official ? 'KartUP Cup — official event' : '', flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, payoutSent: true, lobbyClosed: true } });
+    const timed = drivers.map((u) => ({ userId: u.id, bestLapMs: lapMsAt(trackId, u.id) }));
+    const order = [...timed].sort((a, b) => a.bestLapMs * (1 + r() * 0.04) - b.bestLapMs * (1 + r() * 0.04));
+    const entries = order.map((e, idx) => ({ userId: e.userId, position: idx + 1, laps: lapsIn(trackId, e.bestLapMs * 1.04), bestLapMs: e.bestLapMs }));
     for (const u of drivers) addMember(s, u.id, 'attended');
-    addResults(s, order, start + 2 * HOUR, true);
+    addResults(s, entries, start + 2 * HOUR, true);
+    const fastest = fastestLapUserIds(entries);
+    for (const e of entries) {
+      inputs.get(e.userId)!.push({ userId: e.userId, sessionId: s.id, track: t, date: s.startsAt, position: e.position, fieldSize: entries.length, laps: e.laps, bestLapMs: e.bestLapMs, fastestLap: fastest.includes(e.userId), officialEvent: official, source: 'organizer', verifiedBy: s.hostId });
+    }
   }
 
-  // Top up so Andrei sits at 945–975 points: 1000 = Club Racer, so either waiting
-  // session (P1: +81 for a win, P2: +60 for 3rd) triggers a visible rank-up.
-  const bucLocals = others.filter((u) => u.homeCityId === 'c-buc');
-  for (let extra = 0; andreiPoints < 945 && extra < 30; extra++) {
-    const start = atLocal(-(5 + extra * 3), '18:00');
-    const field = [users[0]!, ...[...bucLocals].sort(() => r() - 0.5).slice(0, 5)];
-    const s = addSession(pick(bucTracks), field[1]!.id, start, { flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, payoutSent: true, lobbyClosed: true } });
-    let pos = 1;
-    while (pos < field.length && andreiPoints + pointsFor(pos, field.length, DEFAULT_RULES.points) > 975) pos++;
-    const order = field.slice(1).map((u) => u.id);
-    order.splice(pos - 1, 0, TEST_USER_ID);
-    andreiPoints += pointsFor(pos, field.length, DEFAULT_RULES.points);
-    for (const u of field) addMember(s, u.id, 'attended');
-    addResults(s, order, start + 2 * HOUR, true);
+  // Timing-sheet imports, oldest first, until each driver sits inside their target rank.
+  const oldestShared = Math.min(...sessions.map((s) => new Date(s.startsAt).getTime()));
+  const ledger: DbLedger[] = [];
+  for (const u of users) {
+    const [lo, hi] = targetWindow(u.id);
+    const mine = inputs.get(u.id)!;
+    const pool = [...bucTracks, ...(u.homeCityId !== 'c-buc' ? REAL_TRACKS.filter((t) => t.cityId === u.homeCityId).map((t) => t.id) : [])];
+    let cursor = oldestShared - 2 * DAY;
+    let rows = scoreAll(mine);
+    for (let guard = 0; guard < 400; guard++) {
+      const tot = totalsOf(rows);
+      if (tot.km >= lo.km && tot.xp >= lo.xp) break;
+      const trackId = pool[Math.floor(r() * pool.length)]!;
+      const t = trackById.get(trackId)!;
+      const daysAgo = (now - cursor) / DAY;
+      const bestLapMs = lapMsAt(trackId, u.id, Math.min(0.06, daysAgo * 0.0001));
+      const roomLaps = Math.floor(((hi.km - tot.km) * 1000) / t.lapLengthM);
+      const laps = Math.max(0, Math.min(tot.km < lo.km ? lapsIn(trackId, bestLapMs) : 2, roomLaps));
+      const km = (laps * t.lapLengthM) / 1000;
+      // Aim for an XP-per-km ratio that reaches both thresholds together.
+      const wanted = tot.km < lo.km ? ((lo.xp + hi.xp) / 2 - tot.xp) * (km / Math.max(km, (lo.km + hi.km) / 2 - tot.km)) : lo.xp - tot.xp + 10;
+      const fastestRoll = r() < 0.5;
+      const candidate = (position: number, fieldSize: number): VerifiedResult => ({ userId: u.id, sessionId: null, track: t, date: new Date(cursor).toISOString(), position, fieldSize, laps, bestLapMs, fastestLap: position === 1 && fastestRoll, officialEvent: false, source: 'timing_sheet', verifiedBy: null });
+      // Close to the target: exact gain (re-scores everything). Far away: quick estimate
+      // (an older row takes over the +30 new-track bonus if the track was already visited).
+      const exact = lo.xp - tot.xp < 400;
+      const visited = rows.some((l) => l.trackId === trackId);
+      // Only results at the same track interact (new-track / personal-best bonuses).
+      const sameTrack = mine.filter((v) => v.track.id === trackId);
+      const sameTrackXp = rows.filter((l) => l.trackId === trackId).reduce((a, l) => a + l.xp, 0);
+      let best: VerifiedResult | null = null;
+      let bestDiff = Infinity;
+      for (let n = 6; n <= 10; n++) {
+        for (let p = 1; p <= n; p++) {
+          const c = candidate(p, n);
+          const gain = exact ? totalsOf(scoreAll([...sameTrack, c])).xp - sameTrackXp : sessionXp({ position: p, fieldSize: n, fastestLap: c.fastestLap, personalBest: false, newTrack: !visited, officialEvent: false }, XP_RULES).total;
+          if (tot.xp + gain > hi.xp) continue;
+          const diff = Math.abs(gain - wanted) + r() * 4; // a little variety in positions
+          if (diff < bestDiff) [best, bestDiff] = [c, diff];
+        }
+      }
+      if (!best) break;
+      mine.push(best);
+      rows = [...rows.filter((l) => l.trackId !== trackId), ...scoreAll([...sameTrack, best])];
+      cursor -= (3 + Math.floor(r() * 4)) * DAY;
+    }
+    ledger.push(...rows);
   }
+  ledger.sort((a, b) => a.date.localeCompare(b.date));
+  ledger.forEach((l) => (l.id = id('l')));
+  for (const u of users) u.rankTierId = rankIdFor(totalsOf(ledger.filter((l) => l.userId === u.id)));
 
   // ── Upcoming sessions (relative to now) ──────────────────────────────────────
   const u1 = addSession('t-vmax-romexpo', 'u-maria', atLocal(1, '19:00'), { maxDrivers: 10, note: 'Friendly race, all levels welcome! Arrive 15 min early for the briefing.' });
@@ -300,6 +389,10 @@ export function seed(realNow: number): Db {
   const t2 = addSession('t-vmax-titan', 'u-vlad', atLocal(3, '19:00'), { maxDrivers: 10, minRankTierId: 2, note: 'Mini Grand Prix format, Amateur rank and up.' });
   for (const uid of ['u-vlad', 'u-mihai', 'u-radu', 'u-ana']) addMember(t2, uid, 'confirmed');
 
+  // Official KartUP event (marked by an admin): XP × 1.5 for everyone.
+  const e1 = addSession('t-vmax-romexpo', 'u-cristian', atLocal(5, '19:00'), { maxDrivers: 10, isOfficialEvent: true, note: 'KartUP Cup — official event. XP × 1.5 for every driver!' });
+  for (const uid of ['u-cristian', 'u-radu', 'u-maria', 'u-vlad', 'u-stefan']) addMember(e1, uid, 'confirmed');
+
   const u8 = addSession('t-vmax-romexpo', 'u-maria', atLocal(4, '20:00'), { maxDrivers: 10 });
   for (const uid of ['u-maria', 'u-radu', 'u-mihai', 'u-ana', 'u-vlad', 'u-bogdan', 'u-cristian', 'u-alex', 'u-bianca', 'u-stefan']) addMember(u8, uid, 'confirmed');
 
@@ -315,7 +408,10 @@ export function seed(realNow: number): Db {
   for (const uid of p2Order) addMember(p2, uid, 'attended');
   addResults(
     p2,
-    p2Order,
+    p2Order.map((userId, i) => {
+      const bestLapMs = lapMsAt('t-amckart', userId) + i * 250;
+      return { userId, position: i + 1, laps: lapsIn('t-amckart', bestLapMs * 1.04), bestLapMs };
+    }),
     p2Start + HOUR,
     false,
     p2Order.filter((u) => u !== 'u-radu' && u !== TEST_USER_ID).map((userId) => ({ userId, response: 'confirm' as const, comment: null })),
@@ -335,13 +431,36 @@ export function seed(realNow: number): Db {
   say(t1, 'u-cristian', 'Yes, right thumb. Use it on the long straight!', 190);
   say(u3, 'u-elena', 'Can we get one more driver? Asking my brother.', 90);
 
-  // ── Experience ────────────────────────────────────────────────────────────────
-  const experience: DbExperience[] = [
-    { userId: TEST_USER_ID, trackId: 't-vmax-romexpo', level: 'advanced', bestLapMs: 49876, sessionsCount: 14 },
-    { userId: TEST_USER_ID, trackId: 't-amckart', level: 'intermediate', bestLapMs: 61234, sessionsCount: 7 },
-    { userId: TEST_USER_ID, trackId: 't-vmax-titan', level: 'intermediate', bestLapMs: 44912, sessionsCount: 4 },
+  // ── Experience: summary of each driver's verified history per track ─────────
+  const experience: DbExperience[] = [];
+  for (const l of ledger) {
+    const e = experience.find((x) => x.userId === l.userId && x.trackId === l.trackId);
+    if (e) {
+      e.sessionsCount += 1;
+      if (l.bestLapMs && (!e.bestLapMs || l.bestLapMs < e.bestLapMs)) e.bestLapMs = l.bestLapMs;
+    } else experience.push({ userId: l.userId, trackId: l.trackId, level: 'beginner', bestLapMs: l.bestLapMs, sessionsCount: 1 });
+  }
+  for (const e of experience) e.level = e.sessionsCount >= 15 ? 'advanced' : e.sessionsCount >= 5 ? 'intermediate' : 'beginner';
+
+  // ── Self-reported results (UNVERIFIED until an admin approves them) ──────────
+  const selfReport = (userId: string, trackId: string, daysAgo: number, position: number, fieldSize: number, laps: number, bestLapMs: number): Db['selfReports'][number] => ({
+    id: id('sr'),
+    userId,
+    trackId,
+    date: iso(atLocal(-daysAgo, '12:00')),
+    position,
+    fieldSize,
+    laps,
+    bestLapMs,
+    status: 'pending',
+    createdAt: iso(now - (daysAgo - 1) * DAY),
+    reviewedBy: null,
+    reviewedAt: null,
+  });
+  const selfReports = [
+    selfReport(TEST_USER_ID, 't-vmax-titan', 9, 2, 8, 14, lapMsAt('t-vmax-titan', TEST_USER_ID)),
+    selfReport('u-diana', 't-amckart', 6, 1, 6, 7, lapMsAt('t-amckart', 'u-diana')),
   ];
-  for (const u of others) experience.push({ userId: u.id, trackId: bucTracks.includes(pick(bucTracks)) ? pick(bucTracks) : 't-vmax-romexpo', level: pick(['beginner', 'intermediate', 'advanced'] as const), bestLapMs: Math.round(47000 + r() * 9000), sessionsCount: 1 + Math.floor(r() * 20) });
 
   // ── One active ban (shows on Bogdan's public profile) ───────────────────────
   const noShowId = id('ns');
@@ -361,6 +480,8 @@ export function seed(realNow: number): Db {
     messages,
     results,
     ledger,
+    selfReports,
+    instantResults: true,
     bans: [
       { id: id('b'), userId: 'u-bogdan', startsAt: iso(now - 4 * HOUR), endsAt: iso(now + 20 * HOUR), reason: 'no_show', offense: 2, noShowId, liftedAt: null, endNotified: false, appeal: null },
     ],

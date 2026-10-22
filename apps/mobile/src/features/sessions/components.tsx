@@ -76,9 +76,10 @@ export function SessionCard({ session, now, tiers, showDate }: { session: KartSe
         ) : session.myStatus === 'joined_unpaid' ? (
           <Chip label={t('sessions.inLobbyUnpaid')} tone="warning" />
         ) : null}
+        {session.isOfficialEvent ? <Chip label={t('sessions.official')} tone="accent" icon="trophy" /> : null}
         {phase !== 'open' ? <PhaseBadge phase={phase} /> : null}
         {session.minSkill ? <Chip label={t('sessions.minSkill', { level: t(`profile.level.${session.minSkill}`) })} /> : null}
-        {minTier ? <Chip label={t('sessions.minRank', { rank: t(`ranks.${minTier.key}` as 'ranks.rookie') })} /> : null}
+        {minTier ? <Chip label={t('sessions.minRank', { rank: minTier.name })} /> : null}
       </View>
       <View style={styles.fillRow}>
         <View style={[styles.fillTrack, { backgroundColor: colors.surfaceAlt }]}>

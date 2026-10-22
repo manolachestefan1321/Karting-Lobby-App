@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * In-memory "database" of the web preview, persisted to localStorage so data
  * survives reloads. Shapes loosely mirror the real Postgres tables.
  */
-import type { ExperienceLevel } from '@kartup/domain';
-import type { AuthProvider, City, Locale, MemberStatus, NotificationPrefs, NotificationType, Track } from '../types';
+import type { ExperienceLevel, XpBreakdown } from '@kartup/domain';
+import type { AuthProvider, City, Locale, MemberStatus, NotificationPrefs, NotificationType, ResultSource, Track } from '../types';
 
 export interface DbUser {
   id: string;
@@ -24,6 +24,8 @@ export interface DbUser {
   termsAcceptedAt: string | null;
   onboardedAt: string | null;
   payoutsEnabled: boolean;
+  /** Highest rank reached (1 = Rookie). Stored so it never goes down. */
+  rankTierId: number;
   createdAt: string;
   prefs: NotificationPrefs;
   blocked: string[];
@@ -38,6 +40,7 @@ export interface DbSession {
   minRankTierId: number | null;
   minSkill: ExperienceLevel | null;
   note: string;
+  isOfficialEvent: boolean;
   cancelledAt: string | null;
   cancelledBy: 'host' | 'track' | 'admin' | 'system' | null;
   cancelReason: string | null;
@@ -88,24 +91,60 @@ export interface DbResults {
   submittedBy: string;
   submittedAt: string;
   deadline: string;
+  /** Host of the lobby, or a KartUP admin. */
+  source: 'organizer' | 'admin';
   printoutUrl: string | null;
-  entries: { userId: string; position: number; bestLapMs: number | null }[];
+  entries: { userId: string; position: number; laps: number; bestLapMs: number | null }[];
   responses: { userId: string; response: 'confirm' | 'dispute'; comment: string | null }[];
   adminDecision: 'approved' | 'rejected' | null;
   finalizedAt: string | null;
 }
 
+/**
+ * Progression ledger: one row per driver per VERIFIED result. Totals (km, XP, tracks
+ * visited) are sums over these rows. Unverified self-reports never get a row.
+ */
 export interface DbLedger {
   id: string;
   userId: string;
-  sessionId: string;
+  /** Lobby session, or null for timing-sheet imports and approved self-reports. */
+  sessionId: string | null;
   trackId: string;
   cityId: string;
+  /** Race start (ISO). */
+  date: string;
+  /** "YYYY-MM" in the track's time zone (seasonal leaderboards). */
   season: string;
-  points: number;
   position: number;
   fieldSize: number;
+  laps: number;
+  bestLapMs: number | null;
+  meters: number;
+  xp: number;
+  breakdown: XpBreakdown;
+  source: ResultSource;
+  /** Who verified it: host, admin, or null for timing sheets. */
+  verifiedBy: string | null;
+  /** Self-report this row came from (approved by an admin). */
+  selfReportId?: string;
   createdAt: string;
+}
+
+/** Self-reported result: UNVERIFIED, no progression until an admin approves it. */
+export interface DbSelfReport {
+  id: string;
+  userId: string;
+  trackId: string;
+  /** Race start (ISO, noon local time of the reported day). */
+  date: string;
+  position: number;
+  fieldSize: number;
+  laps: number;
+  bestLapMs: number | null;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
 }
 
 export interface DbBan {
@@ -187,6 +226,9 @@ export interface Db {
   messages: DbMessage[];
   results: DbResults[];
   ledger: DbLedger[];
+  selfReports: DbSelfReport[];
+  /** Demo: results are final as soon as they are entered (skip the 24 h dispute window). */
+  instantResults: boolean;
   bans: DbBan[];
   noShows: DbNoShow[];
   notifications: DbNotification[];
@@ -196,7 +238,7 @@ export interface Db {
   payouts: DbPayout[];
 }
 
-export const DB_VERSION = 8; // bump when the seed changes: browsers then reload fresh demo data
+export const DB_VERSION = 9; // bump when the seed changes: browsers then reload fresh demo data
 const KEY = 'kartup-preview-db';
 
 /**

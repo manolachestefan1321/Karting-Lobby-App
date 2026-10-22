@@ -49,8 +49,9 @@ export function BannerHost({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (!enabled) return;
     return api.notifications.onNew((n: AppNotification) => {
+      if (n.type === 'rank_up') return; // full-screen RankUpCelebration instead
       const { title, body } = notificationText(n, t, i18n.language);
-      const tone = n.type === 'rank_up' ? 'celebrate' : n.type === 'ban_started' || n.type.includes('cancelled') ? 'danger' : 'default';
+      const tone = n.type === 'ban_started' || n.type.includes('cancelled') ? 'danger' : 'default';
       push({ key: n.id, title, body, icon: NOTIFICATION_ICON[n.type], tone, href: notificationHref(n), notificationId: n.id });
     });
   }, [enabled, t, i18n.language, push]);

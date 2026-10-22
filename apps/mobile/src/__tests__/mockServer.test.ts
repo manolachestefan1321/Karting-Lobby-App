@@ -1,7 +1,7 @@
 /**
  * Integration tests of the preview backend: the same flows the debug panel drives.
  * They exercise the shared business rules end-to-end (join → pay → cancel → refund,
- * auto-cancel, no-show → ban, results → points → rank-up).
+ * auto-cancel, no-show → ban, results → km/XP → rank-up).
  */
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { MockServer } from '@/data/mock/server';
@@ -133,7 +133,7 @@ describe('scheduled rules', () => {
 });
 
 describe('results', () => {
-  it('pending results stay pending until confirmed or 24 h pass', () => {
+  it('pending results stay pending until confirmed (seeded before the demo instant mode applies)', () => {
     const p2 = s.db.sessions.find((x) => x.hostId === 'u-radu' && s.resultsOf(x.id) && !s.resultsOf(x.id)!.finalizedAt)!;
     expect(s.getResults(p2.id)!.status).toBe('pending');
     s.setClockOffset(75 * MIN);
@@ -142,15 +142,20 @@ describe('results', () => {
     expect(s.getResults(p2.id)!.status).toBe('final');
   });
 
-  it('host enters results; once everyone confirms, points are awarded and the rank goes up', () => {
+  it('with the real 24 h window: host results are verified (km + XP) once everyone confirms, and the rank goes up', () => {
+    s.db.instantResults = false;
     const p1 = s.db.sessions.find((x) => x.hostId === TEST_USER_ID && new Date(x.startsAt).getTime() < now() && !s.resultsOf(x.id))!;
     const attended = s.membersOf(p1.id).filter((m) => m.status === 'attended').map((m) => m.userId);
-    const before = s.totalPoints(TEST_USER_ID);
-    expect(before).toBeLessThan(1000);
-    s.submitResults(p1.id, attended.map((userId, i) => ({ userId, position: i + 1, bestLapMs: null })), null);
+    const before = s.totals(TEST_USER_ID);
+    expect(s.rankOf(TEST_USER_ID).key).toBe('clubRacer');
+    s.submitResults(p1.id, attended.map((userId, i) => ({ userId, position: i + 1, laps: 12, bestLapMs: null })), null);
+    expect(s.totals(TEST_USER_ID).xp).toBe(before.xp); // not verified yet
     for (const uid of attended.filter((u) => u !== TEST_USER_ID)) s.respondResults(p1.id, 'confirm', null, uid);
     expect(s.getResults(p1.id)!.status).toBe('final');
-    expect(s.totalPoints(TEST_USER_ID)).toBe(before + 81);
+    // Andrei won a 6-driver field at a track he knows: 25 + 150 + 50 = 225 XP; 12 laps × 700 m.
+    expect(s.totals(TEST_USER_ID).xp).toBe(before.xp + 225);
+    expect(s.totals(TEST_USER_ID).meters).toBe(before.meters + 12 * 700);
+    expect(s.rankOf(TEST_USER_ID).key).toBe('contender');
     expect(myNotifications()).toContain('rank_up');
     expect(myNotifications()).toContain('payout_sent');
   });

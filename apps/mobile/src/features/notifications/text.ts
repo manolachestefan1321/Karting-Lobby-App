@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { AppNotification } from '@/data';
+import { RANK_TIERS, rankById } from '@/data/ranks';
 import { formatDateTime, formatTime, money } from '@/lib/format';
 
 const TZ = 'Europe/Bucharest';
@@ -12,7 +13,9 @@ export function notificationText(n: AppNotification, t: TFunction, locale: strin
   if (typeof d.amount === 'number') params.amount = money(d.amount, String(d.currency ?? 'RON'), locale);
   if (typeof d.cancelUntil === 'string') params.cancelUntil = formatTime(d.cancelUntil, TZ, locale);
   if (typeof d.endsAt === 'string') params.endsAt = formatDateTime(d.endsAt, TZ, locale);
-  if (typeof d.rank === 'string') params.rank = t(`ranks.${d.rank}` as 'ranks.rookie');
+  if (typeof d.rankId === 'number') params.rank = rankById(d.rankId)?.name ?? String(d.rank ?? '');
+  else if (typeof d.rank === 'string') params.rank = RANK_TIERS.find((r) => r.key === d.rank)?.name ?? d.rank;
+  if (n.type === 'self_report_reviewed') params.result = d.approved ? t('notifications.selfReportApproved') : t('notifications.selfReportRejected');
   if (n.type === 'appeal_resolved') params.result = d.approved ? t('notifications.appealApproved') : t('notifications.appealRejected');
   const base = `notifications.types.${n.type}` as const;
   return {
@@ -37,6 +40,7 @@ export const NOTIFICATION_ICON: Record<AppNotification['type'], string> = {
   results_confirmed: 'checkmark-done',
   results_disputed: 'alert-circle',
   rank_up: 'trophy',
+  self_report_reviewed: 'shield-checkmark',
   ban_started: 'ban',
   ban_ended: 'checkmark-circle',
   appeal_resolved: 'mail-open',
@@ -46,7 +50,7 @@ export const NOTIFICATION_ICON: Record<AppNotification['type'], string> = {
 /** Where tapping a notification takes you. */
 export function notificationHref(n: AppNotification): string | null {
   const id = n.data.sessionId;
-  if (n.type === 'rank_up' || n.type === 'ban_started' || n.type === 'ban_ended' || n.type === 'appeal_resolved') return '/profile';
+  if (n.type === 'rank_up' || n.type === 'self_report_reviewed' || n.type === 'ban_started' || n.type === 'ban_ended' || n.type === 'appeal_resolved') return '/profile';
   if (n.type === 'chat_message' && id) return `/session/${id}/chat`;
   if ((n.type === 'results_posted' || n.type === 'results_confirmed' || n.type === 'results_disputed') && id) return `/session/${id}/results`;
   return id ? `/session/${id}` : null;

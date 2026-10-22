@@ -23,11 +23,13 @@ import type {
   PaymentIntentInfo,
   PaymentOutcome,
   PaymentRecord,
-  PointsEntry,
+  ProgressEntry,
   Profile,
   PublicProfile,
   RankTier,
   ReportTarget,
+  SelfReport,
+  SelfReportInput,
   SessionFilters,
   SessionResults,
   Track,
@@ -79,7 +81,10 @@ export interface ProfilesApi {
   listExperience(userId: string): Promise<TrackExperience[]>;
   upsertExperience(input: TrackExperienceInput): Promise<void>;
   deleteExperience(trackId: string): Promise<void>;
-  pointsHistory(userId: string): Promise<PointsEntry[]>;
+  /** Race history: verified results + the user's own self-reports (unverified until an admin approves). */
+  progressHistory(userId: string): Promise<ProgressEntry[]>;
+  /** Self-report a race result. It is UNVERIFIED: shown in history, gives no km/XP until an admin approves it. */
+  selfReport(input: SelfReportInput): Promise<void>;
   /** Host payouts (Stripe Connect Express onboarding). */
   setupPayouts(): Promise<void>;
   appealBan(banId: string, message: string): Promise<void>;
@@ -126,13 +131,24 @@ export interface PaymentsApi {
 
 export interface ResultsApi {
   get(sessionId: string): Promise<SessionResults | null>;
-  submit(sessionId: string, input: { entries: { userId: string; position: number; bestLapMs: number | null }[]; printoutUri: string | null }): Promise<void>;
+  /** Lobby host (or admin): finishing order with laps and best lap per driver. */
+  submit(sessionId: string, input: { entries: { userId: string; position: number; laps: number; bestLapMs: number | null }[]; printoutUri: string | null }): Promise<void>;
   respond(sessionId: string, response: 'confirm' | 'dispute', comment?: string): Promise<void>;
 }
 
 export interface RankingApi {
   leaderboard(scope: LeaderboardScope): Promise<LeaderboardEntry[]>;
   seasons(): Promise<string[]>;
+}
+
+/** KartUP admins only (the server checks the role). */
+export interface AdminApi {
+  pendingSelfReports(): Promise<SelfReport[]>;
+  /** Only admins can approve self-reports (organizers can't: prevents XP farming between friends). */
+  reviewSelfReport(id: string, approve: boolean): Promise<void>;
+  setOfficialEvent(sessionId: string, official: boolean): Promise<void>;
+  /** Sessions an admin may act on: upcoming (official toggle) and those waiting for results. */
+  sessions(): Promise<KartSession[]>;
 }
 
 export interface NotificationsApi {
@@ -174,6 +190,7 @@ export interface DataApi {
   payments: PaymentsApi;
   results: ResultsApi;
   ranking: RankingApi;
+  admin: AdminApi;
   notifications: NotificationsApi;
   moderation: ModerationApi;
   realtime: RealtimeApi;

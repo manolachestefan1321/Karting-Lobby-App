@@ -5,7 +5,7 @@
 import { renderEmail } from '@config/email-templates';
 import { sessionPhase } from '@kartup/domain';
 import { ApiError } from '../api';
-import { TEST_PASSWORD } from './seed';
+import { ADMIN_USER_ID, TEST_PASSWORD } from './seed';
 import { RULES } from './server';
 import { server } from './index';
 
@@ -19,7 +19,7 @@ function randomOf<T>(arr: T[]): T | undefined {
 function candidates(sessionId: string) {
   const s = server.session(sessionId);
   const inLobby = new Set(server.membersOf(sessionId).filter((m) => m.status !== 'removed' && m.status !== 'cancelled').map((m) => m.userId));
-  return server.db.users.filter((u) => !u.deleted && u.onboardedAt && u.id !== server.db.currentUserId && !inLobby.has(u.id) && !server.activeBanOf(u.id) && u.id !== s.hostId);
+  return server.db.users.filter((u) => !u.deleted && u.onboardedAt && u.role !== 'admin' && u.id !== server.db.currentUserId && !inLobby.has(u.id) && !server.activeBanOf(u.id) && u.id !== s.hostId);
 }
 
 export interface DebugSnapshot {
@@ -32,6 +32,13 @@ export interface DebugSnapshot {
   emails: { id: string; to: string; kind: 'confirmation' | 'recovery'; subject: string; createdAt: string; opened: boolean }[];
   appeals: { banId: string; userName: string; message: string; status: string }[];
   disputes: { sessionId: string; label: string }[];
+  /** Self-reported results waiting for an admin. */
+  selfReports: { id: string; userName: string; label: string }[];
+  /** Demo: results final immediately (no 24 h window). */
+  instantResults: boolean;
+  /** The selected session is an official KartUP event (XP × 1.5). */
+  officialSessionIds: string[];
+  adminUserId: string;
   testPassword: string;
 }
 
@@ -57,7 +64,9 @@ export interface DemoStats {
   reportsOpen: number;
   messages: number;
   notifications: number;
-  pointsAwarded: number;
+  xpAwarded: number;
+  kmDriven: number;
+  /** Drivers per rank key. */
   tiers: Record<string, number>;
   perTrack: { trackId: string; name: string; sessions: number; upcoming: number; seatsPaid: number; revenueMinor: number }[];
 }
@@ -99,6 +108,12 @@ export const debug = {
       disputes: db.sessions
         .filter((s) => server.phase(s) === 'disputed')
         .map((s) => ({ sessionId: s.id, label: server.track(s.trackId).name })),
+      selfReports: db.selfReports
+        .filter((r) => r.status === 'pending')
+        .map((r) => ({ id: r.id, userName: server.summary(r.userId).firstName, label: `${server.track(r.trackId).name} · P${r.position}/${r.fieldSize} · ${r.laps} laps` })),
+      instantResults: db.instantResults,
+      officialSessionIds: db.sessions.filter((s) => s.isOfficialEvent).map((s) => s.id),
+      adminUserId: ADMIN_USER_ID,
       testPassword: TEST_PASSWORD,
     };
   },
@@ -131,7 +146,7 @@ export const debug = {
       .sort((a, b) => b.sessions - a.sessions);
     const tiers: Record<string, number> = {};
     for (const u of users.filter((x) => x.onboardedAt)) {
-      const key = server.tierFor(server.totalPoints(u.id)).key;
+      const key = server.rankOf(u.id).key;
       tiers[key] = (tiers[key] ?? 0) + 1;
     }
     return {
@@ -156,7 +171,8 @@ export const debug = {
       reportsOpen: db.reports.filter((r) => r.status === 'open').length,
       messages: db.messages.filter((m) => !m.system).length,
       notifications: db.notifications.length,
-      pointsAwarded: db.ledger.reduce((a, l) => a + l.points, 0),
+      xpAwarded: db.ledger.reduce((a, l) => a + l.xp, 0),
+      kmDriven: Math.round(db.ledger.reduce((a, l) => a + l.meters, 0) / 1000),
       tiers,
       perTrack,
     };
@@ -269,6 +285,21 @@ export const debug = {
   adminDecide(sessionId: string, approve: boolean) {
     server.adminDecide(sessionId, approve);
     return approve ? 'Results approved by admin' : 'Results rejected by admin';
+  },
+  /** Demo: results final as soon as they are entered (default on), or the real 24 h window. */
+  setInstantResults(on: boolean) {
+    server.mutate(() => (server.db.instantResults = on));
+    return on ? 'Results now final immediately (demo)' : 'Results now wait 24 h for confirmations';
+  },
+  /** Acts as the demo admin (only admins can approve self-reports). */
+  reviewSelfReport(id: string, approve: boolean) {
+    server.reviewSelfReport(id, approve, ADMIN_USER_ID);
+    return approve ? 'Self-report approved — km and XP added' : 'Self-report rejected';
+  },
+  toggleOfficial(sessionId: string) {
+    const s = server.session(sessionId);
+    server.setOfficialEvent(sessionId, !s.isOfficialEvent, ADMIN_USER_ID);
+    return s.isOfficialEvent ? 'Marked as official KartUP event (XP × 1.5)' : 'No longer an official event';
   },
   resolveAppeal(banId: string, approve: boolean) {
     server.resolveAppeal(banId, approve);

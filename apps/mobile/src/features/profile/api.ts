@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProfileInput, TrackExperienceInput } from '@kartup/domain';
-import { api } from '@/data';
+import { api, type SelfReportInput } from '@/data';
 import { useLiveQuery } from '@/lib/live';
 
 const STALE_REFERENCE = 1000 * 60 * 30; // reference data rarely changes
@@ -38,8 +38,8 @@ export function useTrackExperience(userId: string | undefined) {
   return useLiveQuery(`profile:${userId}`, { queryKey: ['track_experience', userId], enabled: !!userId, queryFn: () => api.profiles.listExperience(userId!) });
 }
 
-export function usePointsHistory(userId: string | undefined) {
-  return useLiveQuery(`profile:${userId}`, { queryKey: ['points_history', userId], enabled: !!userId, queryFn: () => api.profiles.pointsHistory(userId!) });
+export function useProgressHistory(userId: string | undefined) {
+  return useLiveQuery(`profile:${userId}`, { queryKey: ['progress_history', userId], enabled: !!userId, queryFn: () => api.profiles.progressHistory(userId!) });
 }
 
 /** Mutations invalidate everything: simple and always correct for a small app. */
@@ -84,4 +84,9 @@ export function useSetupPayouts() {
 export function useAppealBan() {
   const invalidate = useInvalidateAll();
   return useMutation({ mutationFn: ({ banId, message }: { banId: string; message: string }) => api.profiles.appealBan(banId, message), onSuccess: invalidate });
+}
+
+export function useSelfReport() {
+  const invalidate = useInvalidateAll();
+  return useMutation({ mutationFn: (input: SelfReportInput) => api.profiles.selfReport(input), onSuccess: invalidate });
 }

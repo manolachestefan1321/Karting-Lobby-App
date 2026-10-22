@@ -235,13 +235,18 @@ export default function LobbyScreen() {
           ) : null}
         </Card>
 
+        <View style={styles.rowWrap}>
+          {s.isOfficialEvent ? <Chip label={t('sessions.official')} tone="accent" icon="trophy" /> : null}
+          <Chip label={t(s.track.lapLengthVerified ? 'lobby.lapLength' : 'lobby.lapLengthToVerify', { m: s.track.lapLengthM })} icon="speedometer-outline" />
+        </View>
+
         {s.minSkill || minTier ? (
           <View style={styles.rowWrap}>
             <Text variant="label" tone="muted">
               {t('lobby.requirements')}
             </Text>
             {s.minSkill ? <Chip label={t('sessions.minSkill', { level: t(`profile.level.${s.minSkill}`) })} /> : null}
-            {minTier ? <Chip label={t('sessions.minRank', { rank: t(`ranks.${minTier.key}` as 'ranks.rookie') })} /> : null}
+            {minTier ? <Chip label={t('sessions.minRank', { rank: minTier.name })} /> : null}
           </View>
         ) : null}
 

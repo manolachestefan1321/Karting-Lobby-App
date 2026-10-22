@@ -5,7 +5,7 @@ import { brand } from '@config/brand';
  *  - 60% main color   #F5E6CC (cream): screen backgrounds and cards;
  *  - 30% secondary    #181818 (near-black): text, tab bar, secondary buttons, controls;
  *  - 10% accent       #E00000 (red, from config/brand.ts): primary buttons, selections, highlights.
- * The dark theme uses the same three colors the other way round.
+ * The dark theme has its own palette (below).
  * Body text contrast is ≥ 4.5:1 (WCAG AA); red text uses a slightly deeper red for that.
  */
 const MAIN = '#F5E6CC';
@@ -44,21 +44,33 @@ export const lightColors: Record<string, string> & typeof shared & {
   onSecondaryMuted: '#B9AD98',
 };
 
+/**
+ * Dark theme — its own palette:
+ *  background #222A2A (iron core), main color #F39120 (heat marker: primary buttons,
+ *  selections, highlights), #EC4624 (rust signal: cancel / penalty / danger),
+ *  #4FBBBC (industrial aqua: success, e.g. "You're in"), text #E2DAC2 (architectural cream).
+ */
 export const darkColors: typeof lightColors = {
   ...shared,
-  background: SECONDARY,
+  accent: '#F39120',
+  accentPressed: '#C9741A',
+  onAccent: '#222A2A', // dark text on orange (white would be too faint)
+  accentText: '#F39120',
+  success: '#4FBBBC',
+  danger: '#EC4624',
+  warning: '#F3B33D',
+  background: '#222A2A',
   // Cards sit a step lighter than the background so they stay visible.
-  surface: '#222222',
-  surfaceAlt: '#2C2C2C',
-  border: '#3A3A3A',
-  text: MAIN,
-  textMuted: '#C9BCA5',
-  textFaint: '#9A8F7D',
+  surface: '#2C3636',
+  surfaceAlt: '#364242',
+  border: '#465454',
+  text: '#E2DAC2',
+  textMuted: '#B4AE9E',
+  textFaint: '#8C928A',
   overlay: 'rgba(0,0,0,0.6)',
-  accentText: '#FF4D47', // accent tuned for text on dark surfaces (AA contrast)
-  secondary: MAIN,
-  onSecondary: SECONDARY,
-  onSecondaryMuted: '#4A4236',
+  secondary: '#1A2121',
+  onSecondary: '#E2DAC2',
+  onSecondaryMuted: '#8C9A99',
 };
 
 export type Colors = typeof lightColors;

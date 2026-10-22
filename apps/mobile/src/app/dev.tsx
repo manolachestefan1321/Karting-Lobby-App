@@ -210,7 +210,7 @@ export default function DeveloperMenu() {
             }))}
             onChange={setSessionId}
           />
-          <Button title={t('dev.openLobby')} size="md" onPress={() => router.push(`/session/${selected.id}`)} icon={<Ionicons name="flag" size={16} color="#fff" />} />
+          <Button title={t('dev.openLobby')} size="md" onPress={() => router.push(`/session/${selected.id}`)} icon={<Ionicons name="flag" size={16} color={colors.onAccent} />} />
           <Text variant="label" tone="muted">
             {t('dev.jumpTo')}
           </Text>

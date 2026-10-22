@@ -102,7 +102,7 @@ export function BannerHost({ enabled }: { enabled: boolean }) {
         ) : null}
         <View style={styles.row}>
           <View style={[styles.icon, { backgroundColor: accent }]}>
-            <Ionicons name={visible.icon as 'flag'} size={18} color="#fff" />
+            <Ionicons name={visible.icon as 'flag'} size={18} color={colors.onAccent} />
           </View>
           <View style={styles.texts}>
             <Text variant="bodyStrong" numberOfLines={1} style={celebrate ? { color: '#fff' } : undefined}>

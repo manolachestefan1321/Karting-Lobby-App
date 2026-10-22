@@ -277,7 +277,7 @@ export default function LobbyScreen() {
                 {t('lobby.checkedIn')}
               </Text>
             ) : phase === 'checkin' ? (
-              <Button title={t('lobby.checkin')} icon={<Ionicons name="location" size={18} color="#fff" />} onPress={() => checkIn.mutate(id, { onError: fail })} loading={checkIn.isPending} />
+              <Button title={t('lobby.checkin')} icon={<Ionicons name="location" size={18} color={colors.onAccent} />} onPress={() => checkIn.mutate(id, { onError: fail })} loading={checkIn.isPending} />
             ) : (
               <Text>{t('lobby.checkinOpensAt', { time: formatTime(win.opens, tz, locale) })}</Text>
             )}

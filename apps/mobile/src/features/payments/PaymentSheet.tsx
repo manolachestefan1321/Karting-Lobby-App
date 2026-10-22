@@ -115,7 +115,7 @@ export function PaymentSheet({
           title={busy ? t('payment.processing') : t('payment.pay', { amount: fmt(p.totalMinor) })}
           onPress={() => void pay()}
           loading={busy}
-          icon={busy ? <ActivityIndicator color="#fff" /> : <Ionicons name="lock-closed" size={16} color="#fff" />}
+          icon={busy ? <ActivityIndicator color={colors.onAccent} /> : <Ionicons name="lock-closed" size={16} color={colors.onAccent} />}
         />
         <Text variant="caption" tone="faint" align="center">
           {t('payment.authorizationNote')}

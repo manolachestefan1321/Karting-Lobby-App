@@ -62,7 +62,7 @@ Keep the terminal window open while you use the app. Press **Ctrl + C** to stop.
   ```
   npm run phone:tunnel
   ```
-  If it asks to install `@expo/ngrok`, type **y** and press Enter. Then scan the new QR code.
+  Then scan the new QR code. (The tunnel tool comes with the project, so there is nothing extra to install.)
 
 ---
 

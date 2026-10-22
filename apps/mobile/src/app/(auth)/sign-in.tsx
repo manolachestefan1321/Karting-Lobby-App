@@ -2,7 +2,7 @@ import { signInSchema } from '@kartup/domain';
 import { Link, router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, View, type TextInputInstance } from 'react-native';
+import { StyleSheet, View, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { Button, Card, Screen, Text, TextField } from '@/components/ui';
@@ -17,7 +17,7 @@ const TEST = { email: TEST_EMAIL, password: TEST_PASSWORD };
 
 export default function SignIn() {
   const { t } = useTranslation();
-  const passwordRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<TextInput>(null);
   const [error, setError] = useState<string | null>(null);
   const { control, handleSubmit, formState, getValues, setValue } = useForm({
     resolver: zodResolver(signInSchema),

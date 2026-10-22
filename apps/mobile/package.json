@@ -1,11 +1,15 @@
 {
   "name": "@kartup/mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",
     "@expo/ui": "~57.0.26",
     "@expo/vector-icons": "^15.0.2",
+    "@formatjs/intl-getcanonicallocales": "^3.2.12",
+    "@formatjs/intl-locale": "^5.3.12",
+    "@formatjs/intl-pluralrules": "^6.3.16",
+    "@formatjs/intl-relativetimeformat": "^12.3.16",
     "@kartup/domain": "*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",

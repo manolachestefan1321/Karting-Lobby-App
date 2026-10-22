@@ -3,7 +3,11 @@
  * and the real Supabase backend return exactly these shapes.
  * Instants are ISO-8601 strings in UTC; calendar dates are "YYYY-MM-DD".
  */
-import type { ExperienceLevel, PriceBreakdown, RulesConfig, XpBreakdown } from '@kartup/domain';
+import type { ExperienceLevel, LobbyType, PriceBreakdown, RulesConfig, XpBreakdown } from '@kartup/domain';
+
+export type { LobbyType };
+/** Why XP was taken (behavior penalties, Competitive lobbies only). */
+export type PenaltyReason = 'no_show' | 'late_leave' | 'false_report';
 
 export type Locale = 'en' | 'ro';
 export type AuthProvider = 'email' | 'google' | 'apple' | 'facebook';
@@ -143,8 +147,10 @@ export interface KartSession {
   minRankTierId: number | null;
   minSkill: ExperienceLevel | null;
   note: string;
-  /** Official KartUP event: XP × 1.5. Set by an admin. */
+  /** Official KartUP event: XP × 1.5. Set by an admin. Always Competitive. */
   isOfficialEvent: boolean;
+  /** Competitive = counts for XP / km / rank. Casual = history only. */
+  lobbyType: LobbyType;
   cancelledAt: string | null;
   cancelledBy: 'host' | 'track' | 'admin' | 'system' | null;
   price: PriceBreakdown;
@@ -202,6 +208,8 @@ export interface SessionResults {
   status: ResultsState;
   /** 'organizer' = entered by the lobby host, 'admin' = entered by a KartUP admin. */
   source: ResultSource;
+  /** Casual sessions: saved in history, no XP / km / rank. */
+  lobbyType: LobbyType;
   printoutUrl: string | null;
   entries: ResultsEntry[];
   responses: { userId: string; response: 'confirm' | 'dispute'; comment: string | null }[];
@@ -223,9 +231,15 @@ export interface LeaderboardEntry {
   wins: number;
 }
 
-/** One line of a driver's race history (verified results and their own self-reports). */
+/** One line of a driver's XP history: races (verified, casual, self-reported) and behavior penalties. */
 export interface ProgressEntry {
   id: string;
+  kind: 'race' | 'penalty';
+  /** Casual lobby: shown, but no XP / km / rank. */
+  casual: boolean;
+  /** Penalties: why, and the full amount (xp can be smaller: XP never goes below 0). */
+  penaltyReason: PenaltyReason | null;
+  penaltyNominal: number | null;
   /** Lobby session, or null for timing-sheet imports and self-reports. */
   sessionId: string | null;
   trackId: string;
@@ -288,6 +302,7 @@ export type NotificationType =
   | 'results_disputed'
   | 'rank_up'
   | 'self_report_reviewed'
+  | 'xp_penalty'
   | 'ban_started'
   | 'ban_ended'
   | 'appeal_resolved'
@@ -350,6 +365,7 @@ export interface CreateSessionInput {
   minRankTierId: number | null;
   minSkill: ExperienceLevel | null;
   note: string;
+  lobbyType: LobbyType;
 }
 
 export type ReportTarget = { kind: 'profile'; userId: string } | { kind: 'message'; messageId: string };

@@ -185,7 +185,7 @@ export const mockApi: DataApi = {
   },
   admin: {
     pendingSelfReports: () => call(() => server.pendingSelfReports()),
-    reviewSelfReport: (id, approve) => call(() => server.reviewSelfReport(id, approve)),
+    reviewSelfReport: (id, decision) => call(() => server.reviewSelfReport(id, decision)),
     setOfficialEvent: (sessionId, official) => call(() => server.setOfficialEvent(sessionId, official)),
     sessions: () => call(() => server.adminSessions()),
   },

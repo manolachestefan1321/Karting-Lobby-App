@@ -1,10 +1,10 @@
-import { hostPayoutMinor, participantPrice, type ExperienceLevel } from '@kartup/domain';
+import { hostPayoutMinor, participantPrice, type ExperienceLevel, type LobbyType } from '@kartup/domain';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, Chip, EmptyState, LoadingState, PickerField, Screen, SectionHeader, Text, TextField } from '@/components/ui';
+import { Button, Card, Chip, EmptyState, LoadingState, PickerField, Screen, SectionHeader, SegmentedControl, Text, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { toast } from '@/features/notifications/BannerHost';
 import { useCities, useRankTiers, useSetupPayouts, useTracks } from '@/features/profile/api';
@@ -45,6 +45,7 @@ export default function CreateTab() {
   const [minRank, setMinRank] = useState<number | null>(null);
   const [minSkill, setMinSkill] = useState<ExperienceLevel | null>(null);
   const [note, setNote] = useState('');
+  const [lobbyType, setLobbyType] = useState<LobbyType>('competitive');
   const locale = i18n.language;
 
   const days = useMemo(
@@ -81,7 +82,7 @@ export default function CreateTab() {
   const submit = () => {
     if (!trackId || !startsAt) return;
     create.mutate(
-      { trackId, startsAt: startsAt.toISOString(), maxDrivers: drivers, minRankTierId: minRank, minSkill, note },
+      { trackId, startsAt: startsAt.toISOString(), maxDrivers: drivers, minRankTierId: minRank, minSkill, note, lobbyType },
       {
         onSuccess: (s) => {
           toast(t('create.created'));
@@ -183,6 +184,20 @@ export default function CreateTab() {
           {t('create.maxDriversHint', { min: rules.minDrivers, max: maxAllowed })}
         </Text>
       </View>
+
+      <SectionHeader title={t('lobbyType.title')} />
+      <SegmentedControl<LobbyType>
+        value={lobbyType}
+        onChange={setLobbyType}
+        accessibilityLabel={t('lobbyType.title')}
+        options={[
+          { value: 'competitive', label: t('lobbyType.competitive') },
+          { value: 'casual', label: t('lobbyType.casual') },
+        ]}
+      />
+      <Text variant="caption" tone="muted">
+        {lobbyType === 'competitive' ? t('lobbyType.competitiveHint') : t('lobbyType.casualHint')}
+      </Text>
 
       <SectionHeader title={t('create.minRank')} />
       <View style={styles.wrapChips}>

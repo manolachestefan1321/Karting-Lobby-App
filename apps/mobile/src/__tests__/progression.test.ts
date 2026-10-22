@@ -47,7 +47,7 @@ describe('demo seed', () => {
   it('history is at VMax Romexpo, VMax Titan and AMC Kart (plus home tracks), all verified', () => {
     const tracks = new Set(s.db.ledger.map((l) => l.trackId));
     for (const id of ['t-vmax-romexpo', 't-vmax-titan', 't-amckart']) expect(tracks.has(id)).toBe(true);
-    expect(s.db.ledger.every((l) => ['organizer', 'timing_sheet'].includes(l.source))).toBe(true);
+    expect(s.db.ledger.filter((l) => l.kind === 'race').every((l) => ['organizer', 'timing_sheet'].includes(l.source))).toBe(true);
   });
 
   it('Andrei sits just below Contender on both km and XP', () => {
@@ -142,8 +142,8 @@ describe('self-reported results', () => {
   it('cannot be approved by a lobby organizer or by the driver — only by an admin', () => {
     report();
     const id = s.db.selfReports.at(-1)!.id;
-    expect(code(() => s.reviewSelfReport(id, true, 'u-maria'))).toBe('admin_only'); // Maria hosts lobbies
-    expect(code(() => s.reviewSelfReport(id, true, TEST_USER_ID))).toBe('admin_only');
+    expect(code(() => s.reviewSelfReport(id, 'approve', 'u-maria'))).toBe('admin_only'); // Maria hosts lobbies
+    expect(code(() => s.reviewSelfReport(id, 'approve', TEST_USER_ID))).toBe('admin_only');
     expect(s.db.selfReports.at(-1)!.status).toBe('pending');
   });
 
@@ -151,26 +151,26 @@ describe('self-reported results', () => {
     const before = s.totals(TEST_USER_ID);
     report();
     const id = s.db.selfReports.at(-1)!.id;
-    s.reviewSelfReport(id, true, ADMIN_USER_ID);
+    s.reviewSelfReport(id, 'approve', ADMIN_USER_ID);
     const after = s.totals(TEST_USER_ID);
     expect(after.meters).toBe(before.meters + 12 * 1240);
     expect(after.xp).toBeGreaterThan(before.xp);
     expect(s.rankOf(TEST_USER_ID).key).toBe('contender');
     expect(s.progressHistory(TEST_USER_ID).find((p) => p.review === 'approved')).toMatchObject({ verification: 'verified', source: 'self' });
-    expect(code(() => s.reviewSelfReport(id, true, ADMIN_USER_ID))).toBe('already_reviewed');
+    expect(code(() => s.reviewSelfReport(id, 'approve', ADMIN_USER_ID))).toBe('already_reviewed');
   });
 
   it('a rejected self-report gives nothing', () => {
     const before = s.totals(TEST_USER_ID);
     report();
-    s.reviewSelfReport(s.db.selfReports.at(-1)!.id, false, ADMIN_USER_ID);
+    s.reviewSelfReport(s.db.selfReports.at(-1)!.id, 'reject', ADMIN_USER_ID);
     expect(s.totals(TEST_USER_ID)).toEqual(before);
   });
 
   it('admins cannot approve their own', () => {
     s.signInAs(ADMIN_USER_ID);
     report();
-    expect(code(() => s.reviewSelfReport(s.db.selfReports.at(-1)!.id, true, ADMIN_USER_ID))).toBe('cannot_review_own');
+    expect(code(() => s.reviewSelfReport(s.db.selfReports.at(-1)!.id, 'approve', ADMIN_USER_ID))).toBe('cannot_review_own');
   });
 
   it('validates the input', () => {

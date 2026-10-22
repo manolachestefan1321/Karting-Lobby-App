@@ -145,7 +145,8 @@ export interface RankingApi {
 export interface AdminApi {
   pendingSelfReports(): Promise<SelfReport[]>;
   /** Only admins can approve self-reports (organizers can't: prevents XP farming between friends). */
-  reviewSelfReport(id: string, approve: boolean): Promise<void>;
+  /** 'reject_false' = the driver reported false data on purpose: XP penalty. */
+  reviewSelfReport(id: string, decision: 'approve' | 'reject' | 'reject_false'): Promise<void>;
   setOfficialEvent(sessionId: string, official: boolean): Promise<void>;
   /** Sessions an admin may act on: upcoming (official toggle) and those waiting for results. */
   sessions(): Promise<KartSession[]>;

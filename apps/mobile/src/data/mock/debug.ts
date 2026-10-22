@@ -282,8 +282,9 @@ export const debug = {
     }
     return response === 'confirm' ? `${n} drivers confirmed` : 'One driver disputed the results';
   },
-  adminDecide(sessionId: string, approve: boolean) {
-    server.adminDecide(sessionId, approve);
+  adminDecide(sessionId: string, approve: boolean, falseDispute = false) {
+    server.adminDecide(sessionId, approve, falseDispute);
+    if (falseDispute) return 'Results approved — disputing driver penalized (false data)';
     return approve ? 'Results approved by admin' : 'Results rejected by admin';
   },
   /** Demo: results final as soon as they are entered (default on), or the real 24 h window. */
@@ -292,9 +293,9 @@ export const debug = {
     return on ? 'Results now final immediately (demo)' : 'Results now wait 24 h for confirmations';
   },
   /** Acts as the demo admin (only admins can approve self-reports). */
-  reviewSelfReport(id: string, approve: boolean) {
-    server.reviewSelfReport(id, approve, ADMIN_USER_ID);
-    return approve ? 'Self-report approved — km and XP added' : 'Self-report rejected';
+  reviewSelfReport(id: string, decision: 'approve' | 'reject' | 'reject_false') {
+    server.reviewSelfReport(id, decision, ADMIN_USER_ID);
+    return decision === 'approve' ? 'Self-report approved — km and XP added' : decision === 'reject_false' ? 'Rejected as false data — XP penalty' : 'Self-report rejected';
   },
   toggleOfficial(sessionId: string) {
     const s = server.session(sessionId);

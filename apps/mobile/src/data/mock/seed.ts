@@ -4,12 +4,12 @@
  * (session in 45 min, results waiting, …) always make sense when you reset.
  */
 import { DEFAULT_RULES, fastestLapUserIds, sessionXp } from '@kartup/domain';
-import { RANKS, XP_RULES } from '@config/progression';
+import { PENALTIES, RANKS, XP_RULES } from '@config/progression';
 import type { City, NotificationPrefs } from '../types';
 import { REAL_TRACKS } from './tracks';
 import { localDateKey, zonedToUtc } from '@/lib/format';
 import { DB_VERSION, type Db, type DbExperience, type DbLedger, type DbMember, type DbPayment, type DbResults, type DbSession, type DbUser } from './db';
-import { rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
+import { counts, penaltyRow, rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
 
 export const TEST_PASSWORD = 'kartup123';
 export const TEST_EMAIL = 'andrei@kartup.test';
@@ -204,6 +204,7 @@ export function seed(realNow: number): Db {
       minSkill: o.minSkill ?? null,
       note: o.note ?? '',
       isOfficialEvent: o.isOfficialEvent ?? false,
+      lobbyType: o.lobbyType ?? 'competitive',
       cancelledAt: null,
       cancelledBy: null,
       cancelReason: null,
@@ -292,7 +293,8 @@ export function seed(realNow: number): Db {
     let drivers = [...racers].filter((u) => u.id !== TEST_USER_ID).sort(() => r() - 0.5).slice(0, 4 + Math.floor(r() * 5));
     if (r() < 0.6) drivers = [users.find((u) => u.id === TEST_USER_ID)!, ...drivers.slice(1)];
     const official = i === 7; // one past official KartUP event (XP × 1.5)
-    const s = addSession(trackId, drivers[0]!.id, start, { isOfficialEvent: official, note: official ? 'KartUP Cup — official event' : '', flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, payoutSent: true, lobbyClosed: true } });
+    const casual = i % 8 === 3; // a few Casual lobbies: in history, no XP / km
+    const s = addSession(trackId, drivers[0]!.id, start, { isOfficialEvent: official, lobbyType: casual ? 'casual' : 'competitive', note: official ? 'KartUP Cup — official event' : casual ? 'Casual run, just for fun.' : '', flags: { reminderSent: true, checkinNotified: true, noShowsProcessed: true, payoutSent: true, lobbyClosed: true } });
     const timed = drivers.map((u) => ({ userId: u.id, bestLapMs: lapMsAt(trackId, u.id) }));
     const order = [...timed].sort((a, b) => a.bestLapMs * (1 + r() * 0.04) - b.bestLapMs * (1 + r() * 0.04));
     const entries = order.map((e, idx) => ({ userId: e.userId, position: idx + 1, laps: lapsIn(trackId, e.bestLapMs * 1.04), bestLapMs: e.bestLapMs }));
@@ -300,7 +302,7 @@ export function seed(realNow: number): Db {
     addResults(s, entries, start + 2 * HOUR, true);
     const fastest = fastestLapUserIds(entries);
     for (const e of entries) {
-      inputs.get(e.userId)!.push({ userId: e.userId, sessionId: s.id, track: t, date: s.startsAt, position: e.position, fieldSize: entries.length, laps: e.laps, bestLapMs: e.bestLapMs, fastestLap: fastest.includes(e.userId), officialEvent: official, source: 'organizer', verifiedBy: s.hostId });
+      inputs.get(e.userId)!.push({ userId: e.userId, sessionId: s.id, track: t, date: s.startsAt, position: e.position, fieldSize: entries.length, laps: e.laps, bestLapMs: e.bestLapMs, fastestLap: fastest.includes(e.userId), officialEvent: official, source: 'organizer', verifiedBy: s.hostId, casual });
     }
   }
 
@@ -330,7 +332,7 @@ export function seed(realNow: number): Db {
       // Close to the target: exact gain (re-scores everything). Far away: quick estimate
       // (an older row takes over the +30 new-track bonus if the track was already visited).
       const exact = lo.xp - tot.xp < 400;
-      const visited = rows.some((l) => l.trackId === trackId);
+      const visited = rows.some((l) => counts(l) && l.trackId === trackId);
       // Only results at the same track interact (new-track / personal-best bonuses).
       const sameTrack = mine.filter((v) => v.track.id === trackId);
       const sameTrackXp = rows.filter((l) => l.trackId === trackId).reduce((a, l) => a + l.xp, 0);
@@ -373,13 +375,13 @@ export function seed(realNow: number): Db {
   const u4 = addSession('t-vmax-romexpo', 'u-vlad', now + 45 * MIN, { maxDrivers: 10, note: 'After-work sprint. Check in at the reception desk.' });
   for (const uid of ['u-vlad', TEST_USER_ID, 'u-ana', 'u-bogdan', 'u-diana', 'u-stefan']) addMember(u4, uid, 'confirmed');
 
-  const u5 = addSession('t-tomiskart', 'u-teodora', atLocal(1, '18:00'), { maxDrivers: 8, note: 'Sunset session by the sea 🌅' });
+  const u5 = addSession('t-tomiskart', 'u-teodora', atLocal(1, '18:00'), { maxDrivers: 8, lobbyType: 'casual', note: 'Sunset session by the sea 🌅 Casual, just for fun.' });
   for (const uid of ['u-teodora', 'u-raluca', 'u-gabriel', 'u-sorin']) addMember(u5, uid, 'confirmed');
 
   const u6 = addSession('t-tt-transilvania', 'u-larisa', atLocal(3, '17:00'), { maxDrivers: 12, minRankTierId: 2, note: 'Amateur rank and up.' });
   for (const uid of ['u-larisa', 'u-paul', 'u-sorin', 'u-gabriel', 'u-raluca']) addMember(u6, uid, 'confirmed');
 
-  const u7 = addSession('t-amckart', 'u-ana', atLocal(6, '11:00'), { maxDrivers: 12, note: 'Weekend endurance-style: 2 × 15 minutes.' });
+  const u7 = addSession('t-amckart', 'u-ana', atLocal(6, '11:00'), { maxDrivers: 12, lobbyType: 'casual', note: 'Weekend endurance-style: 2 × 15 minutes. Casual — no ranking.' });
   for (const uid of ['u-ana', 'u-ioana']) addMember(u7, uid, 'confirmed');
 
   const t1 = addSession('t-vmax-titan', 'u-cristian', atLocal(1, '20:30'), { maxDrivers: 10, note: 'Electric karts with boost — first time at Titan for most of us, come try it!' });
@@ -434,6 +436,7 @@ export function seed(realNow: number): Db {
   // ── Experience: summary of each driver's verified history per track ─────────
   const experience: DbExperience[] = [];
   for (const l of ledger) {
+    if (l.kind !== 'race') continue;
     const e = experience.find((x) => x.userId === l.userId && x.trackId === l.trackId);
     if (e) {
       e.sessionsCount += 1;
@@ -503,6 +506,9 @@ export function seed(realNow: number): Db {
     const kept = members.filter((m) => m.sessionId === s.id && ['confirmed', 'attended', 'no_show'].includes(m.status)).length;
     if (kept) db.payouts.push({ sessionId: s.id, hostId: s.hostId, amountMinor: kept * s.trackPriceMinor, createdAt: iso(new Date(s.startsAt).getTime() + DAY) });
   }
+  // Bogdan's recent no-show (Competitive lobby): −50 XP behavior penalty. His rank stays.
+  const missed = sessions[1]!;
+  db.ledger.push(penaltyRow(db.ledger, { userId: 'u-bogdan', reason: 'no_show', nominal: PENALTIES.noShow, sessionId: missed.id, track: trackById.get(missed.trackId)!, date: iso(now - 4 * HOUR) }, id('l'), iso(now - 4 * HOUR)));
   db.seq = seq;
   return db;
 }

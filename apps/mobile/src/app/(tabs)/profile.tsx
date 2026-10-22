@@ -72,7 +72,7 @@ export default function MyProfile() {
                 title={t('profile.raceHistory')}
                 subtitle={
                   history.data?.[0]
-                    ? `${history.data[0].xp !== null ? `+${history.data[0].xp} XP` : t('profile.unverified')} · ${history.data[0].trackName}`
+                    ? `${history.data[0].xp !== null ? `${history.data[0].xp >= 0 ? '+' : '−'}${Math.abs(history.data[0].xp)} XP` : history.data[0].casual ? t('lobbyType.casual') : t('profile.unverified')} · ${history.data[0].trackName}`
                     : t('profile.noRaces')
                 }
                 onPress={() => router.push('/profile/history')}

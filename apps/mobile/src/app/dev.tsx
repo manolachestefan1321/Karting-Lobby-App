@@ -248,6 +248,7 @@ export default function DeveloperMenu() {
             <Chip label={t('dev.dispute')} onPress={() => run(() => demo.othersRespond(selected.id, 'dispute'))} />
             <Chip label={t('dev.approve')} onPress={() => run(() => demo.adminDecide(selected.id, true))} />
             <Chip label={t('dev.reject')} onPress={() => run(() => demo.adminDecide(selected.id, false))} />
+            <Chip label={t('dev.approveFalseDispute')} onPress={() => run(() => demo.adminDecide(selected.id, true, true))} />
             <Chip label={t('dev.trackCancels')} tone="danger" onPress={() => run(() => demo.trackCancels(selected.id))} />
           </View>
         </Card>
@@ -294,8 +295,9 @@ export default function DeveloperMenu() {
                 <Text variant="bodyStrong">{r.userName}</Text> · {r.label}
               </Text>
               <View style={styles.wrap}>
-                <Chip label={t('dev.approveReport')} tone="success" onPress={() => run(() => demo.reviewSelfReport(r.id, true))} />
-                <Chip label={t('dev.rejectReport')} tone="danger" onPress={() => run(() => demo.reviewSelfReport(r.id, false))} />
+                <Chip label={t('dev.approveReport')} tone="success" onPress={() => run(() => demo.reviewSelfReport(r.id, 'approve'))} />
+                <Chip label={t('dev.rejectReport')} tone="danger" onPress={() => run(() => demo.reviewSelfReport(r.id, 'reject'))} />
+                <Chip label={t('dev.rejectFalse')} tone="danger" onPress={() => run(() => demo.reviewSelfReport(r.id, 'reject_false'))} />
               </View>
             </View>
           ))

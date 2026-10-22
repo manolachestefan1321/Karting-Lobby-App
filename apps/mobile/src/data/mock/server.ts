@@ -17,7 +17,9 @@ import {
   checkinWindow,
   DEFAULT_MIN_AGE,
   DEFAULT_RULES,
+  effectiveLobbyType,
   fastestLapUserIds,
+  isLateLeave,
   hostPayoutMinor,
   hostRemoval,
   isNoShow,
@@ -37,6 +39,8 @@ import { zonedToUtc } from '@/lib/format';
 import { ApiError, type Topic } from '../api';
 import type {
   AppNotification,
+  PenaltyReason,
+  Track,
   AppRules,
   BanInfo,
   ChatMessage,
@@ -58,9 +62,10 @@ import type {
   SessionResults,
   UserSummary,
 } from '../types';
+import { PENALTIES } from '@config/progression';
 import { RANK_TIERS } from '../ranks';
 import { clearDb, loadDb, loadDbAsync, saveDb, type Db, type DbBan, type DbLedger, type DbMember, type DbSession, type DbUser } from './db';
-import { rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
+import { counts, penaltyRow, rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
 import { DEFAULT_PREFS, seed, TEST_PASSWORD } from './seed';
 
 export { RANK_TIERS };
@@ -85,6 +90,7 @@ const GROUP: Record<NotificationType, NotificationGroup> = {
   results_disputed: 'results',
   rank_up: 'ranking',
   self_report_reviewed: 'results',
+  xp_penalty: 'account',
   ban_started: 'account',
   ban_ended: 'account',
   appeal_resolved: 'account',
@@ -318,6 +324,7 @@ export class MockServer {
       minSkill: s.minSkill,
       note: s.note,
       isOfficialEvent: s.isOfficialEvent,
+      lobbyType: effectiveLobbyType(s.lobbyType, s.isOfficialEvent),
       cancelledAt: s.cancelledAt,
       cancelledBy: s.cancelledBy,
       price: participantPrice(s.trackPriceMinor, s.feeMinor, s.currency),
@@ -550,6 +557,10 @@ export class MockServer {
   progressHistory(userId: string): ProgressEntry[] {
     const verified: ProgressEntry[] = this.ledgerOf(userId).map((l) => ({
       id: l.id,
+      kind: l.kind,
+      casual: !!l.casual,
+      penaltyReason: l.penaltyReason ?? null,
+      penaltyNominal: l.penaltyNominal ?? null,
       sessionId: l.sessionId,
       trackId: l.trackId,
       trackName: this.track(l.trackId).name,
@@ -560,8 +571,8 @@ export class MockServer {
       bestLapMs: l.bestLapMs,
       verification: 'verified',
       source: l.source,
-      xp: l.xp,
-      km: l.meters / 1000,
+      xp: l.casual ? null : l.xp,
+      km: l.kind === 'race' && !l.casual ? l.meters / 1000 : null,
       breakdown: l.breakdown,
       review: l.selfReportId ? 'approved' : null,
     }));
@@ -571,6 +582,10 @@ export class MockServer {
             .filter((r) => r.userId === userId && r.status !== 'approved')
             .map((r) => ({
               id: r.id,
+              kind: 'race' as const,
+              casual: false,
+              penaltyReason: null,
+              penaltyNominal: null,
               sessionId: null,
               trackId: r.trackId,
               trackName: this.track(r.trackId).name,
@@ -629,6 +644,20 @@ export class MockServer {
     this.applyRank(r.userId);
     return row;
   }
+  /**
+   * Behavior penalty (Competitive lobbies only): negative XP row, never below 0 XP in
+   * total. Lowers the current season's XP. The rank is NOT touched (ranks never drop).
+   */
+  private addPenalty(userId: string, reason: PenaltyReason, nominal: number, sessionId: string | null, track: Track) {
+    const row = penaltyRow(this.db.ledger, { userId, reason, nominal, sessionId, track, date: this.iso() }, this.nextId('l'), this.iso());
+    this.db.ledger.push(row);
+    this.notify(userId, 'xp_penalty', { reason, xp: -row.xp, nominal, trackName: track.name, ...(sessionId ? { sessionId } : {}) });
+    return row;
+  }
+  private competitive(s: DbSession) {
+    return effectiveLobbyType(s.lobbyType, s.isOfficialEvent) === 'competitive';
+  }
+
   /** Ranks are permanent: only ever move up. */
   private applyRank(userId: string) {
     const u = this.user(userId);
@@ -701,6 +730,7 @@ export class MockServer {
         minSkill: input.minSkill,
         note: input.note.trim().slice(0, 300),
         isOfficialEvent: false,
+        lobbyType: input.lobbyType === 'casual' ? 'casual' : 'competitive',
         cancelledAt: null,
         cancelledBy: null,
         cancelReason: null,
@@ -762,6 +792,9 @@ export class MockServer {
     this.mutate(() => {
       m.status = 'cancelled';
       this.refund(m, 'user_cancel');
+      if (this.competitive(s) && isLateLeave(ms(s.startsAt), this.now(), PENALTIES.lateLeaveWindowMinutes)) {
+        this.addPenalty(userId, 'late_leave', PENALTIES.lateLeave, s.id, this.track(s.trackId));
+      }
       this.notify(s.hostId, 'lobby_left', { ...this.sessionData(s), name: this.name(userId) });
       this.systemMessage(s.id, userId, 'left');
     });
@@ -941,6 +974,7 @@ export class MockServer {
   getResults(sessionId: string): SessionResults | null {
     const r = this.resultsOf(sessionId);
     if (!r) return null;
+    const s = this.session(sessionId);
     const rows = new Map(this.db.ledger.filter((l) => l.sessionId === sessionId).map((l) => [l.userId, l]));
     return {
       sessionId,
@@ -949,12 +983,14 @@ export class MockServer {
       deadline: r.deadline,
       status: this.resultsState(sessionId) ?? 'pending',
       source: r.source,
+      lobbyType: effectiveLobbyType(s.lobbyType, s.isOfficialEvent),
       printoutUrl: r.printoutUrl,
       entries: [...r.entries]
         .sort((a, b) => a.position - b.position)
         .map((e) => {
           const l = rows.get(e.userId);
-          return { ...e, xp: l?.xp ?? null, km: l ? l.meters / 1000 : null, breakdown: l?.breakdown ?? null };
+          const counted = l && !l.casual;
+          return { ...e, xp: counted ? l.xp : null, km: counted ? l.meters / 1000 : null, breakdown: counted ? l.breakdown : null };
         }),
       responses: r.responses,
     };
@@ -1007,11 +1043,19 @@ export class MockServer {
       if (response === 'dispute') this.notify(s.hostId, 'results_disputed', { ...this.sessionData(s), name: this.name(userId) });
     });
   }
-  adminDecide(sessionId: string, approve: boolean) {
+  /**
+   * Admin decision on disputed results. `falseDispute`: the admin found the disputing
+   * drivers reported false data → XP penalty each (Competitive lobbies only).
+   */
+  adminDecide(sessionId: string, approve: boolean, falseDispute = false) {
     const r = this.resultsOf(sessionId);
     if (!r) throw new ApiError('not_found');
+    const s = this.session(sessionId);
     this.mutate(() => {
       r.adminDecision = approve ? 'approved' : 'rejected';
+      if (approve && falseDispute && this.competitive(s)) {
+        for (const d of r.responses.filter((x) => x.response === 'dispute')) this.addPenalty(d.userId, 'false_report', PENALTIES.falseReport, s.id, this.track(s.trackId));
+      }
     });
   }
   /** Results became final → they are VERIFIED: km + XP for every classified driver. */
@@ -1035,8 +1079,9 @@ export class MockServer {
         officialEvent: s.isOfficialEvent,
         source: r.source,
         verifiedBy: r.submittedBy,
+        casual: !this.competitive(s),
       });
-      this.notify(e.userId, 'results_confirmed', { ...this.sessionData(s), xp: row.xp, km: Math.round(row.meters / 100) / 10, position: e.position });
+      this.notify(e.userId, 'results_confirmed', { ...this.sessionData(s), xp: row.xp, km: Math.round(row.meters / 100) / 10, position: e.position, casual: row.casual ? 1 : 0 });
       // Keep self-reported experience in sync with verified sessions.
       const exp = this.db.experience.find((x) => x.userId === e.userId && x.trackId === t.id);
       if (exp) {
@@ -1057,7 +1102,8 @@ export class MockServer {
 
   // ───────────────────────────── ranking ─────────────────────────────
   leaderboard(scope: LeaderboardScope): LeaderboardEntry[] {
-    const rows = this.db.ledger.filter((l) =>
+    // Competitive results and penalties; casual results never count.
+    const rows = this.db.ledger.filter((l) => !l.casual).filter((l) =>
       scope.kind === 'city' ? l.cityId === scope.cityId : scope.kind === 'track' ? l.trackId === scope.trackId : scope.kind === 'season' ? l.season === scope.season : true,
     );
     const by = new Map<string, { xp: number; km: number; sessions: number; wins: number }>();
@@ -1067,16 +1113,20 @@ export class MockServer {
       const a = by.get(l.userId) ?? { xp: 0, km: 0, sessions: 0, wins: 0 };
       a.xp += l.xp;
       a.km += l.meters / 1000;
-      a.sessions += 1;
-      a.wins += l.position === 1 ? 1 : 0;
+      if (l.kind === 'race') {
+        a.sessions += 1;
+        a.wins += l.position === 1 ? 1 : 0;
+      }
       by.set(l.userId, a);
     }
     return [...by.entries()]
+      .filter(([, a]) => a.sessions > 0)
+      .map(([userId, a]) => [userId, { ...a, xp: Math.max(0, a.xp) }] as const) // never below 0
       .sort((a, b) => b[1].xp - a[1].xp || b[1].wins - a[1].wins)
       .map(([userId, a], i) => ({ position: i + 1, user: this.summary(userId), ...a }));
   }
   seasons(): string[] {
-    return [...new Set(this.db.ledger.map((l) => l.season))].sort().reverse();
+    return [...new Set(this.db.ledger.filter(counts).map((l) => l.season))].sort().reverse();
   }
 
   // ───────────────────────────── scheduled jobs ─────────────────────────────
@@ -1124,6 +1174,7 @@ export class MockServer {
             const ban = banForNewNoShow(previous, win.closes, RULES.banLadder);
             this.db.bans.push({ id: this.nextId('b'), userId: m.userId, startsAt: ban.startsAt.toISOString(), endsAt: ban.endsAt.toISOString(), reason: 'no_show', offense: ban.offense, noShowId: nsId, liftedAt: null, endNotified: false, appeal: null });
             this.notify(m.userId, 'ban_started', { ...this.sessionData(s), endsAt: ban.endsAt.toISOString(), offense: ban.offense });
+            if (this.competitive(s)) this.addPenalty(m.userId, 'no_show', PENALTIES.noShow, s.id, this.track(s.trackId));
           } else {
             m.status = 'attended';
           }
@@ -1168,7 +1219,8 @@ export class MockServer {
    * ONLY admins can approve self-reports — not lobby organizers — so friends can't
    * farm XP by approving each other. Approved → verified → km + XP.
    */
-  reviewSelfReport(id: string, approve: boolean, actorId = this.me().id) {
+  reviewSelfReport(id: string, decision: 'approve' | 'reject' | 'reject_false', actorId = this.me().id) {
+    const approve = decision === 'approve';
     this.assertAdmin(actorId);
     const r = this.db.selfReports.find((x) => x.id === id);
     if (!r) throw new ApiError('not_found');
@@ -1197,6 +1249,8 @@ export class MockServer {
         });
       }
       this.notify(r.userId, 'self_report_reviewed', { approved: approve ? 1 : 0, trackName: t.name });
+      // False data on purpose (admin decision): XP penalty. Self-reports always aim at ranked XP.
+      if (decision === 'reject_false') this.addPenalty(r.userId, 'false_report', PENALTIES.falseReport, null, t);
     });
   }
   setOfficialEvent(sessionId: string, official: boolean, actorId = this.me().id) {
@@ -1205,6 +1259,7 @@ export class MockServer {
     if (this.resultsOf(sessionId)) throw new ApiError('results_exist');
     this.mutate(() => {
       s.isOfficialEvent = official;
+      if (official) s.lobbyType = 'competitive'; // official events are always Competitive
     });
   }
   adminSessions(actorId = this.me().id): KartSession[] {

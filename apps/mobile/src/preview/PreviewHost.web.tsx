@@ -251,6 +251,7 @@ export function PreviewHost() {
                 <button style={btn()} onClick={() => run('othersRespond', selected.id, 'dispute')}>Someone disputes</button>
                 <button style={btn()} onClick={() => run('adminDecide', selected.id, true)}>Admin: approve results</button>
                 <button style={btn()} onClick={() => run('adminDecide', selected.id, false)}>Admin: reject results</button>
+                <button style={btn()} onClick={() => run('adminDecide', selected.id, true, true)}>Admin: approve, dispute was false (−XP)</button>
                 <button style={btn()} onClick={() => run('trackCancels', selected.id)}>Track cancels session</button>
               </Row>
             </>

@@ -101,7 +101,7 @@ function ViewResults({ sessionId, members, isHost, locale }: { sessionId: string
         ) : null}
       </View>
       <Text variant="small" tone="muted">
-        {results.status === 'final' ? t('results.verifiedNote') : t('results.pendingNote')}
+        {results.lobbyType === 'casual' ? t('results.casualNote') : results.status === 'final' ? t('results.verifiedNote') : t('results.pendingNote')}
       </Text>
       {mine ? <Text tone="muted">{mine.response === 'confirm' ? t('results.youConfirmed') : t('results.youDisputed')}</Text> : null}
 

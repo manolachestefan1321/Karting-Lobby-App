@@ -161,6 +161,10 @@ rank = highest rank whose km AND XP thresholds are both met; stored, never lower
 | Ace | 800 | 15,000 |
 | Veteran | 1,200 | 25,000 |
 
+**Lobby type:** `sessions.lobby_type` = `competitive` (default) or `casual`. Casual results are stored (position, laps, best lap) with 0 XP / 0 m and never count for seasons or personal-best / new-track bonuses. Official events are always competitive.
+
+**Behavior penalties** (Competitive only, `PENALTIES` in the config): no-show −50, cancelling a paid seat < 2 h before start −25, false data per admin decision (self-report or dispute) −100. They are `progression_ledger` rows with `kind = 'penalty'`, a negative `xp`, `penalty_reason` and `penalty_nominal`. A penalty takes at most the XP the driver has, so total XP never goes below 0. It lowers the season's XP too. The stored rank is never lowered.
+
 Rank names are the same in every language. Seasonal leaderboards (XP earned in a month) are separate from the permanent rank. Demo mode only: results become final as soon as they're entered (switchable in the developer menu), so rank-ups show live.
 
 **Demo isolation:** demo users, history and self-reports exist only in `apps/mobile/src/data/mock`. `supabase/seed.sql` has none (a test checks this), and `metro.config.js` replaces `src/data/mock` with empty modules in builds with `EXPO_PUBLIC_DATA_SOURCE=supabase`.

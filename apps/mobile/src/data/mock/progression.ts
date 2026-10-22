@@ -3,9 +3,9 @@
  * server (live results, approved self-reports) and the demo seed, so both score
  * exactly the same way. The formulas themselves live in @kartup/domain.
  */
-import { isPersonalBest, rankIndexFor, sessionMeters, sessionXp } from '@kartup/domain';
+import { isPersonalBest, penaltyAmount, rankIndexFor, sessionMeters, sessionXp } from '@kartup/domain';
 import { RANKS, XP_RULES } from '@config/progression';
-import type { ResultSource, Track } from '../types';
+import type { PenaltyReason, ResultSource, Track } from '../types';
 import type { DbLedger } from './db';
 
 export interface VerifiedResult {
@@ -23,7 +23,12 @@ export interface VerifiedResult {
   source: ResultSource;
   verifiedBy: string | null;
   selfReportId?: string;
+  /** Casual lobby: saved for history, no XP / km / rank. */
+  casual?: boolean;
 }
+
+/** Rows that count for progression: Competitive / verified races (not casual, not penalties). */
+export const counts = (l: DbLedger) => l.kind === 'race' && !l.casual;
 
 const monthFormats = new Map<string, Intl.DateTimeFormat>();
 const seasons = new Map<string, string>(); // formatting dates is slow; the demo seed asks thousands of times
@@ -40,7 +45,9 @@ export function seasonOf(dateIso: string, timezone: string) {
 
 /** Score one verified result against the driver's EARLIER rows at that track (new track / personal best). */
 export function scoreResult(ledger: readonly DbLedger[], r: VerifiedResult, id: string, createdAt: string): DbLedger {
-  const prior = ledger.filter((l) => l.userId === r.userId && l.trackId === r.track.id && l.date < r.date);
+  const casual = !!r.casual && !r.officialEvent;
+  // Casual results never count for new-track or personal-best bonuses.
+  const prior = ledger.filter((l) => counts(l) && l.userId === r.userId && l.trackId === r.track.id && l.date < r.date);
   const laps = prior.map((l) => l.bestLapMs).filter((x): x is number => !!x);
   const previousBest = laps.length ? Math.min(...laps) : null;
   const breakdown = sessionXp(
@@ -56,6 +63,8 @@ export function scoreResult(ledger: readonly DbLedger[], r: VerifiedResult, id: 
   );
   return {
     id,
+    kind: 'race',
+    ...(casual ? { casual: true } : {}),
     userId: r.userId,
     sessionId: r.sessionId,
     trackId: r.track.id,
@@ -66,9 +75,9 @@ export function scoreResult(ledger: readonly DbLedger[], r: VerifiedResult, id: 
     fieldSize: r.fieldSize,
     laps: r.laps,
     bestLapMs: r.bestLapMs,
-    meters: sessionMeters(r.laps, r.track.lapLengthM),
-    xp: breakdown.total,
-    breakdown,
+    meters: casual ? 0 : sessionMeters(r.laps, r.track.lapLengthM),
+    xp: casual ? 0 : breakdown.total,
+    breakdown: casual ? null : breakdown,
     source: r.source,
     verifiedBy: r.verifiedBy,
     ...(r.selfReportId ? { selfReportId: r.selfReportId } : {}),
@@ -85,15 +94,52 @@ export interface Totals {
   wins: number;
 }
 
+/** Totals over one driver's rows. XP includes penalties and never goes below 0. */
 export function totalsOf(rows: readonly DbLedger[]): Totals {
   const meters = rows.reduce((a, l) => a + l.meters, 0);
+  const races = rows.filter(counts);
   return {
-    xp: rows.reduce((a, l) => a + l.xp, 0),
+    xp: Math.max(0, rows.reduce((a, l) => a + l.xp, 0)),
     meters,
     km: meters / 1000,
-    tracks: new Set(rows.map((l) => l.trackId)).size,
-    sessions: rows.length,
-    wins: rows.filter((l) => l.position === 1).length,
+    tracks: new Set(races.map((l) => l.trackId)).size,
+    sessions: races.length,
+    wins: races.filter((l) => l.position === 1).length,
+  };
+}
+
+/**
+ * A behavior penalty row: minus the full amount, but never more than the driver's
+ * current XP (total XP never goes below 0). It also lowers the season's XP.
+ */
+export function penaltyRow(
+  ledger: readonly DbLedger[],
+  p: { userId: string; reason: PenaltyReason; nominal: number; sessionId: string | null; track: Track; date: string },
+  id: string,
+  createdAt: string,
+): DbLedger {
+  const current = totalsOf(ledger.filter((l) => l.userId === p.userId)).xp;
+  return {
+    id,
+    kind: 'penalty',
+    penaltyReason: p.reason,
+    penaltyNominal: p.nominal,
+    userId: p.userId,
+    sessionId: p.sessionId,
+    trackId: p.track.id,
+    cityId: p.track.cityId,
+    date: p.date,
+    season: seasonOf(p.date, p.track.timezone),
+    position: 0,
+    fieldSize: 0,
+    laps: 0,
+    bestLapMs: null,
+    meters: 0,
+    xp: -penaltyAmount(p.nominal, current),
+    breakdown: null,
+    source: 'admin',
+    verifiedBy: null,
+    createdAt,
   };
 }
 

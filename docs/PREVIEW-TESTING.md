@@ -125,6 +125,29 @@ The demo has drivers in every rank: **Cristian** (Veteran), **Radu** (Ace), **Vl
 - mark an upcoming session as an **Official KartUP event** (XP × 1.5); one is already set up (**KartUP Cup**, VMax Romexpo, in 5 days);
 - enter results for **any** session that is waiting for results (they're final immediately).
 
+## 17. Casual vs Competitive lobbies and XP penalties
+**Lobby type:** every lobby shows a badge: **Competitive** (red) or **Casual – no ranking**.
+- **Create** tab → **Lobby type**: Competitive (default) or Casual.
+- Demo Casual lobbies: **Tomis Kart** (Teodora, tomorrow) and **AMC Kart** (Ana, in 6 days). A few past sessions were Casual too.
+- Casual results are saved in **Race history** with a **Casual – no ranking** label: position, laps and best lap, but no XP or km, and they don't count for the season leaderboard or personal-best bonuses.
+- Official KartUP events are always Competitive (turning an event official switches it).
+
+**XP penalties** (Competitive lobbies only; **your rank never goes down**, and XP never goes below 0):
+| What | XP |
+|---|---|
+| No-show (paid, didn't check in, host didn't confirm) | −50 |
+| Cancelling a paid seat less than 2 h before the start | −25 |
+| Admin decides you reported false data (self-report or dispute) | −100 |
+
+Try them:
+1. **Late leave:** join and pay Maria's VMax Romexpo lobby (tomorrow), Developer menu → pick that session → jump to **61 min before**, then **Cancel my seat**. The dialog warns about −25 XP; you're still refunded.
+2. **No-show:** select **VMax Romexpo (host Vlad)** in 45 minutes and jump to **16 min after**: Andrei never checked in → ban + −50 XP.
+3. **False data:** sign in as admin → Admin tools → a self-report → **False data (−100 XP)**. Or dispute Radu's AMC results and use **Admin: approve, dispute was false (−XP)** in the Developer menu.
+
+Penalties show in **Race history** as red **XP penalty** rows, plus an alert. Bogdan already has one (a recent no-show): sign in as Bogdan to see it.
+
+The values are in `config/progression.ts` (`PENALTIES`).
+
 ## Lap lengths to verify before launch
 Distance (km) = laps × lap length, so these numbers matter. **All are marked "to verify"** in the app (the lobby shows "Lap 700 m (to verify)"). Please confirm each with the track and tell me the correct values. The track websites couldn't be opened directly, so these come from search results, news articles and listings.
 

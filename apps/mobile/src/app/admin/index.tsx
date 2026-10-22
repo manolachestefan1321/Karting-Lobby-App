@@ -1,4 +1,5 @@
 import { formatLapTime } from '@kartup/domain';
+import { PENALTIES } from '@config/progression';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { StyleSheet, Switch, View } from 'react-native';
@@ -29,7 +30,10 @@ export default function AdminScreen() {
   const sessions = useQuery({ queryKey: ['admin_sessions'], enabled: isAdmin, queryFn: () => api.admin.sessions() });
   const fail = (e: unknown) => toast(errorText(e, t as never, i18n.language), 'danger');
   const done = () => qc.invalidateQueries();
-  const review = useMutation({ mutationFn: ({ id, approve }: { id: string; approve: boolean }) => api.admin.reviewSelfReport(id, approve), onSuccess: done });
+  const review = useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'approve' | 'reject' | 'reject_false' }) => api.admin.reviewSelfReport(id, decision),
+    onSuccess: done,
+  });
   const official = useMutation({ mutationFn: ({ id, on }: { id: string; on: boolean }) => api.admin.setOfficialEvent(id, on), onSuccess: done });
 
   if (!isAdmin) return <EmptyState icon="lock-closed-outline" title={t('errors.admin_only')} />;
@@ -71,14 +75,23 @@ export default function AdminScreen() {
                   title={t('admin.approve')}
                   size="md"
                   fullWidth={false}
-                  onPress={() => review.mutate({ id: r.id, approve: true }, { onSuccess: () => toast(t('admin.approved')), onError: fail })}
+                  onPress={() => review.mutate({ id: r.id, decision: 'approve' }, { onSuccess: () => toast(t('admin.approved')), onError: fail })}
                 />
                 <Button
                   title={t('admin.reject')}
                   size="md"
                   variant="secondary"
                   fullWidth={false}
-                  onPress={() => review.mutate({ id: r.id, approve: false }, { onSuccess: () => toast(t('admin.rejected')), onError: fail })}
+                  onPress={() => review.mutate({ id: r.id, decision: 'reject' }, { onSuccess: () => toast(t('admin.rejected')), onError: fail })}
+                />
+              </View>
+              <View style={styles.row}>
+                <Button
+                  title={t('admin.rejectFalse', { xp: PENALTIES.falseReport })}
+                  size="md"
+                  variant="danger"
+                  fullWidth={false}
+                  onPress={() => review.mutate({ id: r.id, decision: 'reject_false' }, { onSuccess: () => toast(t('admin.rejectedFalse')), onError: fail })}
                 />
               </View>
             </Card>

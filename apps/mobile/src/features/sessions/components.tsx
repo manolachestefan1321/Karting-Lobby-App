@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Card, Chip, Text } from '@/components/ui';
-import type { KartSession, RankTier } from '@/data';
+import type { KartSession, LobbyType, RankTier } from '@/data';
 import { formatDay, formatTime, money } from '@/lib/format';
 import { useMyId } from '@/features/auth/AuthProvider';
 import { RULES_FALLBACK, useRulesOrDefault } from './rules';
@@ -23,6 +23,16 @@ export function PhaseBadge({ phase }: { phase: SessionPhase }) {
   const { t } = useTranslation();
   const tone = phase === 'cancelled' ? 'danger' : phase === 'checkin' || phase === 'locked' ? 'warning' : phase === 'final' ? 'success' : phase === 'open' ? undefined : 'accent';
   return <Chip label={t(`sessions.phase.${phase}`)} tone={tone} />;
+}
+
+/** "Competitive" (counts for XP / km / rank) or "Casual" (history only). */
+export function LobbyTypeBadge({ type }: { type: LobbyType }) {
+  const { t } = useTranslation();
+  return type === 'competitive' ? (
+    <Chip label={t('lobbyType.competitive')} tone="accent" icon="podium-outline" />
+  ) : (
+    <Chip label={t('lobbyType.casualNoRanking')} icon="happy-outline" />
+  );
 }
 
 export function SessionCard({ session, now, tiers, showDate }: { session: KartSession; now: Date; tiers?: RankTier[]; showDate?: boolean }) {
@@ -76,6 +86,7 @@ export function SessionCard({ session, now, tiers, showDate }: { session: KartSe
         ) : session.myStatus === 'joined_unpaid' ? (
           <Chip label={t('sessions.inLobbyUnpaid')} tone="warning" />
         ) : null}
+        <LobbyTypeBadge type={session.lobbyType} />
         {session.isOfficialEvent ? <Chip label={t('sessions.official')} tone="accent" icon="trophy" /> : null}
         {phase !== 'open' ? <PhaseBadge phase={phase} /> : null}
         {session.minSkill ? <Chip label={t('sessions.minSkill', { level: t(`profile.level.${session.minSkill}`) })} /> : null}

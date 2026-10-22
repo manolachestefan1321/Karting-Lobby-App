@@ -1,4 +1,5 @@
-import { checkinWindow, hostPayoutMinor, participantCancellation, refundDeadline } from '@kartup/domain';
+import { checkinWindow, hostPayoutMinor, isLateLeave, participantCancellation, refundDeadline } from '@kartup/domain';
+import { PENALTIES } from '@config/progression';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -11,7 +12,7 @@ import { toast } from '@/features/notifications/BannerHost';
 import { PaymentSheet } from '@/features/payments/PaymentSheet';
 import { usePublicProfile, useRankTiers } from '@/features/profile/api';
 import { RankBadge } from '@/features/profile/ProfileView';
-import { PhaseBadge, phaseOf } from '@/features/sessions/components';
+import { LobbyTypeBadge, PhaseBadge, phaseOf } from '@/features/sessions/components';
 import {
   useCancelSeat,
   useCancelSession,
@@ -98,7 +99,11 @@ export default function LobbyScreen() {
   const onCancelSeat = async () => {
     const ok = await confirmDialog({
       title: t('lobby.cancelConfirmTitle'),
-      message: t('lobby.cancelConfirmBody', { amount: fmt(s.price.totalMinor) }),
+      message:
+        t('lobby.cancelConfirmBody', { amount: fmt(s.price.totalMinor) }) +
+        (s.lobbyType === 'competitive' && isLateLeave(new Date(s.startsAt), now, PENALTIES.lateLeaveWindowMinutes)
+          ? `\n\n${t('lobby.lateLeaveWarning', { xp: PENALTIES.lateLeave })}`
+          : ''),
       confirmText: t('lobby.cancelSeat'),
       cancelText: t('common.back'),
       destructive: true,
@@ -235,7 +240,11 @@ export default function LobbyScreen() {
           ) : null}
         </Card>
 
+        <Text variant="caption" tone="muted">
+          {s.lobbyType === 'competitive' ? t('lobbyType.competitiveHint') : t('lobbyType.casualHint')}
+        </Text>
         <View style={styles.rowWrap}>
+          <LobbyTypeBadge type={s.lobbyType} />
           {s.isOfficialEvent ? <Chip label={t('sessions.official')} tone="accent" icon="trophy" /> : null}
           <Chip label={t(s.track.lapLengthVerified ? 'lobby.lapLength' : 'lobby.lapLengthToVerify', { m: s.track.lapLengthM })} icon="speedometer-outline" />
         </View>

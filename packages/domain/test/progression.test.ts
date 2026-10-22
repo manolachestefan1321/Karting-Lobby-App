@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { RANKS, XP_RULES } from '../../../config/progression.ts';
+import { PENALTIES, RANKS, XP_RULES } from '../../../config/progression.ts';
 import {
+  effectiveLobbyType,
   fastestLapUserIds,
+  isLateLeave,
+  penaltyAmount,
   isPersonalBest,
   keepHighest,
   positionXp,
@@ -188,5 +191,34 @@ describe('rank thresholds', () => {
     expect(p.kmProgress).toBe(1);
     expect(p.kmToNext).toBe(0);
     expect(p.xpToNext).toBe(400);
+  });
+});
+
+describe('lobby type and penalties', () => {
+  it('official events are always competitive', () => {
+    expect(effectiveLobbyType('casual', true)).toBe('competitive');
+    expect(effectiveLobbyType('casual', false)).toBe('casual');
+    expect(effectiveLobbyType('competitive', false)).toBe('competitive');
+  });
+
+  it('penalty values come from the config', () => {
+    expect(PENALTIES).toMatchObject({ noShow: 50, lateLeave: 25, lateLeaveWindowMinutes: 120, falseReport: 100 });
+  });
+
+  it('a penalty never takes more XP than the driver has (0 XP floor)', () => {
+    expect(penaltyAmount(50, 1000)).toBe(50);
+    expect(penaltyAmount(50, 30)).toBe(30);
+    expect(penaltyAmount(100, 0)).toBe(0);
+    expect(() => penaltyAmount(-5, 10)).toThrow();
+  });
+
+  it('late leave = less than 2 hours before the start (and before it starts)', () => {
+    const start = Date.UTC(2026, 10, 1, 18, 0);
+    const min = 60_000;
+    expect(isLateLeave(start, start - 121 * min, 120)).toBe(false);
+    expect(isLateLeave(start, start - 120 * min, 120)).toBe(false);
+    expect(isLateLeave(start, start - 119 * min, 120)).toBe(true);
+    expect(isLateLeave(start, start - 61 * min, 120)).toBe(true);
+    expect(isLateLeave(start, start + min, 120)).toBe(false);
   });
 });

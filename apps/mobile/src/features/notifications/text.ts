@@ -15,6 +15,8 @@ export function notificationText(n: AppNotification, t: TFunction, locale: strin
   if (typeof d.endsAt === 'string') params.endsAt = formatDateTime(d.endsAt, TZ, locale);
   if (typeof d.rankId === 'number') params.rank = rankById(d.rankId)?.name ?? String(d.rank ?? '');
   else if (typeof d.rank === 'string') params.rank = RANK_TIERS.find((r) => r.key === d.rank)?.name ?? d.rank;
+  if (n.type === 'xp_penalty') params.reasonText = t(`penalty.${String(d.reason ?? 'no_show')}` as 'penalty.no_show');
+  if (n.type === 'results_confirmed' && d.casual) return { title: t('notifications.types.results_confirmed.title'), body: t('notifications.resultsCasualBody', params) };
   if (n.type === 'self_report_reviewed') params.result = d.approved ? t('notifications.selfReportApproved') : t('notifications.selfReportRejected');
   if (n.type === 'appeal_resolved') params.result = d.approved ? t('notifications.appealApproved') : t('notifications.appealRejected');
   const base = `notifications.types.${n.type}` as const;
@@ -41,6 +43,7 @@ export const NOTIFICATION_ICON: Record<AppNotification['type'], string> = {
   results_disputed: 'alert-circle',
   rank_up: 'trophy',
   self_report_reviewed: 'shield-checkmark',
+  xp_penalty: 'remove-circle',
   ban_started: 'ban',
   ban_ended: 'checkmark-circle',
   appeal_resolved: 'mail-open',
@@ -50,7 +53,7 @@ export const NOTIFICATION_ICON: Record<AppNotification['type'], string> = {
 /** Where tapping a notification takes you. */
 export function notificationHref(n: AppNotification): string | null {
   const id = n.data.sessionId;
-  if (n.type === 'rank_up' || n.type === 'self_report_reviewed' || n.type === 'ban_started' || n.type === 'ban_ended' || n.type === 'appeal_resolved') return '/profile';
+  if (n.type === 'rank_up' || n.type === 'self_report_reviewed' || n.type === 'xp_penalty' || n.type === 'ban_started' || n.type === 'ban_ended' || n.type === 'appeal_resolved') return '/profile';
   if (n.type === 'chat_message' && id) return `/session/${id}/chat`;
   if ((n.type === 'results_posted' || n.type === 'results_confirmed' || n.type === 'results_disputed') && id) return `/session/${id}/results`;
   return id ? `/session/${id}` : null;

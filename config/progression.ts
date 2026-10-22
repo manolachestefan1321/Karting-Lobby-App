@@ -42,3 +42,17 @@ export const XP_RULES = {
   /** Official KartUP events: the session's total XP is multiplied by this. */
   officialEventMultiplier: 1.5,
 };
+
+/**
+ * Behavior penalties (XP only, Competitive lobbies only). Ranks never go down and
+ * total XP never goes below 0: a penalty takes at most the XP the driver has.
+ */
+export const PENALTIES = {
+  /** Paid, then neither checked in nor confirmed by the host. */
+  noShow: 50,
+  /** Cancelling a paid seat less than `lateLeaveWindowMinutes` before the start. */
+  lateLeave: 25,
+  lateLeaveWindowMinutes: 120,
+  /** An admin decides the driver reported false data (self-reported result or dispute). */
+  falseReport: 100,
+};

@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * In-memory "database" of the web preview, persisted to localStorage so data
  * survives reloads. Shapes loosely mirror the real Postgres tables.
  */
-import type { ExperienceLevel, XpBreakdown } from '@kartup/domain';
-import type { AuthProvider, City, Locale, MemberStatus, NotificationPrefs, NotificationType, ResultSource, Track } from '../types';
+import type { ExperienceLevel, LobbyType, XpBreakdown } from '@kartup/domain';
+import type { AuthProvider, City, Locale, MemberStatus, NotificationPrefs, NotificationType, PenaltyReason, ResultSource, Track } from '../types';
 
 export interface DbUser {
   id: string;
@@ -41,6 +41,7 @@ export interface DbSession {
   minSkill: ExperienceLevel | null;
   note: string;
   isOfficialEvent: boolean;
+  lobbyType: LobbyType;
   cancelledAt: string | null;
   cancelledBy: 'host' | 'track' | 'admin' | 'system' | null;
   cancelReason: string | null;
@@ -101,11 +102,18 @@ export interface DbResults {
 }
 
 /**
- * Progression ledger: one row per driver per VERIFIED result. Totals (km, XP, tracks
- * visited) are sums over these rows. Unverified self-reports never get a row.
+ * Progression ledger: one row per driver per VERIFIED result, plus behavior
+ * penalties (negative XP). Totals are sums over these rows. Casual-lobby results
+ * are rows with 0 XP / 0 m (history only). Unverified self-reports never get a row.
  */
 export interface DbLedger {
   id: string;
+  kind: 'race' | 'penalty';
+  /** Casual lobby result: no XP, km, season or personal-best effect. */
+  casual?: boolean;
+  penaltyReason?: PenaltyReason;
+  /** Full penalty before the 0-XP floor (xp is minus what was actually taken). */
+  penaltyNominal?: number;
   userId: string;
   /** Lobby session, or null for timing-sheet imports and approved self-reports. */
   sessionId: string | null;
@@ -120,8 +128,10 @@ export interface DbLedger {
   laps: number;
   bestLapMs: number | null;
   meters: number;
+  /** Negative for penalties. */
   xp: number;
-  breakdown: XpBreakdown;
+  /** Null for casual results and penalties. */
+  breakdown: XpBreakdown | null;
   source: ResultSource;
   /** Who verified it: host, admin, or null for timing sheets. */
   verifiedBy: string | null;
@@ -238,7 +248,7 @@ export interface Db {
   payouts: DbPayout[];
 }
 
-export const DB_VERSION = 9; // bump when the seed changes: browsers then reload fresh demo data
+export const DB_VERSION = 10; // bump when the seed changes: browsers then reload fresh demo data
 const KEY = 'kartup-preview-db';
 
 /**

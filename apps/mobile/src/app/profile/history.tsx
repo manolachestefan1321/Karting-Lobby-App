@@ -38,8 +38,41 @@ export default function RaceHistory() {
   );
 }
 
+/** Behavior penalty: negative XP, never below 0 in total; the rank is kept. */
+function PenaltyRow({ p }: { p: ProgressEntry }) {
+  const { t, i18n } = useTranslation();
+  const partial = p.penaltyNominal !== null && -(p.xp ?? 0) < p.penaltyNominal;
+  return (
+    <Pressable
+      style={styles.row}
+      accessibilityRole={p.sessionId ? 'button' : undefined}
+      disabled={!p.sessionId}
+      onPress={() => p.sessionId && router.push(`/session/${p.sessionId}`)}
+    >
+      <View style={styles.flex}>
+        <Text variant="bodyStrong" tone="danger" numberOfLines={1}>
+          {t('penalty.title')}: {t(`penalty.${p.penaltyReason ?? 'no_show'}`)}
+        </Text>
+        <Text variant="caption" tone="muted">
+          {formatDay(p.date, 'Europe/Bucharest', i18n.language)} · {p.trackName}
+        </Text>
+        <Text variant="caption" tone="faint">
+          {partial ? `${t('penalty.floor', { nominal: p.penaltyNominal })} · ` : ''}
+          {t('penalty.rankKept')}
+        </Text>
+      </View>
+      <View style={styles.right}>
+        <Text variant="heading" tone="danger">
+          −{-(p.xp ?? 0)} XP
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 function Row({ p }: { p: ProgressEntry }) {
   const { t, i18n } = useTranslation();
+  if (p.kind === 'penalty') return <PenaltyRow p={p} />;
   const verified = p.verification === 'verified';
   const reviewLabel = p.review === 'pending' ? t('profile.pendingReview') : p.review === 'rejected' ? t('profile.rejectedReview') : null;
   return (
@@ -58,13 +91,18 @@ function Row({ p }: { p: ProgressEntry }) {
           {p.bestLapMs ? ` · ${formatLapTime(p.bestLapMs)}` : ''}
         </Text>
         <View style={styles.chips}>
+          {p.casual ? <Chip label={t('lobbyType.casualNoRanking')} icon="happy-outline" /> : null}
           <Chip label={verified ? t('profile.verified') : t('profile.unverified')} tone={verified ? 'success' : 'warning'} />
           {reviewLabel ? <Chip label={reviewLabel} tone={p.review === 'rejected' ? 'danger' : undefined} /> : <Chip label={t(`profile.source.${p.source}`)} />}
         </View>
         {p.breakdown ? <Breakdown b={p.breakdown} /> : null}
       </View>
       <View style={styles.right}>
-        {verified ? (
+        {p.casual ? (
+          <Text variant="caption" tone="muted" align="right" style={styles.noProgress}>
+            {t('lobbyType.casualNoRanking')}
+          </Text>
+        ) : verified ? (
           <>
             <Text variant="heading" tone="accent">
               +{p.xp} XP

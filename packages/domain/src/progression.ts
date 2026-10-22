@@ -152,3 +152,28 @@ export function rankProgress<T extends RankThreshold>(km: number, xp: number, ra
     xpToNext: Math.max(0, next.minXp - xp),
   };
 }
+
+// ───────────────────────────── lobby type & penalties ─────────────────────────────
+
+/** Competitive lobbies count for XP / km / rank; casual ones are history only. Official events are always competitive. */
+export type LobbyType = 'casual' | 'competitive';
+
+export function effectiveLobbyType(lobbyType: LobbyType, officialEvent: boolean): LobbyType {
+  return officialEvent ? 'competitive' : lobbyType;
+}
+
+/**
+ * XP actually taken by a penalty: the full amount, but never more than the driver
+ * has, so total XP never goes below 0. Returns a positive number (subtract it).
+ */
+export function penaltyAmount(nominal: number, currentTotalXp: number): number {
+  if (!(nominal >= 0)) throw new Error('Penalty must be ≥ 0');
+  return Math.max(0, Math.min(nominal, currentTotalXp));
+}
+
+/** Leaving a paid seat inside this window before the start costs XP (Competitive only). */
+export function isLateLeave(startsAt: Date | number, now: Date | number, windowMinutes: number): boolean {
+  const s = typeof startsAt === 'number' ? startsAt : startsAt.getTime();
+  const n = typeof now === 'number' ? now : now.getTime();
+  return n < s && s - n < windowMinutes * 60_000;
+}

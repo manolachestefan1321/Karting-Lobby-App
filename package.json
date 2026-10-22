@@ -19,7 +19,7 @@
     "iphone": "cd apps/mobile && npx expo run:ios --device --configuration Release",
     "start": "cd apps/mobile && npx expo start",
     "phone": "cd apps/mobile && npx expo start",
-    "phone:tunnel": "cd apps/mobile && npx expo start --tunnel ngrok"
+    "phone:tunnel": "cd apps/mobile && npx expo start --tunnel"
   },
   "engines": {
     "node": ">=20"

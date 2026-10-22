@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   wrap: { backgroundColor: 'rgba(11,11,13,0.96)', zIndex: 950, justifyContent: 'space-between' },
   stripe: { marginTop: spacing.xl, marginBottom: spacing.xl, alignItems: 'flex-start', overflow: 'hidden' },
   center: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
-  kicker: { color: '#E10600', letterSpacing: 4, textTransform: 'uppercase' },
+  kicker: { color: '#E00000', letterSpacing: 4, textTransform: 'uppercase' },
   muted: { color: '#A7A9AC' },
   badge: { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: 6, maxWidth: '100%' },
   badgeText: { color: '#fff', fontSize: 48, lineHeight: 52 },

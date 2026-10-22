@@ -18,7 +18,7 @@ export const RANKS = [
   { key: 'pro', name: 'Pro', minKm: 300, minXp: 5000, color: '#9B51E0' },
   { key: 'apex', name: 'Apex', minKm: 500, minXp: 9000, color: '#E8762C' },
   { key: 'ace', name: 'Ace', minKm: 800, minXp: 15000, color: '#C9A227' },
-  { key: 'veteran', name: 'Veteran', minKm: 1200, minXp: 25000, color: '#E10600' },
+  { key: 'veteran', name: 'Veteran', minKm: 1200, minXp: 25000, color: '#E00000' },
 ] as const;
 
 export type RankKey = (typeof RANKS)[number]['key'];

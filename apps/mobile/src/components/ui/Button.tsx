@@ -29,7 +29,7 @@ export function Button({
   const isDisabled = disabled || loading;
   const palette = {
     primary: { bg: colors.accent, pressed: colors.accentPressed, fg: colors.onAccent, border: colors.accent },
-    secondary: { bg: colors.surfaceAlt, pressed: colors.border, fg: colors.text, border: colors.border },
+    secondary: { bg: colors.secondary, pressed: colors.textMuted, fg: colors.onSecondary, border: colors.secondary },
     ghost: { bg: 'transparent', pressed: colors.surfaceAlt, fg: colors.text, border: 'transparent' },
     danger: { bg: 'transparent', pressed: colors.surfaceAlt, fg: colors.danger, border: colors.danger },
   }[variant];

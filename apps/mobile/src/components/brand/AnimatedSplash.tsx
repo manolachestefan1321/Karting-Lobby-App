@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { CheckeredStripe } from '@/components/ui/CheckeredStripe';
+import { brand } from '@config/brand';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Wordmark } from './Wordmark';
 
@@ -28,7 +29,7 @@ export function AnimatedSplash({ ready }: { ready: boolean }) {
 
   if (done) return null;
   return (
-    <Animated.View pointerEvents={ready ? 'none' : 'auto'} style={[StyleSheet.absoluteFill, styles.wrap, { backgroundColor: '#0B0B0D', opacity }]}>
+    <Animated.View pointerEvents={ready ? 'none' : 'auto'} style={[StyleSheet.absoluteFill, styles.wrap, { backgroundColor: brand.colors.splashBackground, opacity }]}>
       <Animated.View style={{ transform: [{ translateX: slide }] }}>
         <Wordmark size={64} align="center" />
       </Animated.View>

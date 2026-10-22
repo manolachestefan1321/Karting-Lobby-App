@@ -93,7 +93,7 @@ export function BannerHost({ enabled }: { enabled: boolean }) {
           if (visible.href) router.push(visible.href as never);
           hide();
         }}
-        style={[styles.card, { backgroundColor: celebrate ? '#16161A' : colors.surface, borderColor: accent, shadowColor: '#000' }]}
+        style={[styles.card, { backgroundColor: celebrate ? '#222222' : colors.surface, borderColor: accent, shadowColor: '#000' }]}
       >
         {celebrate ? (
           <View style={styles.celebrate}>

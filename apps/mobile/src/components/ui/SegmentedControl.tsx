@@ -16,7 +16,7 @@ export function SegmentedControl<T extends string>({ value, options, onChange, a
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
-      style={[styles.wrap, { backgroundColor: colors.surfaceAlt }]}
+      style={[styles.wrap, { backgroundColor: colors.secondary }]}
     >
       {options.map((o) => {
         const selected = o.value === value;
@@ -28,7 +28,7 @@ export function SegmentedControl<T extends string>({ value, options, onChange, a
             onPress={() => onChange(o.value)}
             style={[styles.item, selected && { backgroundColor: colors.accent }]}
           >
-            <Text variant="label" style={{ color: selected ? colors.onAccent : colors.textMuted }} numberOfLines={1}>
+            <Text variant="label" style={{ color: selected ? colors.onAccent : colors.onSecondaryMuted }} numberOfLines={1}>
               {o.label}
             </Text>
           </Pressable>

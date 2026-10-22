@@ -109,8 +109,8 @@ export function PreviewHost() {
     }
   }, [snap, sessionId]);
 
-  const statusBg = theme === 'dark' ? '#0B0B0D' : '#F5F5F7';
-  const statusFg = theme === 'dark' ? '#FFFFFF' : '#0B0B0D';
+  const statusBg = theme === 'dark' ? '#181818' : '#F5E6CC';
+  const statusFg = theme === 'dark' ? '#F5E6CC' : '#181818';
   const offsetMin = Math.round((snap?.offsetMs ?? 0) / 60000);
   const offsetLabel = offsetMin === 0 ? 'real time' : `${offsetMin > 0 ? '+' : '−'}${fmtDuration(Math.abs(offsetMin))} from real time`;
 

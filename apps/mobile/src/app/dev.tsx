@@ -6,10 +6,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useReducer, useState, type ReactNode } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, Chip, confirmDialog, EmptyState, PickerField, Screen, SectionHeader, Text } from '@/components/ui';
+import { Button, Card, Chip, confirmDialog, EmptyState, PickerField, Screen, SectionHeader, Text, Toggle } from '@/components/ui';
 import { api } from '@/data';
 import { RANK_TIERS } from '@/data/ranks';
 import { toast } from '@/features/notifications/BannerHost';
@@ -264,7 +264,7 @@ export default function DeveloperMenu() {
               {snap.instantResults ? t('dev.instantResultsOn') : t('dev.instantResultsOff')}
             </Text>
           </View>
-          <Switch
+          <Toggle
             value={snap.instantResults}
             onValueChange={(on) => {
               run(() => demo.setInstantResults(on));

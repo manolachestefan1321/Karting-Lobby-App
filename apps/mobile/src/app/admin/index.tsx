@@ -2,9 +2,9 @@ import { formatLapTime } from '@kartup/domain';
 import { PENALTIES } from '@config/progression';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Avatar, Button, Card, EmptyState, LoadingState, Screen, SectionHeader, Text } from '@/components/ui';
+import { Avatar, Button, Card, EmptyState, LoadingState, Screen, SectionHeader, Text, Toggle } from '@/components/ui';
 import { api } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { toast } from '@/features/notifications/BannerHost';
@@ -128,7 +128,7 @@ export default function AdminScreen() {
                     <Text variant="caption" tone="muted">
                       {t('admin.official')}
                     </Text>
-                    <Switch
+                    <Toggle
                       value={s.isOfficialEvent}
                       onValueChange={(on) => official.mutate({ id: s.id, on }, { onError: fail })}
                       accessibilityLabel={`${t('admin.official')}: ${s.track.name}`}

@@ -16,3 +16,4 @@ export * from './OptionSheet';
 export * from './PickerField';
 export * from './Chip';
 export * from './Dialog';
+export * from './Toggle';

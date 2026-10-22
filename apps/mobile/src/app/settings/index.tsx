@@ -1,22 +1,20 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { Linking, StyleSheet, Switch, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { brand } from '@config/brand';
 import { Wordmark } from '@/components/brand/Wordmark';
-import { Card, ListRow, Screen, SectionHeader, SegmentedControl, Text } from '@/components/ui';
+import { Card, ListRow, Screen, SectionHeader, SegmentedControl, Text, Toggle } from '@/components/ui';
 import { api, type Locale, type NotificationGroup } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useNotificationPrefs, useSetNotificationPrefs } from '@/features/notifications/hooks';
 import { usePreferences, type ThemePreference } from '@/store/preferences';
-import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 
 const GROUPS: NotificationGroup[] = ['lobby', 'chat', 'reminders', 'results', 'ranking', 'account'];
 
 export default function Settings() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
   const { signOut, profile } = useAuth();
   const { locale, theme, setLocale, setTheme } = usePreferences();
   const prefs = useNotificationPrefs();
@@ -60,13 +58,10 @@ export default function Settings() {
         {GROUPS.map((g) => (
           <View key={g} style={styles.prefRow}>
             <Text style={styles.flex}>{t(`settings.prefs.${g}`)}</Text>
-            <Switch
+            <Toggle
               value={g === 'account' ? true : (prefs.data?.[g] ?? true)}
               disabled={g === 'account' || !prefs.data}
               onValueChange={(v) => prefs.data && setPrefs.mutate({ ...prefs.data, [g]: v })}
-              trackColor={{ true: colors.accent, false: colors.border }}
-              thumbColor="#FFFFFF"
-              ios_backgroundColor={colors.border}
               accessibilityLabel={t(`settings.prefs.${g}`)}
             />
           </View>

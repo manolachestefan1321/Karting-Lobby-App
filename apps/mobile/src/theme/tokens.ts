@@ -24,6 +24,8 @@ export const lightColors: Record<string, string> & typeof shared & {
   /** Readable text version of `danger` (the button color can be too light for small text). */
   dangerText: string;
   onDanger: string;
+  /** Toggle switches: one accent color when on, neutral grey when off, white thumb. */
+  toggleOn: string; toggleOff: string; toggleThumb: string;
   /** The 30% color: tab bar, secondary buttons, segmented controls. */
   secondary: string; onSecondary: string; onSecondaryMuted: string;
 } = {
@@ -35,6 +37,9 @@ export const lightColors: Record<string, string> & typeof shared & {
   danger: '#F39120',
   dangerText: '#9A5208',
   onDanger: SECONDARY,
+  toggleOn: '#EC4624',
+  toggleOff: '#A7A39A',
+  toggleThumb: '#FFFFFF',
   background: '#E2DAC2',
   surface: '#EDE7D7',
   surfaceAlt: '#D5CAAC',
@@ -66,6 +71,9 @@ export const darkColors: typeof lightColors = {
   danger: '#EC4624',
   dangerText: '#EC4624',
   onDanger: '#222A2A',
+  toggleOn: '#F39120',
+  toggleOff: '#5C6767',
+  toggleThumb: '#FFFFFF',
   warning: '#F3B33D',
   background: '#222A2A',
   // Cards sit a step lighter than the background so they stay visible.

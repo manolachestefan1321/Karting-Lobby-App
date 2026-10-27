@@ -27,6 +27,11 @@ function wrap(error: { code?: string; message?: string } | null) {
 
 type Row = Record<string, any>;
 
+/** Uploaded photo first; otherwise the photo from Apple / Google / Facebook, if any. */
+function avatarOf(r: Row): string | null {
+  return publicStorageUrl('avatars', r.avatar_path) ?? r.provider_avatar_url ?? null;
+}
+
 function toProfile(r: Row): Profile {
   return {
     id: r.id,
@@ -35,7 +40,7 @@ function toProfile(r: Row): Profile {
     dateOfBirth: r.date_of_birth,
     homeCityId: r.home_city_id,
     bio: r.bio ?? '',
-    avatarUrl: publicStorageUrl('avatars', r.avatar_path),
+    avatarUrl: avatarOf(r),
     locale: r.locale,
     role: r.role,
     termsAcceptedAt: r.terms_accepted_at,
@@ -50,16 +55,16 @@ function toPublic(r: Row): PublicProfile {
     id: r.id,
     firstName: r.first_name,
     lastName: r.last_name,
-    avatarUrl: publicStorageUrl('avatars', r.avatar_path),
-    rankTierId: r.rank_tier_id,
-    // Columns added by the progression migration in the real-version phase.
+    avatarUrl: avatarOf(r),
+    // Highest rank reached (stored, never goes down) — new drivers start at 1 = Rookie.
+    rankTierId: r.rank_tier_id ?? 1,
     totalXp: r.total_xp ?? 0,
     totalKm: (r.total_meters ?? 0) / 1000,
     bio: r.bio,
     homeCityId: r.home_city_id,
     age: r.age,
     sessionsRaced: r.sessions_raced,
-    tracksRaced: r.tracks_raced,
+    tracksRaced: r.tracks_visited ?? r.tracks_raced ?? 0,
     wins: r.wins,
     noShowCount: r.no_show_count ?? 0,
     createdAt: r.created_at,
@@ -110,7 +115,7 @@ export const supabaseApi: DataApi = {
     deleteAccount: async () => {
       const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
       if (error) throw new ApiError('generic');
-      await supabase.auth.signOut();
+      await signOutEverywhere(); // also forgets the Google account on the device
     },
   },
   profiles: {

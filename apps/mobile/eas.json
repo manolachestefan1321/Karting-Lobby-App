@@ -7,29 +7,54 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "APP_VARIANT": "development" },
+      "env": {
+        "APP_VARIANT": "development"
+      },
       "environment": "development"
     },
     "development-simulator": {
       "extends": "development",
-      "ios": { "simulator": true }
+      "ios": {
+        "simulator": true
+      }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "APP_VARIANT": "preview" },
+      "env": {
+        "APP_VARIANT": "preview",
+        "EXPO_PUBLIC_DATA_SOURCE": "supabase"
+      },
       "environment": "preview",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "APP_VARIANT": "production" },
+      "env": {
+        "APP_VARIANT": "production",
+        "EXPO_PUBLIC_DATA_SOURCE": "supabase"
+      },
       "environment": "production"
+    },
+    "demo": {
+      "autoIncrement": true,
+      "env": {
+        "APP_VARIANT": "demo",
+        "EXPO_PUBLIC_DATA_SOURCE": "mock"
+      },
+      "environment": "preview"
     }
   },
   "submit": {
     "production": {
       "ios": {},
-      "android": { "track": "internal" }
+      "android": {
+        "track": "internal"
+      }
+    },
+    "demo": {
+      "ios": {}
     }
   }
 }

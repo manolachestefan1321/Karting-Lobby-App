@@ -86,7 +86,7 @@ npm run brand:sync   # regenerate logo images, email templates, legal texts from
 These steps are **not needed for the preview**. When you approve the preview, we will:
 1. Connect Supabase. Auth, profiles and cities are already written for it in `apps/mobile/src/data/supabase`. Sessions, payments and results come next.
 2. Set up Stripe: test mode first, with Connect Express payouts to hosts.
-3. Set up sign-in with Google, Apple and Facebook, and push notifications.
+3. Sign-in with Google, Apple, Facebook and email: the code is ready. Account and console setup: **[docs/AUTH-SETUP.md](docs/AUTH-SETUP.md)**. Push notifications come later.
 4. Make EAS builds for iPhone and Android, and publish to App Store Connect and Google Play Console.
 
 Each of these steps will come with exact account-setup instructions for macOS.

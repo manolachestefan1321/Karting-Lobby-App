@@ -14,7 +14,14 @@ const variant = process.env.APP_VARIANT ?? 'production';
 // with a free Apple ID.
 const realBackend = process.env.EXPO_PUBLIC_DATA_SOURCE === 'supabase';
 const suffix = variant === 'production' ? '' : `.${variant}`;
-const nameSuffix = variant === 'production' ? '' : variant === 'development' ? ' (Dev)' : ' (Preview)';
+const nameSuffix = variant === 'production' ? '' : variant === 'development' ? ' (Dev)' : variant === 'demo' ? ' Demo' : ' (Preview)';
+
+// The demo (fake users and data, for track visits) must never ship as the real app.
+// Only the `demo` and `development` build profiles may use it; local `expo start` is unaffected.
+const buildProfile = process.env.EAS_BUILD_PROFILE;
+if ((buildProfile === 'production' || buildProfile === 'preview') && !realBackend) {
+  throw new Error(`Build profile "${buildProfile}" must use the real backend: set EXPO_PUBLIC_DATA_SOURCE=supabase (see eas.json).`);
+}
 
 // The iOS URL scheme for Google Sign-In is the reversed iOS client ID.
 const googleIosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID

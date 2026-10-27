@@ -33,7 +33,7 @@ Values you copy go into **environment variables**, never into the code.
    ```
 6. Supabase → **Authentication → URL Configuration**:
    - **Site URL:** `kartup://auth/callback`
-   - **Redirect URLs:** add `kartup://**`
+   - **Redirect URLs:** add `kartup://**`, plus for testing on your PC and in Expo Go: `http://localhost:8081/**` and `exp://**`
 7. Supabase → **Authentication → Providers → Email**: keep it enabled with **Confirm email** on.
 8. Later, before launch: set up a custom email sender under **Authentication → SMTP** (for example Resend or Brevo). Supabase's built-in sender is limited to a few emails per hour.
 
@@ -116,4 +116,9 @@ eas build --platform ios --profile demo         # demo for track visits (TestFli
 ```
 A `production` or `preview` build stops with an error if it would contain the demo.
 
-The real backend uses native Google sign-in, so it can't run in Expo Go: test it with a `preview` build.
+**Testing real accounts before any build:** put the Supabase URL and anon key in `apps/mobile/.env`, then:
+- `npm run web:real` opens it in Chrome at http://localhost:8081;
+- `npm run phone:real` opens it in Expo Go.
+
+Email, Google and Facebook work there (Google uses the browser instead of the native picker). The native Google picker and Sign in with Apple need a `preview` build.
+`npm run web` and `npm run phone:tunnel` stay on the demo.

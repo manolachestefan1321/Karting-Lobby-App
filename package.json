@@ -14,17 +14,20 @@
     "functions:check": "cd supabase/functions && deno check */index.ts",
     "check": "npm run typecheck && npm test && npm run db:test",
     "brand:sync": "node scripts/brand-sync.ts",
-    "web": "npm run brand:sync -- --skip-images && npm run web --workspace apps/mobile",
+    "web": "npm run brand:sync -- --skip-images && npm run web --workspace apps/mobile -- --clear",
     "ios": "cd apps/mobile && npx expo run:ios",
     "iphone": "cd apps/mobile && npx expo run:ios --device --configuration Release",
     "start": "cd apps/mobile && npx expo start",
     "phone": "cd apps/mobile && npx expo start",
-    "phone:tunnel": "cd apps/mobile && npx expo start --tunnel"
+    "phone:tunnel": "cd apps/mobile && npx expo start --tunnel --clear",
+    "web:real": "cross-env EXPO_PUBLIC_DATA_SOURCE=supabase npm run web --workspace apps/mobile -- --clear",
+    "phone:real": "cd apps/mobile && cross-env EXPO_PUBLIC_DATA_SOURCE=supabase npx expo start --tunnel --clear"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
-    "@resvg/resvg-js": "2.6.2"
+    "@resvg/resvg-js": "2.6.2",
+    "cross-env": "^7.0.3"
   }
 }

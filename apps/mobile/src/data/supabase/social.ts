@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
-import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { env } from './env';
 import { supabase } from './client';
@@ -13,9 +13,21 @@ WebBrowser.maybeCompleteAuthSession();
 
 let googleConfigured = false;
 
+/**
+ * The native Google module exists only in real builds (EAS), not in Expo Go or on the web.
+ * It's loaded on demand so the app can still run there (Google then signs in through the browser).
+ */
+const nativeGoogleAvailable = Platform.OS !== 'web' && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+type GoogleModule = typeof import('@react-native-google-signin/google-signin');
+function googleModule(): GoogleModule {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require('@react-native-google-signin/google-signin') as GoogleModule;
+}
+
 /** Google: native account picker → ID token → Supabase session. */
 export async function signInWithGoogle(): Promise<SocialResult> {
-  if (Platform.OS === 'web') return signInWithOAuthBrowser('google');
+  if (!nativeGoogleAvailable) return signInWithOAuthBrowser('google');
+  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = googleModule();
   if (!googleConfigured) {
     GoogleSignin.configure({ webClientId: env.googleWebClientId, iosClientId: env.googleIosClientId || undefined });
     googleConfigured = true;
@@ -101,8 +113,9 @@ export async function signInWithOAuthBrowser(provider: 'facebook' | 'google'): P
 }
 
 export async function signOutEverywhere() {
-  if (Platform.OS !== 'web') {
+  if (nativeGoogleAvailable) {
     try {
+      const { GoogleSignin } = googleModule();
       if (GoogleSignin.hasPreviousSignIn()) await GoogleSignin.signOut();
     } catch {
       // Not signed in with Google — nothing to do.

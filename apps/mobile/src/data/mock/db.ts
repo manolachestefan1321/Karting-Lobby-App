@@ -248,7 +248,7 @@ export interface Db {
   payouts: DbPayout[];
 }
 
-export const DB_VERSION = 10; // bump when the seed changes: browsers then reload fresh demo data
+export const DB_VERSION = 11; // bump when the seed changes: browsers then reload fresh demo data
 const KEY = 'kartup-preview-db';
 
 /**

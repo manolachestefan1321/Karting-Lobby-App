@@ -128,7 +128,7 @@ The demo has drivers in every rank: **Cristian** (Veteran), **Radu** (Ace), **Vl
 ## 17. Casual vs Competitive lobbies and XP penalties
 **Lobby type:** every lobby shows a badge: **Competitive** (red) or **Casual – no ranking**.
 - **Create** tab → **Lobby type**: Competitive (default) or Casual.
-- Demo Casual lobbies: **Tomis Kart** (Teodora, tomorrow) and **AMC Kart** (Ana, in 6 days). A few past sessions were Casual too.
+- Demo Casual lobbies: **VMax Timișoara** (Sorin, tomorrow) and **AMC Kart** (Ana, in 6 days). A few past sessions were Casual too.
 - Casual results are saved in **Race history** with a **Casual – no ranking** label: position, laps and best lap, but no XP or km, and they don't count for the season leaderboard or personal-best bonuses.
 - Official KartUP events are always Competitive (turning an event official switches it).
 
@@ -156,14 +156,8 @@ Distance (km) = laps × lap length, so these numbers matter. **All are marked "t
 | AMC Kart (Tunari) | **1,240 m** | [AMC Kart Facebook](https://www.facebook.com/AMCKART/videos/10158334153981713/) · [Adevărul](https://adevarul.ro/stiri-locale/bucuresti/viteza-si-adrenalina-la-karting-1378954.html) | High: the operator says 1,240 m, CIK-FIA certified (some directories say 1,250 m) |
 | VMax Romexpo | **700 m** | [vmaxromexpo.ro/evenimente](https://vmaxromexpo.ro/evenimente/) · [kart-map](https://www.kart-map.com/en/circuits/vmax-karting-romexpo) | Medium: event pages say 700 m, the English homepage says 600 m, the gift page lists 700/650/500 m layouts. **Which layout is used?** |
 | VMax Titan | **600 m** | [PGKart (track builder)](https://www.pgkart.com/en/works/vmax-karting-titan/) | Medium-high: "600 linear m"; the official site page still shows "0 M" |
-| Tomis Kart Mamaia | **450 m** | [TripAdvisor](https://www.tripadvisor.com/Attraction_Review-g295396-d6826040-Reviews-Tomis_Kart_Constanta_Karting-Constanta_Constanta_County_Southeast_Romania.html) | **Low**: other listings say 300, 250 or 200 m. TripAdvisor marks it **temporarily closed**. |
-| T&T Karting Transilvania (Dej) | **800 m** | [Someșeanul (2020)](https://someseanul.ro/tt-karting-transilvania-si-a-deschis-azi-portile-langa-dej-video/) | Medium-high: opening article, 800 m long |
-| Green Kart Timișoara | **150 m** | none found | **Estimate**: small venue, listings mention kids' karts |
-| Indoor Karting Calea Chișinăului (Iași) | **600 m** | [Ziarul de Iași](https://www.ziaruldeiasi.ro/stiri/un-fost-pilot-de-formula-2-si-a-extins-afacerile-in-iasi-pista-de-karting-acoperita-pe-calea-chisinaului--375021.html) | Medium-high: 600 m multi-level (VMax Iași, 2023); operator may have changed |
-| Prejmer Raceway | **1,250 m** | [ProSport](https://www.prosport.ro/?p=5792394) | Medium: planned spec, 14 corners |
-| Masterkart Ghimbav | **1,050 m** | [autostiri.ro](https://autostiri.ro/masterkart-circuitul-de-agrement-din-ghimbav-brasov/) · [fasport](https://www.fasport.ro/karting/Brasov/Masterkart.html) | Medium: long layout 1,050 m, short 950 m (one listing says 900 m) |
-| Red Motor (Timișoara) | **720 m** | [RaceFacer](https://www.racefacer.com/en/karting-tracks/redmotor) | **Conflict**: RaceFacer says 720 m, but the operator's homepage reportedly shows an **indoor 420 m** track. Ask which one sessions use. |
-| Drift Karting Craiova | **300 m** | none found | **Estimate** |
-| Krea Karting (Oradea) | **350 m** | none found | **Estimate**. Several listings say **permanently closed**. Check before launch. |
+| VMax Karting Cluj | **500 m** | [vmaxcluj.ro/circuitul](https://vmaxcluj.ro/en/circuitul/) | Medium: official circuit text says 500 m |
+| VMax Karting Brașov | **600 m** | [vmaxbrasov.ro/circuitul](https://vmaxbrasov.ro/en/circuitul/) | Medium: events page says 650 m; multi-level track |
+| VMax Karting Timișoara | **600 m** | [vmaxtimisoara.ro/circuitul](https://vmaxtimisoara.ro/en/circuitul/) | **Conflict:** some pages say 500 m |
 
 To change a value, edit `lapLengthM` in `apps/mobile/src/data/mock/tracks.ts` (demo). In the real version it goes in the `tracks.lap_length_m` column, and an admin sets "verified" once confirmed.

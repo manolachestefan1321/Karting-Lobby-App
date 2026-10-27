@@ -375,10 +375,10 @@ export function seed(realNow: number): Db {
   const u4 = addSession('t-vmax-romexpo', 'u-vlad', now + 45 * MIN, { maxDrivers: 10, note: 'After-work sprint. Check in at the reception desk.' });
   for (const uid of ['u-vlad', TEST_USER_ID, 'u-ana', 'u-bogdan', 'u-diana', 'u-stefan']) addMember(u4, uid, 'confirmed');
 
-  const u5 = addSession('t-tomiskart', 'u-teodora', atLocal(1, '18:00'), { maxDrivers: 8, lobbyType: 'casual', note: 'Sunset session by the sea 🌅 Casual, just for fun.' });
-  for (const uid of ['u-teodora', 'u-raluca', 'u-gabriel', 'u-sorin']) addMember(u5, uid, 'confirmed');
+  const u5 = addSession('t-vmax-timisoara', 'u-sorin', atLocal(1, '18:00'), { maxDrivers: 8, lobbyType: 'casual', note: 'Friday-evening fun run. Casual, just for fun.' });
+  for (const uid of ['u-sorin', 'u-raluca', 'u-gabriel', 'u-teodora']) addMember(u5, uid, 'confirmed');
 
-  const u6 = addSession('t-tt-transilvania', 'u-larisa', atLocal(3, '17:00'), { maxDrivers: 12, minRankTierId: 2, note: 'Amateur rank and up.' });
+  const u6 = addSession('t-vmax-cluj', 'u-larisa', atLocal(3, '17:00'), { maxDrivers: 12, minRankTierId: 2, note: 'Amateur rank and up.' });
   for (const uid of ['u-larisa', 'u-paul', 'u-sorin', 'u-gabriel', 'u-raluca']) addMember(u6, uid, 'confirmed');
 
   const u7 = addSession('t-amckart', 'u-ana', atLocal(6, '11:00'), { maxDrivers: 12, lobbyType: 'casual', note: 'Weekend endurance-style: 2 × 15 minutes. Casual — no ranking.' });

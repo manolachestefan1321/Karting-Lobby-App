@@ -172,8 +172,10 @@ describe('results', () => {
 });
 
 describe('seeded tracks', () => {
-  it('uses real tracks whose prices are marked "to verify" and link to a source', () => {
-    expect(s.db.tracks.length).toBeGreaterThanOrEqual(8);
+  it('has exactly the KartUP tracks (5 VMax + AMC Kart), prices "to verify" with a source', () => {
+    expect(s.db.tracks.map((t) => t.id).sort()).toEqual(['t-amckart', 't-vmax-brasov', 't-vmax-cluj', 't-vmax-romexpo', 't-vmax-timisoara', 't-vmax-titan']);
+    // Every session in the demo is at one of them.
+    expect(s.db.sessions.every((x) => s.db.tracks.some((t) => t.id === x.trackId))).toBe(true);
     for (const t of s.db.tracks) {
       expect(t.price.verified).toBe(false);
       expect(t.price.sourceUrl).toMatch(/^https:\/\//);

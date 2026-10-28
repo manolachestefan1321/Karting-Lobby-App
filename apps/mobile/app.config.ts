@@ -28,6 +28,20 @@ const googleIosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
   ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID.split('.').reverse().join('.')
   : 'com.googleusercontent.apps.placeholder';
 
+// The demo uses the real KartUP logo (assets/images/demo, made from the official wordmark).
+const demoLogo = variant === 'demo';
+const assets = demoLogo
+  ? {
+      icon: './assets/images/demo/icon.png',
+      adaptiveIconForeground: './assets/images/demo/android-icon-foreground.png',
+      adaptiveIconBackground: './assets/images/demo/android-icon-background.png',
+      adaptiveIconMonochrome: undefined,
+      splash: './assets/images/demo/splash-icon.png',
+      favicon: './assets/images/demo/favicon.png',
+    }
+  : brand.assets;
+const logoBackground = demoLogo ? '#15161A' : brand.colors.splashBackground;
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: brand.name + nameSuffix,
@@ -36,9 +50,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: brand.scheme,
   version: '1.0.0',
   orientation: 'portrait',
-  icon: brand.assets.icon,
+  icon: assets.icon,
   userInterfaceStyle: 'automatic',
-  backgroundColor: brand.colors.splashBackground,
+  backgroundColor: logoBackground,
   ios: {
     bundleIdentifier: brand.iosBundleId + suffix,
     supportsTablet: false,
@@ -48,10 +62,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: brand.androidPackage + suffix,
     adaptiveIcon: {
-      backgroundColor: brand.colors.splashBackground,
-      foregroundImage: brand.assets.adaptiveIconForeground,
-      backgroundImage: brand.assets.adaptiveIconBackground,
-      monochromeImage: brand.assets.adaptiveIconMonochrome,
+      backgroundColor: logoBackground,
+      foregroundImage: assets.adaptiveIconForeground,
+      backgroundImage: assets.adaptiveIconBackground,
+      monochromeImage: assets.adaptiveIconMonochrome,
     },
     predictiveBackGestureEnabled: false,
   },
@@ -60,8 +74,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     name: brand.name,
     shortName: brand.name,
     description: brand.slogan,
-    themeColor: brand.colors.splashBackground,
-    favicon: brand.assets.favicon,
+    themeColor: logoBackground,
+    favicon: assets.favicon,
   },
   plugins: [
     'expo-router',
@@ -83,9 +97,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: brand.colors.splashBackground,
-        image: brand.assets.splash,
-        imageWidth: 120,
+        backgroundColor: logoBackground,
+        image: assets.splash,
+        imageWidth: demoLogo ? 300 : 120,
       },
     ],
   ],

@@ -32,6 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: brand.name + nameSuffix,
   slug: brand.slug,
+  owner: 'mano131202',
   scheme: brand.scheme,
   version: '1.0.0',
   orientation: 'portrait',
@@ -94,6 +95,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     appVariant: variant,
-    eas: { projectId: process.env.EAS_PROJECT_ID },
+    // Expo project "kartup" on account mano131202 (not a secret). EAS_PROJECT_ID overrides it.
+    eas: { projectId: process.env.EAS_PROJECT_ID ?? '832e2334-a3dd-4c85-a0db-e16af52c50a3' },
   },
 });

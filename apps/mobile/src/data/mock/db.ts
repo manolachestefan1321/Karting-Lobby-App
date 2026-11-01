@@ -28,6 +28,10 @@ export interface DbUser {
   rankTierId: number;
   /** Profile badges (optional so older saved demo data keeps working). */
   badges?: Badge[];
+  /** Founder setup already applied (version). */
+  founderSetup?: number;
+  /** Racing before KartUP, set by the database: replaces the computed km / tracks / wins. */
+  history?: { meters: number; tracks: number; wins: number };
   createdAt: string;
   prefs: NotificationPrefs;
   blocked: string[];

@@ -263,6 +263,9 @@ describe('Founder Racer (demo)', () => {
     expect(s.rankOf(TEST_USER_ID).key).toBe('veteran');
     expect(s.isAdmin(TEST_USER_ID)).toBe(true);
     expect(s.publicProfile('u-maria')!.badges).toEqual([]);
+    const pub = s.publicProfile(TEST_USER_ID)!;
+    expect([pub.totalKm, pub.tracksRaced, pub.wins]).toEqual([600, 10, 23]);
+    expect(s.db.experience.find((e) => e.userId === TEST_USER_ID && e.trackId === 't-vmax-romexpo')!.bestLapMs).toBe(59_800);
   });
 
   it('also works with extra names or a different order', () => {

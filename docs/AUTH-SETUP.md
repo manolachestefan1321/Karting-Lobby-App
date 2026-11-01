@@ -49,6 +49,19 @@ Use the email of your account. This gives your profile:
 
 Nobody else can get these from the app.
 
+Then add your racing before KartUP. This sets **600 km**, **10 tracks visited**, **23 wins** and a best lap of **59.800** at VMax Romexpo:
+```
+update public.user_stats
+   set total_meters = 600000, tracks_visited = 10, wins = 23
+ where user_id = (select id from auth.users where email = 'your@email.com');
+
+insert into public.track_experience (user_id, track_id, level, best_lap_ms)
+select u.id, t.id, 'advanced', 59800
+  from auth.users u, public.tracks t
+ where u.email = 'your@email.com' and t.slug = 'vmax-romexpo'
+on conflict (user_id, track_id) do update set best_lap_ms = 59800;
+```
+
 ## 2. Apple (Sign in with Apple)
 You need the **Apple Developer Program** (99 $/year).
 1. **developer.apple.com → Certificates, IDs & Profiles → Identifiers**: the App ID `com.kartup.app` must have **Sign In with Apple** enabled.

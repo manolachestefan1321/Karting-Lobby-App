@@ -106,6 +106,8 @@ const ms = (iso: string) => new Date(iso).getTime();
 const stripeFeeMinor = (amountMinor: number) => Math.round(amountMinor * 0.015) + 100;
 
 type Listener = () => void;
+/** Bump to re-apply the founder setup below to an existing demo profile. */
+const FOUNDER_SETUP = 2;
 
 export class MockServer {
   db: Db;
@@ -222,7 +224,10 @@ export class MockServer {
   }
   /** Lifetime km / XP / tracks from VERIFIED results only. */
   totals(userId: string) {
-    return totalsOf(this.ledgerOf(userId));
+    const t = totalsOf(this.ledgerOf(userId));
+    const h = this.user(userId)?.history;
+    // Racing done before KartUP (set by the database), shown instead of the computed totals.
+    return h ? { ...t, meters: h.meters, km: h.meters / 1000, tracks: h.tracks, wins: h.wins } : t;
   }
   /** Highest rank reached (stored, never goes down). */
   rankOf(userId: string) {
@@ -1285,10 +1290,16 @@ export class MockServer {
     const plain = (x: string | null) => (x ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
     for (const u of this.db.users) {
       const words = `${plain(u.firstName)} ${plain(u.lastName)}`.split(/[\s-]+/);
-      if (u.deleted || !words.includes('manolache') || !words.includes('stefan') || u.badges?.includes('founder')) continue;
-      u.badges = [...(u.badges ?? []), 'founder'];
+      if (u.deleted || !words.includes('manolache') || !words.includes('stefan') || u.founderSetup === FOUNDER_SETUP) continue;
+      u.founderSetup = FOUNDER_SETUP;
+      if (!u.badges?.includes('founder')) u.badges = [...(u.badges ?? []), 'founder'];
       u.rankTierId = RANK_TIERS.length;
       u.role = 'admin';
+      u.history = { meters: 600_000, tracks: 10, wins: 23 };
+      // Best lap at VMax Romexpo: 59.800 (only set once; the owner can edit it afterwards).
+      const xp = this.db.experience.find((e) => e.userId === u.id && e.trackId === 't-vmax-romexpo');
+      if (xp) xp.bestLapMs = 59_800;
+      else this.db.experience.push({ userId: u.id, trackId: 't-vmax-romexpo', level: 'advanced', bestLapMs: 59_800, sessionsCount: 0 });
     }
   }
 

@@ -499,6 +499,7 @@ export function seed(realNow: number): Db {
     reports: [],
     experience,
     payouts: [],
+    cashouts: [],
   };
   // Past sessions whose payout already went out: record the host payout (track price × kept seats).
   for (const s of sessions) {

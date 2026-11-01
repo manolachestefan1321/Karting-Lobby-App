@@ -285,6 +285,36 @@ export interface RankUpEvent {
   totalXp: number;
 }
 
+/** Owner money screen: KartUP's own earnings (platform fees) and cash-outs to the bank via Stripe. */
+export interface OwnerFinance {
+  currency: string;
+  /** Paid seats counted (captured, not refunded). */
+  seats: number;
+  /** Platform fees charged to drivers, before Stripe's processing fees. */
+  grossFeesMinor: number;
+  /** Stripe's card processing fees on those payments (estimate). */
+  stripeFeesMinor: number;
+  /** Net from finished sessions, not yet cashed out. */
+  availableMinor: number;
+  /** Net from upcoming sessions: can still be refunded, available after the session. */
+  pendingMinor: number;
+  /** All cash-outs so far (in transit + paid). */
+  cashedOutMinor: number;
+  /** Last 4 digits of the bank account linked in Stripe. */
+  bankLast4: string;
+  cashouts: OwnerCashout[];
+}
+
+export interface OwnerCashout {
+  id: string;
+  amountMinor: number;
+  currency: string;
+  createdAt: string;
+  /** Expected arrival in the bank account. */
+  arrivesAt: string;
+  status: 'in_transit' | 'paid';
+}
+
 export type NotificationType =
   | 'lobby_joined'
   | 'lobby_left'

@@ -72,6 +72,7 @@ export default function Settings() {
       <Card padded={false}>
         <ListRow icon="receipt-outline" title={t('settings.payments')} onPress={() => router.push('/settings/payments')} />
         {profile?.role === 'admin' ? <ListRow icon="shield-checkmark-outline" title={t('settings.admin')} onPress={() => router.push('/admin')} /> : null}
+        {profile?.role === 'admin' ? <ListRow icon="wallet-outline" title={t('settings.owner')} onPress={() => router.push('/admin/finance')} /> : null}
         {api.kind === 'mock' ? <ListRow icon="construct-outline" title={t('dev.open')} subtitle={t('settings.previewMode')} onPress={() => router.push('/dev')} /> : null}
         <ListRow icon="log-out-outline" title={t('settings.signOut')} chevron={false} onPress={() => void signOut()} />
         <ListRow icon="trash-outline" title={t('settings.deleteAccount')} destructive onPress={() => router.push('/settings/delete-account')} />

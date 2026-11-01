@@ -51,6 +51,8 @@ import type {
   LobbyMember,
   NotificationGroup,
   NotificationType,
+  OwnerCashout,
+  OwnerFinance,
   PaymentIntentInfo,
   PaymentOutcome,
   Profile,
@@ -100,6 +102,8 @@ const GROUP: Record<NotificationType, NotificationGroup> = {
 const SKILL_ORDER: ExperienceLevel[] = ['beginner', 'intermediate', 'advanced'];
 const KEPT = ['confirmed', 'attended', 'no_show'];
 const ms = (iso: string) => new Date(iso).getTime();
+/** Stripe card fee for standard EEA cards in Romania: 1.5% + 1 RON (estimate; check stripe.com/ro/pricing). */
+const stripeFeeMinor = (amountMinor: number) => Math.round(amountMinor * 0.015) + 100;
 
 type Listener = () => void;
 
@@ -1268,6 +1272,54 @@ export class MockServer {
       .filter((s) => ['open', 'locked', 'checkin', 'awaiting_results'].includes(this.phase(s)))
       .sort((a, b) => ms(a.startsAt) - ms(b.startsAt))
       .map((s) => this.kartSession(s));
+  }
+
+  // ───────────────────────────── owner money ─────────────────────────────
+  /**
+   * KartUP keeps the platform fee of each paid seat; Stripe's card fee is taken from it
+   * (the host gets the full track price). Fees of finished sessions become available;
+   * upcoming ones stay pending because they can still be refunded.
+   * The real version reads this from the Stripe balance; here it's computed from the demo data.
+   */
+  ownerFinance(actorId = this.me().id): OwnerFinance {
+    this.assertAdmin(actorId);
+    let seats = 0, gross = 0, stripe = 0, settled = 0, pending = 0;
+    for (const p of this.db.payments) {
+      if (p.status !== 'captured') continue;
+      const s = this.db.sessions.find((x) => x.id === p.sessionId);
+      if (!s || s.cancelledAt) continue;
+      const card = stripeFeeMinor(p.amountMinor);
+      seats += 1;
+      gross += p.feeMinor;
+      stripe += card;
+      if (s.flags.payoutSent) settled += p.feeMinor - card;
+      else pending += p.feeMinor - card;
+    }
+    const cashedOut = this.db.cashouts.reduce((a, c) => a + c.amountMinor, 0);
+    const now = this.now().getTime();
+    return {
+      currency: 'RON',
+      seats,
+      grossFeesMinor: gross,
+      stripeFeesMinor: stripe,
+      availableMinor: Math.max(0, settled - cashedOut),
+      pendingMinor: pending,
+      cashedOutMinor: cashedOut,
+      bankLast4: '4821',
+      cashouts: [...this.db.cashouts]
+        .sort((a, b) => ms(b.createdAt) - ms(a.createdAt))
+        .map((c) => ({ ...c, currency: 'RON', status: ms(c.arrivesAt) <= now ? 'paid' : 'in_transit' })),
+    };
+  }
+  /** Cash out the whole available balance. Arrives in the bank in 2 days (Stripe standard payout). */
+  ownerCashout(actorId = this.me().id): OwnerCashout {
+    const amount = this.ownerFinance(actorId).availableMinor;
+    if (amount <= 0) throw new ApiError('nothing_to_cash_out');
+    return this.mutate(() => {
+      const c = { id: this.nextId('po'), amountMinor: amount, createdAt: this.iso(), arrivesAt: new Date(this.now().getTime() + 2 * 86_400_000).toISOString() };
+      this.db.cashouts.push(c);
+      return { ...c, currency: 'RON', status: 'in_transit' as const };
+    });
   }
 
   // ───────────────────────────── admin (used by the debug panel) ─────────────────────────────

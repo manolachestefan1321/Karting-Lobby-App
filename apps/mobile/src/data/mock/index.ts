@@ -188,6 +188,8 @@ export const mockApi: DataApi = {
     reviewSelfReport: (id, decision) => call(() => server.reviewSelfReport(id, decision)),
     setOfficialEvent: (sessionId, official) => call(() => server.setOfficialEvent(sessionId, official)),
     sessions: () => call(() => server.adminSessions()),
+    finance: () => call(() => server.ownerFinance()),
+    cashout: () => call(() => server.ownerCashout()),
   },
   notifications: {
     list: () =>

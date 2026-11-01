@@ -5,7 +5,7 @@
  */
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { MockServer } from '@/data/mock/server';
-import { TEST_USER_ID } from '@/data/mock/seed';
+import { ADMIN_USER_ID, TEST_USER_ID } from '@/data/mock/seed';
 import { server } from '@/data/mock';
 import { debug } from '@/data/mock/debug';
 
@@ -212,5 +212,41 @@ describe('developer menu statistics', () => {
     expect(after.seatsPaid).toBe(before.seatsPaid + 1);
     expect(after.perTrack.find((t) => t.trackId === u1.trackId)!.seatsPaid).toBeGreaterThan(0);
     expect(after.users).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe('owner money', () => {
+  it('only the owner (admin) sees it', () => {
+    expect(() => s.ownerFinance(TEST_USER_ID)).toThrow('admin_only');
+    expect(() => s.ownerCashout(TEST_USER_ID)).toThrow('admin_only');
+  });
+
+  it('net = platform fees − Stripe card fees; upcoming seats stay pending', () => {
+    const before = s.ownerFinance(ADMIN_USER_ID);
+    expect(before.grossFeesMinor).toBeGreaterThan(0);
+    expect(before.availableMinor).toBeGreaterThan(0);
+    const upcoming = s.db.sessions.find((x) => x.hostId === 'u-maria' && new Date(x.startsAt).getTime() > now())!;
+    const intent = s.createIntent(upcoming.id);
+    s.confirmPayment(intent.paymentId, '4242424242424242');
+    const after = s.ownerFinance(ADMIN_USER_ID);
+    const stripe = Math.round(intent.price.totalMinor * 0.015) + 100;
+    expect(after.seats).toBe(before.seats + 1);
+    expect(after.grossFeesMinor - before.grossFeesMinor).toBe(500);
+    expect(after.stripeFeesMinor - before.stripeFeesMinor).toBe(stripe);
+    expect(after.pendingMinor - before.pendingMinor).toBe(500 - stripe);
+    expect(after.availableMinor).toBe(before.availableMinor);
+  });
+
+  it('cash-out sends the whole available balance and arrives in 2 days', () => {
+    const { availableMinor } = s.ownerFinance(ADMIN_USER_ID);
+    const c = s.ownerCashout(ADMIN_USER_ID);
+    expect(c.amountMinor).toBe(availableMinor);
+    expect(c.status).toBe('in_transit');
+    const f = s.ownerFinance(ADMIN_USER_ID);
+    expect(f.availableMinor).toBe(0);
+    expect(f.cashedOutMinor).toBe(availableMinor);
+    expect(() => s.ownerCashout(ADMIN_USER_ID)).toThrow('nothing_to_cash_out');
+    s.setClockOffset(s.db.clockOffsetMs + 2 * 86_400_000 + MIN);
+    expect(s.ownerFinance(ADMIN_USER_ID).cashouts[0]!.status).toBe('paid');
   });
 });

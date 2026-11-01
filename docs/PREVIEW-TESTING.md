@@ -148,6 +148,16 @@ Penalties show in **Race history** as red **XP penalty** rows, plus an alert. Bo
 
 The values are in `config/progression.ts` (`PENALTIES`).
 
+## 18. Owner: money and cash-out
+1. Developer menu → **Progression & admin** → **Sign in as admin** (`admin@kartup.test`, password `kartup123`).
+2. **Settings → Owner · Money & cash-out**:
+   - **Available to cash out**: platform fees from finished sessions, minus Stripe's card fee (about 1.5% + 1 RON per payment, an estimate);
+   - **pending**: fees from upcoming sessions, which can still be refunded.
+3. Tap **Cash out to bank** and confirm. The cash-out shows **On the way**, and the balance drops to 0.
+4. Move the clock forward 2 days (debug panel → Time): it changes to **Paid**.
+
+Demo only: no real money moves. In the real app the numbers come from the KartUP Stripe account, and only the owner sees this screen.
+
 ## Lap lengths to verify before launch
 Distance (km) = laps × lap length, so these numbers matter. **All are marked "to verify"** in the app (the lobby shows "Lap 700 m (to verify)"). Please confirm each with the track and tell me the correct values. The track websites couldn't be opened directly, so these come from search results, news articles and listings.
 

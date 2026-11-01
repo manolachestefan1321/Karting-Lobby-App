@@ -220,6 +220,14 @@ export interface DbPayout {
   createdAt: string;
 }
 
+/** KartUP's own cash-outs (platform fees → owner's bank account, via Stripe). */
+export interface DbCashout {
+  id: string;
+  amountMinor: number;
+  createdAt: string;
+  arrivesAt: string;
+}
+
 export interface Db {
   version: number;
   seededAt: string;
@@ -246,9 +254,10 @@ export interface Db {
   reports: DbReport[];
   experience: DbExperience[];
   payouts: DbPayout[];
+  cashouts: DbCashout[];
 }
 
-export const DB_VERSION = 11; // bump when the seed changes: browsers then reload fresh demo data
+export const DB_VERSION = 12; // bump when the seed changes: browsers then reload fresh demo data
 const KEY = 'kartup-preview-db';
 
 /**

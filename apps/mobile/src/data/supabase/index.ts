@@ -205,7 +205,7 @@ export const supabaseApi: DataApi = {
   payments: { createIntent: notImplemented, confirm: notImplemented, history: notImplemented },
   results: { get: notImplemented, submit: notImplemented, respond: notImplemented },
   ranking: { leaderboard: notImplemented, seasons: notImplemented },
-  admin: { pendingSelfReports: notImplemented, reviewSelfReport: notImplemented, setOfficialEvent: notImplemented, sessions: notImplemented },
+  admin: { pendingSelfReports: notImplemented, reviewSelfReport: notImplemented, setOfficialEvent: notImplemented, sessions: notImplemented, finance: notImplemented, cashout: notImplemented },
   notifications: {
     list: notImplemented,
     markAllRead: notImplemented,

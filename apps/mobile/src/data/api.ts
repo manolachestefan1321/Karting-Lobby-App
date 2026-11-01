@@ -28,6 +28,8 @@ import type {
   PublicProfile,
   RankTier,
   ReportTarget,
+  OwnerCashout,
+  OwnerFinance,
   SelfReport,
   SelfReportInput,
   SessionFilters,
@@ -150,6 +152,10 @@ export interface AdminApi {
   setOfficialEvent(sessionId: string, official: boolean): Promise<void>;
   /** Sessions an admin may act on: upcoming (official toggle) and those waiting for results. */
   sessions(): Promise<KartSession[]>;
+  /** Owner only: KartUP's earnings (platform fees) and cash-outs. */
+  finance(): Promise<OwnerFinance>;
+  /** Owner only: send the whole available balance to the bank account linked in Stripe. */
+  cashout(): Promise<OwnerCashout>;
 }
 
 export interface NotificationsApi {

@@ -11,7 +11,7 @@ export interface BanStep {
 
 export interface RulesConfig {
   currency: string;
-  /** Platform fee per driver, minor units (500 = 5.00 RON). */
+  /** Platform fee per driver, minor units (1000 = 10.00 RON). */
   platformFeeMinor: number;
   /** Cancellation with full refund allowed until this many minutes before start. */
   cancelRefundCutoffMinutes: number;
@@ -31,7 +31,7 @@ export interface RulesConfig {
 
 export const DEFAULT_RULES: RulesConfig = {
   currency: 'RON',
-  platformFeeMinor: 500,
+  platformFeeMinor: 1000,
   cancelRefundCutoffMinutes: 60,
   reminderBeforeMinutes: 120,
   checkinOpensBeforeMinutes: 30,

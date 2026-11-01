@@ -47,7 +47,7 @@ const SEEDS: Seed[] = [
   {
     id: 't-vmax-romexpo',
     cityId: 'c-buc',
-    name: 'VMax Electric Indoor Karting Romexpo',
+    name: 'VMax Romexpo',
     address: 'Bd. Mărăști 65–67, Romexpo Pavilion C4–C5, București',
     lat: 44.4766,
     lng: 26.0628,
@@ -67,7 +67,7 @@ const SEEDS: Seed[] = [
   {
     id: 't-vmax-titan',
     cityId: 'c-buc',
-    name: 'VMax Karting Titan',
+    name: 'VMax Titan',
     address: 'Bd. 1 Decembrie 1918 nr. 1J, Sector 3, București',
     lat: 44.4235,
     lng: 26.1665,
@@ -87,7 +87,7 @@ const SEEDS: Seed[] = [
   {
     id: 't-vmax-cluj',
     cityId: 'c-cj',
-    name: 'VMax Karting Cluj',
+    name: 'VMax Cluj',
     address: 'Bd. Muncii 14, Cluj-Napoca',
     lat: 46.781,
     lng: 23.628,
@@ -107,7 +107,7 @@ const SEEDS: Seed[] = [
   {
     id: 't-vmax-brasov',
     cityId: 'c-bv',
-    name: 'VMax Karting Brașov',
+    name: 'VMax Brașov',
     address: 'Str. Henri Coandă nr. 2, Hala H14 (Coresi), Brașov',
     lat: 45.673,
     lng: 25.617,
@@ -127,7 +127,7 @@ const SEEDS: Seed[] = [
   {
     id: 't-vmax-timisoara',
     cityId: 'c-tm',
-    name: 'VMax Karting Timișoara',
+    name: 'VMax Timișoara',
     address: 'Calea Stan Vidrighin 5, Timișoara',
     lat: 45.74,
     lng: 21.262,

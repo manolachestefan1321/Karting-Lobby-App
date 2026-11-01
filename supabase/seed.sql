@@ -25,11 +25,11 @@ insert into public.tracks (city_id, name, slug, address, location)
 select c.id, t.name, t.slug, t.address, t.location::extensions.geography
 from (values
   ('bucuresti',   'AMC Kart',                              'amc-kart',        'Șoseaua de Centură nr. 5A, Tunari, Ilfov',             'SRID=4326;POINT(26.1285 44.5465)'),
-  ('bucuresti',   'VMax Electric Indoor Karting Romexpo',  'vmax-romexpo',    'Bd. Mărăști 65–67, Romexpo Pavilion C4–C5, București', 'SRID=4326;POINT(26.0628 44.4766)'),
-  ('bucuresti',   'VMax Karting Titan',                    'vmax-titan',      'Bd. 1 Decembrie 1918 nr. 1J, Sector 3, București',     'SRID=4326;POINT(26.1665 44.4235)'),
-  ('cluj-napoca', 'VMax Karting Cluj',                     'vmax-cluj',       'Bd. Muncii 14, Cluj-Napoca',                           'SRID=4326;POINT(23.6280 46.7810)'),
-  ('brasov',      'VMax Karting Brașov',                   'vmax-brasov',     'Str. Henri Coandă nr. 2, Hala H14 (Coresi), Brașov',   'SRID=4326;POINT(25.6170 45.6730)'),
-  ('timisoara',   'VMax Karting Timișoara',                'vmax-timisoara',  'Calea Stan Vidrighin 5, Timișoara',                    'SRID=4326;POINT(21.2620 45.7400)')
+  ('bucuresti',   'VMax Romexpo',                          'vmax-romexpo',    'Bd. Mărăști 65–67, Romexpo Pavilion C4–C5, București', 'SRID=4326;POINT(26.0628 44.4766)'),
+  ('bucuresti',   'VMax Titan',                            'vmax-titan',      'Bd. 1 Decembrie 1918 nr. 1J, Sector 3, București',     'SRID=4326;POINT(26.1665 44.4235)'),
+  ('cluj-napoca', 'VMax Cluj',                             'vmax-cluj',       'Bd. Muncii 14, Cluj-Napoca',                           'SRID=4326;POINT(23.6280 46.7810)'),
+  ('brasov',      'VMax Brașov',                           'vmax-brasov',     'Str. Henri Coandă nr. 2, Hala H14 (Coresi), Brașov',   'SRID=4326;POINT(25.6170 45.6730)'),
+  ('timisoara',   'VMax Timișoara',                        'vmax-timisoara',  'Calea Stan Vidrighin 5, Timișoara',                    'SRID=4326;POINT(21.2620 45.7400)')
 ) as t(city_slug, name, slug, address, location)
 join public.cities c on c.slug = t.city_slug
 on conflict (slug) do nothing;

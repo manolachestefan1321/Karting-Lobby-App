@@ -112,6 +112,7 @@ In **developers.facebook.com**:
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | no (public by design) |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google **Web** client ID | no |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google **iOS** client ID | no |
+| `EXPO_PUBLIC_SOCIAL_LOGINS` | sign-in buttons to show, e.g. `apple,google,facebook`. Add each one only after it's switched on in Supabase. Empty = email only | no |
 | `EAS_PROJECT_ID` | optional (already set in `app.config.ts`) | no |
 
 `EXPO_PUBLIC_DATA_SOURCE` is already set by `eas.json`: `supabase` for production and preview, `mock` for demo.

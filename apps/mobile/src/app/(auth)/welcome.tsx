@@ -12,6 +12,16 @@ import { spacing } from '@/theme/tokens';
 
 type Provider = 'apple' | 'google' | 'facebook';
 
+/**
+ * Real app: only the sign-in providers switched on in Supabase are shown, listed in
+ * EXPO_PUBLIC_SOCIAL_LOGINS (e.g. "apple,google,facebook"). The demo shows all of them.
+ */
+const enabledProviders = new Set(
+  api.kind === 'mock'
+    ? ['apple', 'google', 'facebook']
+    : (process.env.EXPO_PUBLIC_SOCIAL_LOGINS ?? '').split(',').map((p) => p.trim().toLowerCase()),
+);
+
 export default function Welcome() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -19,9 +29,12 @@ export default function Welcome() {
   const [error, setError] = useState<string | null>(null);
   // Apple sign-in is offered on iPhones (required by App Store rules). The preview shows it too.
   const [appleAvailable, setAppleAvailable] = useState(api.kind === 'mock');
+  const showApple = appleAvailable && enabledProviders.has('apple');
+  const showGoogle = enabledProviders.has('google');
+  const showFacebook = enabledProviders.has('facebook');
 
   useEffect(() => {
-    if (api.kind === 'mock' || Platform.OS !== 'ios') return;
+    if (api.kind === 'mock' || Platform.OS !== 'ios' || !enabledProviders.has('apple')) return;
     void import('expo-apple-authentication').then((m) => m.isAvailableAsync()).then(setAppleAvailable);
   }, []);
 
@@ -51,7 +64,7 @@ export default function Welcome() {
       </View>
 
       <View style={styles.actions}>
-        {appleAvailable ? (
+        {showApple ? (
           <Button
             title={t('auth.continueWithApple')}
             variant="secondary"
@@ -61,34 +74,40 @@ export default function Welcome() {
             onPress={() => void run('apple')}
           />
         ) : null}
-        <Button
-          title={t('auth.continueWithGoogle')}
-          variant="secondary"
-          icon={<Ionicons name="logo-google" size={18} color={colors.text} />}
-          loading={busy === 'google'}
-          disabled={!!busy}
-          onPress={() => void run('google')}
-        />
-        <Button
-          title={t('auth.continueWithFacebook')}
-          variant="secondary"
-          icon={<Ionicons name="logo-facebook" size={20} color={colors.text} />}
-          loading={busy === 'facebook'}
-          disabled={!!busy}
-          onPress={() => void run('facebook')}
-        />
+        {showGoogle ? (
+          <Button
+            title={t('auth.continueWithGoogle')}
+            variant="secondary"
+            icon={<Ionicons name="logo-google" size={18} color={colors.text} />}
+            loading={busy === 'google'}
+            disabled={!!busy}
+            onPress={() => void run('google')}
+          />
+        ) : null}
+        {showFacebook ? (
+          <Button
+            title={t('auth.continueWithFacebook')}
+            variant="secondary"
+            icon={<Ionicons name="logo-facebook" size={20} color={colors.text} />}
+            loading={busy === 'facebook'}
+            disabled={!!busy}
+            onPress={() => void run('facebook')}
+          />
+        ) : null}
         {error ? (
           <Text tone="danger" align="center" accessibilityLiveRegion="polite">
             {error}
           </Text>
         ) : null}
-        <View style={styles.divider}>
-          <View style={[styles.line, { backgroundColor: colors.border }]} />
-          <Text variant="caption" tone="faint">
-            {t('common.or').toUpperCase()}
-          </Text>
-          <View style={[styles.line, { backgroundColor: colors.border }]} />
-        </View>
+        {showApple || showGoogle || showFacebook ? (
+          <View style={styles.divider}>
+            <View style={[styles.line, { backgroundColor: colors.border }]} />
+            <Text variant="caption" tone="faint">
+              {t('common.or').toUpperCase()}
+            </Text>
+            <View style={[styles.line, { backgroundColor: colors.border }]} />
+          </View>
+        ) : null}
         <Button title={t('auth.signUpWithEmail')} onPress={() => router.push('/sign-up')} disabled={!!busy} />
         <View style={styles.row}>
           <Text tone="muted">{t('auth.haveAccount')}</Text>

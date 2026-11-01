@@ -33,7 +33,7 @@ describe('join, pay and cancel', () => {
     const u1 = sessionByHost('u-maria', (t) => t > now());
     const before = s.paidCount(u1.id);
     const intent = s.createIntent(u1.id);
-    expect(intent.price.totalMinor).toBe(u1.trackPriceMinor + 500);
+    expect(intent.price.totalMinor).toBe(u1.trackPriceMinor + 1000);
     expect(s.member(u1.id, TEST_USER_ID)?.status).toBe('joined_unpaid');
     expect(s.paidCount(u1.id)).toBe(before);
 
@@ -208,7 +208,7 @@ describe('developer menu statistics', () => {
     server.confirmPayment(intent.paymentId, '4242424242424242');
     const after = debug.stats();
     expect(after.collectedMinor - before.collectedMinor).toBe(intent.price.totalMinor);
-    expect(after.platformFeesMinor - before.platformFeesMinor).toBe(500);
+    expect(after.platformFeesMinor - before.platformFeesMinor).toBe(1000);
     expect(after.seatsPaid).toBe(before.seatsPaid + 1);
     expect(after.perTrack.find((t) => t.trackId === u1.trackId)!.seatsPaid).toBeGreaterThan(0);
     expect(after.users).toBeGreaterThanOrEqual(20);
@@ -231,9 +231,9 @@ describe('owner money', () => {
     const after = s.ownerFinance(ADMIN_USER_ID);
     const stripe = Math.round(intent.price.totalMinor * 0.015) + 100;
     expect(after.seats).toBe(before.seats + 1);
-    expect(after.grossFeesMinor - before.grossFeesMinor).toBe(500);
+    expect(after.grossFeesMinor - before.grossFeesMinor).toBe(1000);
     expect(after.stripeFeesMinor - before.stripeFeesMinor).toBe(stripe);
-    expect(after.pendingMinor - before.pendingMinor).toBe(500 - stripe);
+    expect(after.pendingMinor - before.pendingMinor).toBe(1000 - stripe);
     expect(after.availableMinor).toBe(before.availableMinor);
   });
 

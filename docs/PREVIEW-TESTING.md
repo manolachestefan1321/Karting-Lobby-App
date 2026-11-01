@@ -33,22 +33,22 @@ Use **Signed in as → Andrei Popescu** in the debug panel, or Log in → **Fill
 3. **My sessions** at the top lists Andrei's active sessions.
 
 ## 3b. Both VMax tracks
-In București you'll find sessions at **VMax Electric Indoor Karting Romexpo** (hosted by Maria, and the ones used in the steps below) and at **VMax Karting Titan** (hosted by Cristian tomorrow at 20:30, and by Vlad in 3 days for Amateur rank and up). Open the Titan lobby to see its price (100 + 5 = 105 RON) and the chat about the boost button.
+In București you'll find sessions at **VMax Romexpo** (hosted by Maria, and the ones used in the steps below) and at **VMax Titan** (hosted by Cristian tomorrow at 20:30, and by Vlad in 3 days for Amateur rank and up). Open the Titan lobby to see its price (100 + 10 = 110 RON) and the chat about the boost button.
 
 ## 4. Join a lobby and pay (fake payment)
-1. In București, open **VMax Electric Indoor Karting Romexpo · hosted by Maria Ionescu** (tomorrow).
-2. You see the countdown, price (120 RON track + 5 RON fee = **125 RON**), a yellow **"Price to verify with the track"** chip with a link to where the price came from, host's note, drivers and chat preview.
-3. Tap **Join & pay 125 RON**. The test payment sheet opens. Tap **Pay 125 RON**. You get a "Seat confirmed" banner and "You're in".
+1. In București, open **VMax Romexpo · hosted by Maria Ionescu** (tomorrow).
+2. You see the countdown, price (120 RON track + 10 RON fee = **130 RON**), a yellow **"Price to verify with the track"** chip with a link to where the price came from, host's note, drivers and chat preview.
+3. Tap **Join & pay 130 RON**. The test payment sheet opens. Tap **Pay 130 RON**. You get a "Seat confirmed" banner and "You're in".
 4. To test a declined card: on another session, change the card number to `4000 0000 0000 0002`.
 5. To test the race for the last seat: debug panel → session **AMC Kart (host Radu)** (7/8 drivers) → open it in the app → tap Join & pay. **Before** tapping Pay, click **Someone joins & pays** in the panel, then tap Pay. You'll see "The last seat was taken a moment ago. Your card was NOT charged."
 
 ## 5. Cancel before the last hour (refund)
 1. In the Maria lobby you just paid for, the footer shows "Free cancellation until …".
-2. Tap **Cancel my seat** → confirm. You get a "Seat cancelled. 125 RON refunded." banner, and a "Refund issued" alert. **Profile → ⚙ → Payment history** shows the payment as Refunded.
+2. Tap **Cancel my seat** → confirm. You get a "Seat cancelled. 130 RON refunded." banner, and a "Refund issued" alert. **Profile → ⚙ → Payment history** shows the payment as Refunded.
 
 ## 6. Cancel inside the last hour (blocked)
 1. Pay for the Maria session again.
-2. Debug panel → select **VMax Electric Indoor Karting Romexpo (host Maria)** → **59 min before**.
+2. Debug panel → select **VMax Romexpo (host Maria)** → **59 min before**.
 3. The footer now says "Cancellation closed: no refunds in the last hour", and the cancel button is gone.
 4. Try **61 min before**: cancelling is allowed again.
 
@@ -63,7 +63,7 @@ Debug panel → select a session you paid for → **2 h before**. A "Race in 2 h
 5. Reset demo data, then instead click **Someone joins & pays** before **3 h before**. With 4 paid drivers it stays on.
 
 ## 9. Check-in, no-show and ban
-1. Select **VMax Electric Indoor Karting Romexpo (host Vlad)**, starting soon, where Andrei has paid. Open it in the app.
+1. Select **VMax Romexpo (host Vlad)**, starting soon, where Andrei has paid. Open it in the app.
 2. Click **10 min before**. The "Check-in is open" banner appears and the lobby shows **I'm at the track — check in**.
 3. To test being too far away: set **Simulated GPS → 5 km away** and tap check in. You'll see "You're 5000 m from the track".
 4. **No-show path:** don't check in, and click **16 min after**. You get "No-show: joining blocked" with the ban end time (**1 hour** for the 1st no-show). The lobby says "You were marked as no-show", and the debug panel shows Andrei as BANNED.
@@ -75,7 +75,7 @@ Debug panel → select a session you paid for → **2 h before**. A "Race in 2 h
 
 ## 10. Enter results (host), km, XP and rank-up
 Andrei is a **Club Racer** sitting just below **Contender** (150 km and 2,500 XP): about 149 km and 2,480–2,495 XP. Check **Profile**: two progress bars (km and XP), both almost full.
-1. Select **VMax Electric Indoor Karting Romexpo (host Andrei)**, which finished 2 hours ago. Open it and tap **Enter results**.
+1. Select **VMax Romexpo (host Andrei)**, which finished 2 hours ago. Open it and tap **Enter results**.
 2. Tap the drivers in finishing order. For **every** driver type the **laps** completed (e.g. `12`). The **best lap** is optional (e.g. `48.512`). You can also attach a photo of a "timing printout" (any image). Tap **Submit results**.
 3. **Demo mode: results are final immediately** (no 24-hour wait), so a full-screen **RANK UP · Contender** celebration appears right away. Any finishing position works, as long as Andrei has at least 2 laps.
 4. Open **View results**: every driver shows **+XP** and **km**, with the breakdown (participation, position, podium, fastest lap, personal best, new track). Check **Profile** (new badge, the bars now point to **Pro**) and **Profile → Race history**.
@@ -166,8 +166,8 @@ Distance (km) = laps × lap length, so these numbers matter. **All are marked "t
 | AMC Kart (Tunari) | **1,240 m** | [AMC Kart Facebook](https://www.facebook.com/AMCKART/videos/10158334153981713/) · [Adevărul](https://adevarul.ro/stiri-locale/bucuresti/viteza-si-adrenalina-la-karting-1378954.html) | High: the operator says 1,240 m, CIK-FIA certified (some directories say 1,250 m) |
 | VMax Romexpo | **700 m** | [vmaxromexpo.ro/evenimente](https://vmaxromexpo.ro/evenimente/) · [kart-map](https://www.kart-map.com/en/circuits/vmax-karting-romexpo) | Medium: event pages say 700 m, the English homepage says 600 m, the gift page lists 700/650/500 m layouts. **Which layout is used?** |
 | VMax Titan | **600 m** | [PGKart (track builder)](https://www.pgkart.com/en/works/vmax-karting-titan/) | Medium-high: "600 linear m"; the official site page still shows "0 M" |
-| VMax Karting Cluj | **500 m** | [vmaxcluj.ro/circuitul](https://vmaxcluj.ro/en/circuitul/) | Medium: official circuit text says 500 m |
-| VMax Karting Brașov | **600 m** | [vmaxbrasov.ro/circuitul](https://vmaxbrasov.ro/en/circuitul/) | Medium: events page says 650 m; multi-level track |
-| VMax Karting Timișoara | **600 m** | [vmaxtimisoara.ro/circuitul](https://vmaxtimisoara.ro/en/circuitul/) | **Conflict:** some pages say 500 m |
+| VMax Cluj | **500 m** | [vmaxcluj.ro/circuitul](https://vmaxcluj.ro/en/circuitul/) | Medium: official circuit text says 500 m |
+| VMax Brașov | **600 m** | [vmaxbrasov.ro/circuitul](https://vmaxbrasov.ro/en/circuitul/) | Medium: events page says 650 m; multi-level track |
+| VMax Timișoara | **600 m** | [vmaxtimisoara.ro/circuitul](https://vmaxtimisoara.ro/en/circuitul/) | **Conflict:** some pages say 500 m |
 
 To change a value, edit `lapLengthM` in `apps/mobile/src/data/mock/tracks.ts` (demo). In the real version it goes in the `tracks.lap_length_m` column, and an admin sets "verified" once confirmed.

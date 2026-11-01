@@ -12,7 +12,7 @@ You must be at least 16, give accurate information and keep your login safe. One
 
 ## 3. Sessions, hosts and payments
 - A **host** creates a session and is responsible for booking the slot with the track and paying the track.
-- Every participant, including the host, pays their share in the app: the track price per driver plus a **platform fee of 5 RON per driver**. Your seat is held only after a successful payment.
+- Every participant, including the host, pays their share in the app: the track price per driver plus a **platform fee of 10 RON per driver**. Your seat is held only after a successful payment.
 - After the session has taken place, we pay the host the track price for the seats that were paid and not refunded.
 
 ## 4. Cancellations and refunds

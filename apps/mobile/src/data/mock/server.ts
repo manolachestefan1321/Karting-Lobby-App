@@ -69,6 +69,7 @@ import { RANK_TIERS } from '../ranks';
 import { clearDb, loadDb, loadDbAsync, saveDb, type Db, type DbBan, type DbLedger, type DbMember, type DbSession, type DbUser } from './db';
 import { counts, penaltyRow, rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
 import { DEFAULT_PREFS, seed, TEST_PASSWORD } from './seed';
+import { REAL_TRACKS } from './tracks';
 
 export { RANK_TIERS };
 
@@ -1144,6 +1145,7 @@ export class MockServer {
   tick() {
     const now = this.now().getTime();
     this.applyFounder();
+    this.syncTrackNames();
     for (const s of this.db.sessions) {
       if (s.cancelledAt) continue;
       const start = ms(s.startsAt);
@@ -1286,6 +1288,14 @@ export class MockServer {
    * Founder Racer badge, the Veteran rank and owner tools. In the real app this is
    * done once with `select public.make_founder('email')` (see docs/AUTH-SETUP.md).
    */
+  /** Saved demo data keeps the track names from tracks.ts up to date (names were shortened). */
+  private syncTrackNames() {
+    for (const t of this.db.tracks) {
+      const name = REAL_TRACKS.find((x) => x.id === t.id)?.name;
+      if (name && t.name !== name) t.name = name;
+    }
+  }
+
   private applyFounder() {
     const plain = (x: string | null) => (x ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
     for (const u of this.db.users) {

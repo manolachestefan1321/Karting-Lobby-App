@@ -8,7 +8,7 @@
 | Paying the host back | **Stripe Connect Express** payouts. A host verifies once (ID + IBAN) before creating a session. After the session took place, the app transfers `track price × paid drivers` to the host. Refunded seats are not paid out. Late cancellations and no-shows still pay the host. The payout is held if participants report that the session didn't happen. |
 | Who pays | Every participant, the host included. |
 | Minimum drivers | 4. If a session has fewer than 4 paid drivers at the auto-cancel cut-off, it is cancelled automatically and everyone gets a full refund. |
-| Platform fee | 5 RON per driver, on top of the track price (configurable in `app_config`). Example: an 800 RON track price for 10 drivers means each pays 80 + 5 = 85 RON, you keep 50 RON and the host receives 800 RON. |
+| Platform fee | 10 RON per driver, on top of the track price (`DEFAULT_RULES.platformFeeMinor`). Example: an 800 RON track price for 10 drivers means each pays 80 + 10 = 90 RON, the host receives 800 RON and you keep 100 RON, minus Stripe's card fee (about 1.5% + 1 RON per payment). |
 | Time display | Always the track's local time. |
 
 > App name **KartUP** · slogan **"Find your team & race."** (kept in English in every language). All branding (name, slogan, slug `kartup`, scheme `kartup://`, bundle IDs `com.kartup.app`, colors, logo paths, support email, legal entity) lives in **`config/brand.ts`**. `npm run brand:sync` regenerates the placeholder logo, the email templates and the legal texts from it.

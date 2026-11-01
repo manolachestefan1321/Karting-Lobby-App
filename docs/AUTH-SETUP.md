@@ -37,6 +37,18 @@ Values you copy go into **environment variables**, never into the code.
 7. Supabase → **Authentication → Providers → Email**: keep it enabled with **Confirm email** on.
 8. Later, before launch: set up a custom email sender under **Authentication → SMTP** (for example Resend or Brevo). Supabase's built-in sender is limited to a few emails per hour.
 
+### Make yourself the founder (once)
+After you have signed up in the real app with your own account, open Supabase → **SQL Editor** and run:
+```
+select public.make_founder('your@email.com');
+```
+Use the email of your account. This gives your profile:
+- the **Founder Racer** badge;
+- the **Veteran** rank;
+- the owner and admin tools.
+
+Nobody else can get these from the app.
+
 ## 2. Apple (Sign in with Apple)
 You need the **Apple Developer Program** (99 $/year).
 1. **developer.apple.com → Certificates, IDs & Profiles → Identifiers**: the App ID `com.kartup.app` must have **Sign In with Apple** enabled.

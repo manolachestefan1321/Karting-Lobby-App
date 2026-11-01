@@ -312,6 +312,7 @@ export class MockServer {
       noShowCount: this.noShowCount(userId),
       createdAt: u.createdAt,
       activeBan: this.banInfo(this.activeBanOf(userId)),
+      badges: u.badges ?? [],
     };
   }
   kartSession(s: DbSession): KartSession {
@@ -1137,6 +1138,7 @@ export class MockServer {
   /** The equivalent of the server's every-minute cron job. Idempotent. */
   tick() {
     const now = this.now().getTime();
+    this.applyFounder();
     for (const s of this.db.sessions) {
       if (s.cancelledAt) continue;
       const start = ms(s.startsAt);
@@ -1272,6 +1274,22 @@ export class MockServer {
       .filter((s) => ['open', 'locked', 'checkin', 'awaiting_results'].includes(this.phase(s)))
       .sort((a, b) => ms(a.startsAt) - ms(b.startsAt))
       .map((s) => this.kartSession(s));
+  }
+
+  /**
+   * Demo: the owner's own profile (Ștefan Manolache, either name order) gets the
+   * Founder Racer badge, the Veteran rank and owner tools. In the real app this is
+   * done once with `select public.make_founder('email')` (see docs/AUTH-SETUP.md).
+   */
+  private applyFounder() {
+    const plain = (x: string | null) => (x ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+    for (const u of this.db.users) {
+      const names = [plain(u.firstName), plain(u.lastName)].sort().join(' ');
+      if (u.deleted || names !== 'manolache stefan' || u.badges?.includes('founder')) continue;
+      u.badges = [...(u.badges ?? []), 'founder'];
+      u.rankTierId = RANK_TIERS.length;
+      u.role = 'admin';
+    }
   }
 
   // ───────────────────────────── owner money ─────────────────────────────

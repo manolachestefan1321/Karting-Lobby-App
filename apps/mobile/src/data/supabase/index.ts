@@ -69,6 +69,7 @@ function toPublic(r: Row): PublicProfile {
     noShowCount: r.no_show_count ?? 0,
     createdAt: r.created_at,
     activeBan: null,
+    badges: r.badges ?? [],
   };
 }
 

@@ -57,7 +57,11 @@ export interface UserSummary {
   totalKm: number;
 }
 
+/** Profile badges. 'founder' = Founder Racer (KartUP's founder). */
+export type Badge = 'founder';
+
 export interface PublicProfile extends UserSummary {
+  badges: Badge[];
   bio: string;
   homeCityId: string | null;
   age: number | null;

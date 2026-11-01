@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * survives reloads. Shapes loosely mirror the real Postgres tables.
  */
 import type { ExperienceLevel, LobbyType, XpBreakdown } from '@kartup/domain';
-import type { AuthProvider, City, Locale, MemberStatus, NotificationPrefs, NotificationType, PenaltyReason, ResultSource, Track } from '../types';
+import type { AuthProvider, Badge, City, Locale, MemberStatus, NotificationPrefs, NotificationType, PenaltyReason, ResultSource, Track } from '../types';
 
 export interface DbUser {
   id: string;
@@ -26,6 +26,8 @@ export interface DbUser {
   payoutsEnabled: boolean;
   /** Highest rank reached (1 = Rookie). Stored so it never goes down. */
   rankTierId: number;
+  /** Profile badges (optional so older saved demo data keeps working). */
+  badges?: Badge[];
   createdAt: string;
   prefs: NotificationPrefs;
   blocked: string[];

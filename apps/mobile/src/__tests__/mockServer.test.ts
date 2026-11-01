@@ -250,3 +250,18 @@ describe('owner money', () => {
     expect(s.ownerFinance(ADMIN_USER_ID).cashouts[0]!.status).toBe('paid');
   });
 });
+
+describe('Founder Racer (demo)', () => {
+  it('the owner profile (Ștefan Manolache) gets the badge, Veteran and owner tools', () => {
+    const me = s.user(TEST_USER_ID)!;
+    expect(s.publicProfile(TEST_USER_ID)!.badges).toEqual([]);
+    s.mutate(() => {
+      me.firstName = 'Ștefan';
+      me.lastName = 'Manolache';
+    });
+    expect(s.publicProfile(TEST_USER_ID)!.badges).toEqual(['founder']);
+    expect(s.rankOf(TEST_USER_ID).key).toBe('veteran');
+    expect(s.isAdmin(TEST_USER_ID)).toBe(true);
+    expect(s.publicProfile('u-maria')!.badges).toEqual([]);
+  });
+});

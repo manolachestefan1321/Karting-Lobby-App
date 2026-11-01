@@ -352,6 +352,7 @@ const ro: Translations = {
     selfReportRejected: 'neaprobat de administrator.',
   },
   profile: {
+    founder: 'Founder Racer',
     edit: 'Editează profilul',
     settings: 'Setări',
     rank: 'Rang',

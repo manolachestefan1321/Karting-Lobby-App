@@ -20,6 +20,20 @@ export function RankBadge({ tier, small }: { tier: RankTier; small?: boolean }) 
   );
 }
 
+/** "Founder Racer" badge: KartUP's founder. Black with a gold edge and a checkered flag. */
+export function FounderBadge() {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.founder} accessibilityLabel={t('profile.founder')}>
+      <Ionicons name="flag" size={12} color={FOUNDER_GOLD} />
+      <Text variant="label" style={styles.founderText}>
+        {t('profile.founder')}
+      </Text>
+    </View>
+  );
+}
+const FOUNDER_GOLD = '#C9A227';
+
 const km1 = (km: number) => (Math.round(km * 10) / 10).toLocaleString();
 
 function Stat({ label, value }: { label: string; value: string | number }) {
@@ -111,6 +125,7 @@ export function ProfileView({
         </Text>
         <View style={styles.metaRow}>
           {progress ? <RankBadge tier={progress.current} /> : null}
+          {profile.badges.includes('founder') ? <FounderBadge /> : null}
           {cityName ? (
             <View style={styles.meta}>
               <Ionicons name="location-outline" size={14} color={colors.textMuted} />
@@ -231,6 +246,19 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 4, transform: [{ skewX: '-8deg' }] },
   badgeSmall: { paddingHorizontal: 6, paddingVertical: 0 },
   badgeText: { color: '#fff' },
+  founder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: FOUNDER_GOLD,
+    backgroundColor: '#181818',
+    transform: [{ skewX: '-8deg' }],
+  },
+  founderText: { color: FOUNDER_GOLD },
   statsCard: { flexDirection: 'row', justifyContent: 'space-between' },
   stat: { alignItems: 'center', flex: 1 },
   statLabel: { textTransform: 'uppercase', letterSpacing: 0.8 },

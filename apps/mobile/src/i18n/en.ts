@@ -351,6 +351,7 @@ const en = {
     selfReportRejected: 'not approved by the admin.',
   },
   profile: {
+    founder: 'Founder Racer',
     edit: 'Edit profile',
     settings: 'Settings',
     rank: 'Rank',

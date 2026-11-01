@@ -1277,15 +1277,15 @@ export class MockServer {
   }
 
   /**
-   * Demo: the owner's own profile (Ștefan Manolache, either name order) gets the
+   * Demo: the owner's own profile (Ștefan Manolache: any order, extra names or diacritics) gets the
    * Founder Racer badge, the Veteran rank and owner tools. In the real app this is
    * done once with `select public.make_founder('email')` (see docs/AUTH-SETUP.md).
    */
   private applyFounder() {
     const plain = (x: string | null) => (x ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
     for (const u of this.db.users) {
-      const names = [plain(u.firstName), plain(u.lastName)].sort().join(' ');
-      if (u.deleted || names !== 'manolache stefan' || u.badges?.includes('founder')) continue;
+      const words = `${plain(u.firstName)} ${plain(u.lastName)}`.split(/[\s-]+/);
+      if (u.deleted || !words.includes('manolache') || !words.includes('stefan') || u.badges?.includes('founder')) continue;
       u.badges = [...(u.badges ?? []), 'founder'];
       u.rankTierId = RANK_TIERS.length;
       u.role = 'admin';

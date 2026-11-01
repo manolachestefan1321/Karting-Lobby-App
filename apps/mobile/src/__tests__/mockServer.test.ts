@@ -264,4 +264,13 @@ describe('Founder Racer (demo)', () => {
     expect(s.isAdmin(TEST_USER_ID)).toBe(true);
     expect(s.publicProfile('u-maria')!.badges).toEqual([]);
   });
+
+  it('also works with extra names or a different order', () => {
+    const maria = s.user('u-maria')!;
+    s.mutate(() => {
+      maria.firstName = 'Manolache';
+      maria.lastName = 'Ştefan-Alexandru';
+    });
+    expect(s.publicProfile('u-maria')!.badges).toEqual(['founder']);
+  });
 });

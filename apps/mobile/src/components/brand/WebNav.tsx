@@ -3,6 +3,7 @@ import { router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CheckeredStripe, Text } from '@/components/ui';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { usePreferences } from '@/store/preferences';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, spacing } from '@/theme/tokens';
@@ -12,6 +13,12 @@ import { Wordmark } from './Wordmark';
  * Website menu (web only): Home = the app itself (sign up / sign in, then the
  * app), and JOIN THE RACE = the launch-event sign-up page.
  */
+/** HOME on the website = the app: sign up / sign in, or the app itself once signed in. */
+export function useGoToApp() {
+  const { user } = useAuth();
+  return () => router.navigate(user ? '/' : '/welcome');
+}
+
 export function WebNav() {
   const { t } = useTranslation();
   const { colors, scheme } = useTheme();
@@ -19,6 +26,7 @@ export function WebNav() {
   const setLocale = usePreferences((s) => s.setLocale);
   const setTheme = usePreferences((s) => s.setTheme);
   const pathname = usePathname();
+  const goToApp = useGoToApp();
   const { width } = useWindowDimensions();
   const onJoin = pathname === '/join';
 
@@ -26,7 +34,7 @@ export function WebNav() {
     <View style={{ backgroundColor: colors.background }}>
       <View style={styles.bar} accessibilityRole="header">
         <View style={styles.inner}>
-          <Pressable onPress={() => router.navigate('/')} accessibilityRole="link" accessibilityLabel={t('web.home')}>
+          <Pressable onPress={() => router.navigate('/')} accessibilityRole="link" accessibilityLabel="KartUP">
             <Wordmark size={26} slogan={false} />
           </Pressable>
           <View style={styles.links}>
@@ -49,7 +57,7 @@ export function WebNav() {
             >
               <Ionicons name={scheme === 'dark' ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textMuted} />
             </Pressable>
-            <Pressable onPress={() => router.navigate('/')} accessibilityRole="link" style={styles.link}>
+            <Pressable onPress={goToApp} accessibilityRole="link" style={styles.link}>
               <Text variant="label" tone={onJoin ? 'muted' : 'default'}>
                 {t('web.home')}
               </Text>

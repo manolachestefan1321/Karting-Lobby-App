@@ -1,11 +1,11 @@
 import { launchSignupSchema } from '@kartup/domain';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { Fragment, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Checkbox, Text, TextField } from '@/components/ui';
+import { useGoToApp } from '@/components/brand/WebNav';
 import { api } from '@/data';
 import { useSiteMotion } from '@/features/web/motion';
 import { errorKey } from '@/lib/errors';
@@ -31,6 +31,7 @@ export default function JoinTheRace() {
   const scroll = useRef<ScrollView>(null);
   const formY = useRef(0);
   const scrollTo = useSiteMotion(scroll);
+  const goToApp = useGoToApp();
   const [done, setDone] = useState<'created' | 'exists' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastRef = useRef<TextInput>(null);
@@ -309,7 +310,7 @@ export default function JoinTheRace() {
             <Text variant="caption" tone="muted">
               {t('join.copyright', { year: new Date().getFullYear() })}
             </Text>
-            <Pressable onPress={() => router.navigate('/')} accessibilityRole="link">
+            <Pressable onPress={goToApp} accessibilityRole="link">
               <Text variant="caption" style={styles.underline}>
                 {t('join.backHome')}
               </Text>

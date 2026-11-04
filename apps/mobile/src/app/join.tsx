@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type Text
 import { useTranslation } from 'react-i18next';
 import { Button, Checkbox, Text, TextField } from '@/components/ui';
 import { api } from '@/data';
+import { useSiteMotion } from '@/features/web/motion';
 import { errorKey } from '@/lib/errors';
 import { zodResolver } from '@/lib/zodResolver';
 import { usePreferences } from '@/store/preferences';
@@ -29,6 +30,7 @@ export default function JoinTheRace() {
   const locale = usePreferences((s) => s.locale) ?? 'ro';
   const scroll = useRef<ScrollView>(null);
   const formY = useRef(0);
+  const scrollTo = useSiteMotion(scroll);
   const [done, setDone] = useState<'created' | 'exists' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastRef = useRef<TextInput>(null);
@@ -77,7 +79,7 @@ export default function JoinTheRace() {
     <ScrollView ref={scroll} style={{ backgroundColor: colors.background }} keyboardShouldPersistTaps="handled">
       {/* ── Hero ───────────────────────────── */}
       <View style={styles.wrap}>
-        <View style={styles.badges}>
+        <View nativeID="hero-badges" style={styles.badges}>
           <View style={[styles.badge, { borderColor: colors.accent }]}>
             <Text variant="caption" tone="accent" style={styles.tracked}>
               {t('join.badge')}
@@ -87,27 +89,34 @@ export default function JoinTheRace() {
             {t('join.badgeNote')}
           </Text>
         </View>
-        <Text style={display(big)}>
+        <Text nativeID="hero-headline" style={display(big)}>
           {t('join.headline1')}
           {'\n'}
           {t('join.headline2')}
           <Text style={[display(big), { color: colors.accent }]}>{t('join.headlineAccent')}</Text>
         </Text>
-        <Text style={styles.lead}>{t('join.body')}</Text>
-        <Text style={display(wide ? 26 : 22)}>{t('join.tagline')}</Text>
-        <View style={styles.ctaRow}>
-          <Button title={t('join.cta')} fullWidth={false} onPress={() => scroll.current?.scrollTo({ y: formY.current, animated: true })} />
+        <Text nativeID="hero-body" style={styles.lead}>
+          {t('join.body')}
+        </Text>
+        <Text nativeID="hero-tagline" style={display(wide ? 26 : 22)}>
+          {t('join.tagline')}
+        </Text>
+        <View nativeID="hero-cta" style={styles.ctaRow}>
+          <Button title={t('join.cta')} fullWidth={false} onPress={() => scrollTo(formY.current)} />
         </View>
       </View>
 
       {/* ── Why the waitlist wins ─────────────── */}
       <View style={section}>
         <View style={styles.wrap}>
-          <Text style={display(wide ? 52 : 36)}>{t('join.whyTitle')}</Text>
+          <Text nativeID="reveal-why" style={display(wide ? 52 : 36)}>
+            {t('join.whyTitle')}
+          </Text>
           <View style={styles.cards}>
             {CARDS.map((c) => (
               <View
                 key={c}
+                nativeID={`reveal-card-${c}`}
                 style={[
                   styles.card,
                   {
@@ -126,7 +135,7 @@ export default function JoinTheRace() {
               </View>
             ))}
           </View>
-          <View style={styles.flow}>
+          <View nativeID="reveal-flow" style={styles.flow}>
             {FLOW.map((f, i) => (
               <Fragment key={f}>
                 {i > 0 ? <Ionicons name="arrow-forward" size={20} color={colors.accent} /> : null}
@@ -155,7 +164,7 @@ export default function JoinTheRace() {
       {/* ── Lock in your spot (form) ──────────── */}
       <View style={section} onLayout={(e) => (formY.current = e.nativeEvent.layout.y)}>
         <View style={[styles.wrap, wide && styles.split]}>
-          <View style={[styles.gapMd, wide && styles.flex]}>
+          <View nativeID="reveal-form-intro" style={[styles.gapMd, wide && styles.flex]}>
             <Text style={display(wide ? 72 : 48)}>
               {t('join.formTitle1')}
               {'\n'}
@@ -165,7 +174,7 @@ export default function JoinTheRace() {
             <Text style={styles.lead}>{t('join.formBody')}</Text>
           </View>
 
-          <View style={[styles.form, wide && styles.flex, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View nativeID="reveal-form" style={[styles.form, wide && styles.flex, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {done ? (
               <View style={styles.gapMd}>
                 <Ionicons name="checkmark-circle" size={40} color={colors.success} />

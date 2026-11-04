@@ -6,7 +6,7 @@
  * Errors: implementations throw `ApiError` with a stable `code` the app translates
  * (see i18n "errors.*").
  */
-import type { ProfileInput, TrackExperienceInput } from '@kartup/domain';
+import type { LaunchSignupInput, ProfileInput, TrackExperienceInput } from '@kartup/domain';
 import type {
   AppNotification,
   AppRules,
@@ -187,6 +187,12 @@ export interface LocationApi {
   current(): Promise<{ lat: number; lng: number } | null>;
 }
 
+/** "Join the race": pre-launch sign-ups from the website (no account needed). */
+export interface LaunchApi {
+  /** 'exists' when this email is already on the list (not an error for the visitor). */
+  signup(input: Omit<LaunchSignupInput, 'consent'> & { locale: 'en' | 'ro' }): Promise<'created' | 'exists'>;
+}
+
 export interface DataApi {
   kind: 'mock' | 'supabase';
   clock: Clock;
@@ -202,4 +208,5 @@ export interface DataApi {
   moderation: ModerationApi;
   realtime: RealtimeApi;
   location: LocationApi;
+  launch: LaunchApi;
 }

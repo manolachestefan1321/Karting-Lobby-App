@@ -218,4 +218,15 @@ export const supabaseApi: DataApi = {
   moderation: { report: notImplemented, block: notImplemented, unblock: notImplemented, blocked: notImplemented },
   realtime: { subscribe: () => () => undefined },
   location: { current: notImplemented },
+  launch: {
+    signup: async ({ firstName, lastName, phone, email, locale }) => {
+      // Insert only: visitors can't read the list back (no .select()).
+      const { error } = await supabase
+        .from('launch_signups')
+        .insert({ first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim().toLowerCase(), locale });
+      if (error?.code === '23505') return 'exists';
+      wrap(error);
+      return 'created';
+    },
+  },
 };

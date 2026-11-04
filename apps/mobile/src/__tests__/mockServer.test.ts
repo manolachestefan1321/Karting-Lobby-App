@@ -277,3 +277,13 @@ describe('Founder Racer (demo)', () => {
     expect(s.publicProfile('u-maria')!.badges).toEqual(['founder']);
   });
 });
+
+describe('join the race (website)', () => {
+  it('signs up once per email, without an account', () => {
+    s.signOut();
+    const input = { firstName: 'Ana', lastName: 'Pop', phone: '0722 123 456', email: 'Ana@Test.ro', locale: 'ro' };
+    expect(s.launchSignup(input)).toBe('created');
+    expect(s.launchSignup({ ...input, email: ' ana@test.ro' })).toBe('exists');
+    expect(s.db.launchSignups).toHaveLength(1);
+  });
+});

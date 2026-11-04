@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { profileSchema, signUpSchema, trackExperienceSchema } from '../src/profile.ts';
+import { launchSignupSchema, profileSchema, signUpSchema, trackExperienceSchema } from '../src/profile.ts';
 
 const now = new Date('2026-10-20T12:00:00Z');
 const cityId = '7d6c3f8e-5a1b-4c2d-9e8f-0a1b2c3d4e5f';
@@ -59,5 +59,22 @@ describe('track experience', () => {
     expect(
       trackExperienceSchema.safeParse({ trackId: cityId, level: 'pro', bestLapMs: null, sessionsCount: 0 }).success,
     ).toBe(false);
+  });
+});
+
+describe('launch sign-up (Join the race)', () => {
+  const ok = { firstName: 'Ștefan', lastName: 'Manolache', phone: '0722 123 456', email: 'Stefan@Test.ro ', consent: true as const };
+  it('accepts Romanian and international phone numbers', () => {
+    expect(launchSignupSchema.safeParse(ok).success).toBe(true);
+    expect(launchSignupSchema.safeParse({ ...ok, phone: '+40 722-123-456' }).success).toBe(true);
+  });
+  it('normalizes the email', () => {
+    expect(launchSignupSchema.parse(ok).email).toBe('stefan@test.ro');
+  });
+  it('rejects bad phones, missing names and no consent', () => {
+    expect(launchSignupSchema.safeParse({ ...ok, phone: '123' }).success).toBe(false);
+    expect(launchSignupSchema.safeParse({ ...ok, phone: 'call me' }).success).toBe(false);
+    expect(launchSignupSchema.safeParse({ ...ok, firstName: ' ' }).success).toBe(false);
+    expect(launchSignupSchema.safeParse({ ...ok, consent: false }).success).toBe(false);
   });
 });

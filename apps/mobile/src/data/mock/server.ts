@@ -1313,6 +1313,15 @@ export class MockServer {
     }
   }
 
+  // ───────────────────────────── join the race (website) ─────────────────────────────
+  launchSignup(input: { firstName: string; lastName: string; phone: string; email: string; locale: string }): 'created' | 'exists' {
+    const email = input.email.trim().toLowerCase();
+    const list = (this.db.launchSignups ??= []);
+    if (list.some((x) => x.email === email)) return 'exists';
+    this.mutate(() => list.push({ ...input, email, createdAt: this.iso() }));
+    return 'created';
+  }
+
   // ───────────────────────────── owner money ─────────────────────────────
   /**
    * KartUP keeps the platform fee of each paid seat; Stripe's card fee is taken from it

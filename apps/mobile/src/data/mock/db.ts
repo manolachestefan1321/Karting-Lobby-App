@@ -261,6 +261,8 @@ export interface Db {
   experience: DbExperience[];
   payouts: DbPayout[];
   cashouts: DbCashout[];
+  /** "Join the race" sign-ups from the website (optional: older saved demo data has none). */
+  launchSignups?: { firstName: string; lastName: string; phone: string; email: string; locale: string; createdAt: string }[];
 }
 
 export const DB_VERSION = 12; // bump when the seed changes: browsers then reload fresh demo data

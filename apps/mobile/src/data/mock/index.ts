@@ -249,4 +249,7 @@ export const mockApi: DataApi = {
   location: {
     current: () => call(() => server.simulatedPosition()),
   },
+  launch: {
+    signup: (input) => call(() => server.launchSignup(input)),
+  },
 };

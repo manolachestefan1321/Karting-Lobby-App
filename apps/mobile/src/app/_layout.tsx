@@ -20,6 +20,7 @@ import { api } from '@/data';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { BannerHost } from '@/features/notifications/BannerHost';
 import { RankUpCelebration } from '@/components/brand/RankUpCelebration';
+import { WebNav } from '@/components/brand/WebNav';
 import { detectDeviceLocale, i18n, initI18n } from '@/i18n';
 import { DebugBridge } from '@/preview/DebugBridge';
 import { PreviewHost } from '@/preview/PreviewHost';
@@ -70,6 +71,7 @@ function RootNavigator() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      {Platform.OS === 'web' && ready ? <WebNav /> : null}
       {ready && signedIn && !profile ? (
         <Screen scroll={false} edges={['top', 'bottom']}>
           <ErrorState onRetry={() => void refreshProfile()} />
@@ -116,8 +118,9 @@ function RootNavigator() {
             <Stack.Screen name="settings/delete-account" options={header} />
           </Stack.Protected>
 
-          {/* Always reachable: email/OAuth deep links and the legal pages. */}
+          {/* Always reachable: email/OAuth deep links, the legal pages and Join the race (website). */}
           <Stack.Screen name="auth/callback" />
+          <Stack.Screen name="join" />
           <Stack.Screen name="legal/[doc]" options={header} />
           <Stack.Screen name="dev" options={header} />
         </Stack>

@@ -46,6 +46,25 @@ export const signUpSchema = z.object({
   acceptTerms: z.literal(true, 'validation.acceptTerms'),
 });
 
+/** Phone: digits with optional +, spaces, dashes, dots or brackets; 9 to 15 digits. */
+export const phoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+?[0-9 ()\-.]+$/, 'validation.phone')
+  .refine((v) => {
+    const digits = v.replace(/\D/g, '').length;
+    return digits >= 9 && digits <= 15;
+  }, 'validation.phone');
+
+/** "Join the race": pre-launch sign-up for the launch event (website). */
+export const launchSignupSchema = z.object({
+  firstName: name,
+  lastName: name,
+  phone: phoneSchema,
+  email: emailSchema,
+  consent: z.literal(true, 'validation.consent'),
+});
+
 export function profileSchema(minAge: number = DEFAULT_MIN_AGE, now?: Date) {
   return z.object({
     firstName: name,
@@ -65,5 +84,6 @@ export const trackExperienceSchema = z.object({
 
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
+export type LaunchSignupInput = z.infer<typeof launchSignupSchema>;
 export type ProfileInput = z.infer<ReturnType<typeof profileSchema>>;
 export type TrackExperienceInput = z.infer<typeof trackExperienceSchema>;

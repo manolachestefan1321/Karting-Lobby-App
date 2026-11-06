@@ -598,6 +598,38 @@ const en = {
     demoNote: 'Demo: website traffic is simulated. Waitlist, accounts, revenue and karting sessions come from the demo data.',
     realNote: 'Anonymous website data (no names or emails). Refreshes every 10 seconds.',
   },
+  cookies: {
+    title: 'Cookies and privacy',
+    settingsTitle: 'Cookie settings',
+    intro: 'We use strictly necessary storage so the website works (sign-in, language, theme). Only if you accept, we also use anonymous visit statistics to improve KartUP. We use no advertising cookies and never sell data. The website works the same if you refuse, and you can change your choice at any time in “Cookie settings”.',
+    privacyLink: 'Privacy policy',
+    refuseAll: 'Refuse all',
+    acceptAll: 'Accept all',
+    customize: 'Customize',
+    save: 'Save my choices',
+    close: 'Close without changes',
+    alwaysOn: 'Always on',
+    notUsed: 'Not used',
+    necessary: {
+      title: 'Strictly necessary',
+      body: 'The website can’t work without them: they keep you signed in and remember your language, theme and cookie choice. They don’t need consent (Art. 5(3) ePrivacy Directive).',
+      items: 'kartup-consent (your choice, 6 months) · kartup-preferences (language and theme, until you clear it) · sb-…-auth-token (Supabase sign-in, until you sign out)',
+    },
+    analytics: {
+      title: 'Statistics',
+      body: 'We count visits anonymously: pages viewed, how you arrived (e.g. an Instagram link) and device type. No name, email or IP address. Data stays in the EU (Supabase, Paris) and is deleted after 13 months.',
+      items: 'kartup-vid (random visitor ID, 13 months) · kartup-sid (random visit ID, until you close the tab)',
+    },
+    marketing: {
+      title: 'Marketing and advertising',
+      body: 'We use no advertising cookies, tracking pixels or third-party ad services.',
+    },
+    settingsLink: 'Cookie settings',
+  },
+  seo: {
+    title: 'KartUP | Karting in Bucharest – find your team & race',
+    description: 'Karting races in Bucharest with lobbies, leaderboards and ranks. Join the free waitlist for the KartUP launch event and be on the grid first.',
+  },
   dev: {
     open: 'Developer menu',
     title: 'Developer menu',

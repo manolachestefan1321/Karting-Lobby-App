@@ -1,12 +1,15 @@
 import { launchSignupSchema } from '@kartup/domain';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Fragment, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type TextInput } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Checkbox, Text, TextField } from '@/components/ui';
 import { useGoToApp } from '@/components/brand/WebNav';
 import { api } from '@/data';
+import { openCookieSettings } from '@/features/web/consent';
+import { usePageMeta } from '@/features/web/seo';
 import { useSiteMotion } from '@/features/web/motion';
 import { errorKey } from '@/lib/errors';
 import { zodResolver } from '@/lib/zodResolver';
@@ -32,6 +35,7 @@ export default function JoinTheRace() {
   const formY = useRef(0);
   const scrollTo = useSiteMotion(scroll);
   const goToApp = useGoToApp();
+  usePageMeta(t('seo.title'), t('seo.description'));
   const [done, setDone] = useState<'created' | 'exists' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastRef = useRef<TextInput>(null);
@@ -310,11 +314,25 @@ export default function JoinTheRace() {
             <Text variant="caption" tone="muted">
               {t('join.copyright', { year: new Date().getFullYear() })}
             </Text>
-            <Pressable onPress={goToApp} accessibilityRole="link">
-              <Text variant="caption" style={styles.underline}>
-                {t('join.backHome')}
-              </Text>
-            </Pressable>
+            <View style={styles.footerLinks}>
+              <Pressable onPress={() => router.push('/legal/privacy')} accessibilityRole="link">
+                <Text variant="caption" style={styles.underline}>
+                  {t('cookies.privacyLink')}
+                </Text>
+              </Pressable>
+              {Platform.OS === 'web' ? (
+                <Pressable onPress={openCookieSettings} accessibilityRole="button">
+                  <Text variant="caption" style={styles.underline}>
+                    {t('cookies.settingsLink')}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={goToApp} accessibilityRole="link">
+                <Text variant="caption" style={styles.underline}>
+                  {t('join.backHome')}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </View>
@@ -397,4 +415,5 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   underline: { textDecorationLine: 'underline' },
+  footerLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
 });

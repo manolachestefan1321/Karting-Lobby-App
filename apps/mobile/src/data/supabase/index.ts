@@ -242,6 +242,9 @@ export const supabaseApi: DataApi = {
         device: e.device,
       });
     },
+    consent: async ({ consentId, analytics, version, locale }) => {
+      await supabase.from('consent_log').insert({ consent_id: consentId, analytics, version, locale });
+    },
     report: async (range) => {
       const { seconds, buckets } = ANALYTICS_RANGES[range];
       const { data, error } = await supabase.rpc('analytics_report', { p_seconds: seconds, p_buckets: buckets });

@@ -21,6 +21,7 @@ import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { BannerHost } from '@/features/notifications/BannerHost';
 import { RankUpCelebration } from '@/components/brand/RankUpCelebration';
 import { WebNav } from '@/components/brand/WebNav';
+import { CookieBanner } from '@/features/web/CookieBanner';
 import { SiteTracker } from '@/features/web/SiteTracker';
 import { detectDeviceLocale, i18n, initI18n } from '@/i18n';
 import { DebugBridge } from '@/preview/DebugBridge';
@@ -65,7 +66,8 @@ function RootNavigator() {
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync().catch(() => undefined);
-    if (Platform.OS === 'web') document.title = `${brand.name} — ${brand.slogan}`;
+    // Pages with their own <Head> (Join the race) set a Google title; the app keeps the brand one.
+    if (Platform.OS === 'web' && !document.title) document.title = `${brand.name} — ${brand.slogan}`;
   }, [ready]);
 
   const header = { headerShown: true, title: '' };
@@ -131,6 +133,8 @@ function RootNavigator() {
       <BannerHost enabled={signedIn} />
       <RankUpCelebration enabled={signedIn} />
       <DialogHost />
+      {/* Real website only: the demo stores no statistics, so it needs no consent. */}
+      {Platform.OS === 'web' && ready && api.kind === 'supabase' ? <CookieBanner /> : null}
       {api.kind === 'mock' ? <DebugBridge /> : null}
       <AnimatedSplash ready={ready} />
     </View>

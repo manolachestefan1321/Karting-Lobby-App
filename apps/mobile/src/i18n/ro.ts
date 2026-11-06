@@ -599,6 +599,38 @@ const ro: Translations = {
     demoNote: 'Demo: traficul pe site e simulat. Waitlist-ul, conturile, încasările și sesiunile de karting vin din datele demo.',
     realNote: 'Date anonime de pe site (fără nume sau emailuri). Se actualizează la fiecare 10 secunde.',
   },
+  cookies: {
+    title: 'Cookie-uri și confidențialitate',
+    settingsTitle: 'Setări cookie',
+    intro: 'Folosim stocare locală strict necesară ca site-ul să funcționeze (autentificare, limbă, temă). Doar dacă accepți, folosim și statistici anonime despre vizite, ca să îmbunătățim KartUP. Nu folosim cookie-uri de publicitate și nu vindem date. Site-ul funcționează la fel dacă refuzi, iar alegerea o poți schimba oricând din „Setări cookie”.',
+    privacyLink: 'Politica de confidențialitate',
+    refuseAll: 'Refuz toate',
+    acceptAll: 'Accept toate',
+    customize: 'Personalizez',
+    save: 'Salvez alegerile',
+    close: 'Închide fără modificări',
+    alwaysOn: 'Mereu active',
+    notUsed: 'Nu folosim',
+    necessary: {
+      title: 'Strict necesare',
+      body: 'Fără ele site-ul nu poate funcționa: te țin autentificat și îți rețin limba, tema și alegerea despre cookie-uri. Nu au nevoie de acord (art. 5(3) din Directiva ePrivacy).',
+      items: 'kartup-consent (alegerea ta, 6 luni) · kartup-preferences (limbă și temă, până o ștergi) · sb-…-auth-token (autentificare Supabase, până te deconectezi)',
+    },
+    analytics: {
+      title: 'Statistici',
+      body: 'Numărăm anonim vizitele: paginile văzute, de unde ai venit (de ex. un link de pe Instagram) și tipul de dispozitiv. Fără nume, email sau adresă IP. Datele stau în UE (Supabase, Paris) și se șterg după 13 luni.',
+      items: 'kartup-vid (ID aleatoriu de vizitator, 13 luni) · kartup-sid (ID aleatoriu de vizită, până închizi tab-ul)',
+    },
+    marketing: {
+      title: 'Marketing și publicitate',
+      body: 'Nu folosim cookie-uri de publicitate, pixeli de urmărire sau servicii terțe de reclame.',
+    },
+    settingsLink: 'Setări cookie',
+  },
+  seo: {
+    title: 'KartUP | Karting în București – găsește-ți echipa',
+    description: 'Curse de karting în București cu lobby-uri, clasamente și ranguri. Înscrie-te gratuit pe waitlist pentru evenimentul de lansare KartUP.',
+  },
   dev: {
     open: 'Meniu dezvoltator',
     title: 'Meniu dezvoltator',

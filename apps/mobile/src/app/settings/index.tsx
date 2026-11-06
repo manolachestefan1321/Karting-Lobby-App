@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { Linking, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { brand } from '@config/brand';
 import { Wordmark } from '@/components/brand/Wordmark';
@@ -8,6 +8,7 @@ import { Card, ListRow, Screen, SectionHeader, SegmentedControl, Text, Toggle } 
 import { api, type Locale, type NotificationGroup } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useNotificationPrefs, useSetNotificationPrefs } from '@/features/notifications/hooks';
+import { openCookieSettings } from '@/features/web/consent';
 import { usePreferences, type ThemePreference } from '@/store/preferences';
 import { spacing } from '@/theme/tokens';
 
@@ -82,6 +83,7 @@ export default function Settings() {
       <Card padded={false}>
         <ListRow icon="shield-checkmark-outline" title={t('settings.privacy')} onPress={() => router.push('/legal/privacy')} />
         <ListRow icon="document-text-outline" title={t('settings.terms')} onPress={() => router.push('/legal/terms')} />
+        {Platform.OS === 'web' && api.kind === 'supabase' ? <ListRow icon="options-outline" title={t('cookies.settingsLink')} onPress={openCookieSettings} /> : null}
         <ListRow icon="mail-outline" title={t('settings.contact')} subtitle={brand.supportEmail} onPress={() => void Linking.openURL(`mailto:${brand.supportEmail}`)} />
       </Card>
 

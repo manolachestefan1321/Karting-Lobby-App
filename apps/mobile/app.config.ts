@@ -73,7 +73,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     output: 'single',
     name: brand.name,
     shortName: brand.name,
-    description: brand.slogan,
+    description: brand.seo.description,
     themeColor: logoBackground,
     favicon: assets.favicon,
   },

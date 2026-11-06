@@ -11,11 +11,27 @@ import { spacing } from '@/theme/tokens';
 export default function LegalScreen() {
   const { doc } = useLocalSearchParams<{ doc: 'privacy' | 'terms' }>();
   const md = doc === 'terms' ? termsOfService : privacyPolicy;
+  const lines = md.split('\n');
+  const cells = (line: string) => line.split('|').slice(1, -1).map((c) => c.trim().replace(/`/g, ''));
+  const isRule = (line: string | undefined) => !!line && /^\|[\s|:-]+\|$/.test(line.trim());
   return (
     <Screen>
       <View style={styles.wrap}>
-        {md.split('\n').map((line, i) => {
-          if (!line.trim()) return null;
+        {lines.map((line, i) => {
+          if (!line.trim() || isRule(line)) return null;
+          // Markdown table row: the row above a |---| rule is the header.
+          if (line.startsWith('|')) {
+            const header = isRule(lines[i + 1]);
+            return (
+              <View key={i} style={styles.row}>
+                {cells(line).map((c, j) => (
+                  <Text key={j} variant="small" tone={header ? 'default' : 'muted'} style={[styles.cell, header && styles.bold]}>
+                    {c}
+                  </Text>
+                ))}
+              </View>
+            );
+          }
           if (line.startsWith('# ')) return <Text key={i} variant="title">{line.slice(2)}</Text>;
           if (line.startsWith('## ')) return <Text key={i} variant="heading" style={styles.h2}>{line.slice(3)}</Text>;
           const text = line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^_(.+)_$/, '$1');
@@ -27,4 +43,10 @@ export default function LegalScreen() {
   );
 }
 
-const styles = StyleSheet.create({ wrap: { gap: spacing.sm }, h2: { marginTop: spacing.md } });
+const styles = StyleSheet.create({
+  wrap: { gap: spacing.sm },
+  h2: { marginTop: spacing.md },
+  row: { flexDirection: 'row', gap: spacing.sm },
+  cell: { flex: 1 },
+  bold: { fontWeight: '700' },
+});

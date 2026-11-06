@@ -200,6 +200,8 @@ export interface LaunchApi {
 export interface AnalyticsApi {
   track(event: SiteEvent): Promise<void>;
   report(range: AnalyticsRange): Promise<AnalyticsReport>;
+  /** Proof of a cookie choice (random id, no personal data). */
+  consent(record: { consentId: string; analytics: boolean; version: string; locale: 'en' | 'ro' }): Promise<void>;
 }
 
 export interface DataApi {

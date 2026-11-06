@@ -40,6 +40,24 @@ export const brand = {
     favicon: './assets/images/favicon.png',
   },
 
+  /**
+   * Public website. Change `siteUrl` if the domain is different, then run `npm run brand:sync`:
+   * it rewrites the page Google and social apps read (apps/mobile/public/index.html),
+   * robots.txt and sitemap.xml. Romanian is the main language (Bucharest).
+   */
+  siteUrl: 'https://kartup.ro',
+  seo: {
+    /** Google result title: under 60 characters. */
+    title: 'KartUP | Karting în București – găsește-ți echipa',
+    /** Google result text: under 155 characters. */
+    description: 'Curse de karting în București cu lobby-uri, clasamente și ranguri. Înscrie-te gratuit pe waitlist pentru evenimentul de lansare KartUP.',
+    /** Link preview (WhatsApp, Instagram, Facebook). */
+    shareTitle: 'KartUP — Fii pe grilă înaintea tuturor',
+    shareDescription: 'Evenimentul de lansare KartUP: calificări, finală, podium și numele tău în primul clasament. Înscrie-te gratuit pe waitlist.',
+    /** Public pages listed for Google (the app's private pages are not). */
+    pages: ['/', '/join', '/welcome', '/legal/privacy', '/legal/terms'],
+  },
+
   /** Contact / legal — placeholders, replace before launch. Shown in Settings, emails and legal texts. */
   supportEmail: 'support@kartup.example',
   legalEntity: 'KartUP SRL (placeholder company name)',
@@ -48,7 +66,7 @@ export const brand = {
   privacyUrl: 'https://kartup.example/privacy',
   termsUrl: 'https://kartup.example/terms',
   /** Shown as "Last updated" in the privacy policy and terms. */
-  legalLastUpdated: '2026-10-20',
+  legalLastUpdated: '2026-11-06',
 } as const;
 
 export type Brand = typeof brand;

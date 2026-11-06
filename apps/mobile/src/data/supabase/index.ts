@@ -9,7 +9,7 @@ import { RANK_TIERS } from '../ranks';
 import { ANALYTICS_RANGES, type AnalyticsReport, type City, type Profile, type PublicProfile, type Track } from '../types';
 import { publicStorageUrl, supabase } from './client';
 import { authRedirectUrl } from './redirect';
-import { allTracks, sessionsApi, subscribeLive } from './sessions';
+import { adminSessionsApi, allTracks, moderationApi, progressHistory, rankingApi, resultsApi, sessionsApi, subscribeLive } from './sessions';
 import { signInWithApple, signInWithGoogle, signInWithOAuthBrowser, signOutEverywhere } from './social';
 
 const notImplemented = (): never => {
@@ -167,7 +167,7 @@ export const supabaseApi: DataApi = {
     upsertExperience: async (i) =>
       wrap((await supabase.from('track_experience').upsert({ user_id: await uid(), track_id: i.trackId, level: i.level, best_lap_ms: i.bestLapMs, sessions_count: i.sessionsCount })).error),
     deleteExperience: async (trackId) => wrap((await supabase.from('track_experience').delete().eq('user_id', await uid()).eq('track_id', trackId)).error),
-    progressHistory: notImplemented,
+    progressHistory,
     selfReport: notImplemented,
     setupPayouts: notImplemented,
     appealBan: notImplemented,
@@ -203,13 +203,11 @@ export const supabaseApi: DataApi = {
     enterLobby: notImplemented,
     checkIn: notImplemented,
     confirmAttendance: notImplemented,
-    messages: notImplemented,
-    sendMessage: notImplemented,
   },
   payments: { createIntent: notImplemented, confirm: notImplemented, history: notImplemented },
-  results: { get: notImplemented, submit: notImplemented, respond: notImplemented },
-  ranking: { leaderboard: notImplemented, seasons: notImplemented },
-  admin: { pendingSelfReports: notImplemented, reviewSelfReport: notImplemented, setOfficialEvent: notImplemented, sessions: notImplemented, finance: notImplemented, cashout: notImplemented },
+  results: resultsApi,
+  ranking: rankingApi,
+  admin: { ...adminSessionsApi, reviewSelfReport: notImplemented, finance: notImplemented, cashout: notImplemented },
   notifications: {
     list: notImplemented,
     markAllRead: notImplemented,
@@ -218,7 +216,7 @@ export const supabaseApi: DataApi = {
     setPrefs: notImplemented,
     onNew: () => () => undefined,
   },
-  moderation: { report: notImplemented, block: notImplemented, unblock: notImplemented, blocked: notImplemented },
+  moderation: moderationApi,
   realtime: { subscribe: (_topic, cb) => subscribeLive(cb) },
   location: { current: notImplemented },
   launch: {
@@ -253,9 +251,9 @@ export const supabaseApi: DataApi = {
       const { data, error } = await supabase.rpc('analytics_report', { p_seconds: seconds, p_buckets: buckets });
       if (error?.message?.includes('founder_only')) throw new ApiError('admin_only');
       wrap(error);
-      const r = data as Omit<AnalyticsReport, 'range' | 'from' | 'revenue' | 'karting'>;
-      // Payments and karting sessions aren't in the real backend yet: shown as "not live".
-      return { ...r, range, from: new Date(Date.now() - seconds * 1000).toISOString(), revenue: null, karting: null };
+      const r = data as Omit<AnalyticsReport, 'range' | 'from' | 'revenue'>;
+      // Payments aren't in the real backend yet: revenue is shown as "not live".
+      return { ...r, range, from: new Date(Date.now() - seconds * 1000).toISOString(), revenue: null, karting: r.karting ?? null };
     },
   },
 };

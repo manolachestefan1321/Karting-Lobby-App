@@ -289,6 +289,15 @@ export interface RankUpEvent {
   totalXp: number;
 }
 
+/** Results a driver disputed, waiting for an admin decision. */
+export interface DisputedResults {
+  sessionId: string;
+  trackName: string;
+  startsAt: string;
+  timezone: string;
+  disputes: { name: string; comment: string | null }[];
+}
+
 /** Owner money screen: KartUP's own earnings (platform fees) and cash-outs to the bank via Stripe. */
 export interface OwnerFinance {
   currency: string;

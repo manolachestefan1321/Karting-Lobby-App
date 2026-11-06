@@ -162,7 +162,9 @@ function EnterResults({ sessionId, members, asAdmin, instant }: { sessionId: str
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const submit = useSubmitResults();
-  const attended = members.filter((m) => m.status === 'attended');
+  const rules = useRulesOrDefault();
+  // Without check-in (real app for now), every driver with a seat can be classified.
+  const attended = members.filter((m) => m.status === 'attended' || (!rules.checkinEnabled && m.status === 'confirmed'));
   const [order, setOrder] = useState<string[]>([]);
   const [bestLaps, setBestLaps] = useState<Record<string, string>>({});
   const [lapCounts, setLapCounts] = useState<Record<string, string>>({});

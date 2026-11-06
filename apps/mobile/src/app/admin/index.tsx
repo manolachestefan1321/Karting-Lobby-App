@@ -28,12 +28,14 @@ export default function AdminScreen() {
   const isAdmin = profile?.role === 'admin';
   const reports = useLiveQuery('sessions', { queryKey: ['admin_self_reports'], enabled: isAdmin, queryFn: () => api.admin.pendingSelfReports() });
   const sessions = useQuery({ queryKey: ['admin_sessions'], enabled: isAdmin, queryFn: () => api.admin.sessions() });
+  const disputed = useLiveQuery('sessions', { queryKey: ['admin_disputed'], enabled: isAdmin, queryFn: () => api.admin.disputedResults() });
   const fail = (e: unknown) => toast(errorText(e, t as never, i18n.language), 'danger');
   const done = () => qc.invalidateQueries();
   const review = useMutation({
     mutationFn: ({ id, decision }: { id: string; decision: 'approve' | 'reject' | 'reject_false' }) => api.admin.reviewSelfReport(id, decision),
     onSuccess: done,
   });
+  const decide = useMutation({ mutationFn: ({ id, approve }: { id: string; approve: boolean }) => api.admin.decideResults(id, approve), onSuccess: done });
   const official = useMutation({ mutationFn: ({ id, on }: { id: string; on: boolean }) => api.admin.setOfficialEvent(id, on), onSuccess: done });
 
   if (!isAdmin) return <EmptyState icon="lock-closed-outline" title={t('errors.admin_only')} />;
@@ -43,6 +45,42 @@ export default function AdminScreen() {
     <Screen>
       <Text variant="title">{t('admin.title')}</Text>
       <Text tone="muted">{t('admin.subtitle')}</Text>
+
+      {/* Results a driver disputed: the admin decides (approve → final → XP). */}
+      <SectionHeader title={t('admin.disputed')} />
+      {!disputed.data?.length ? (
+        <Card>
+          <Text tone="muted">{t('admin.noDisputes')}</Text>
+        </Card>
+      ) : (
+        disputed.data.map((d) => (
+          <Card key={d.sessionId} style={styles.gapSm}>
+            <Text variant="bodyStrong" onPress={() => router.push(`/session/${d.sessionId}/results`)}>
+              {d.trackName} · {formatDateTime(d.startsAt, d.timezone, i18n.language)}
+            </Text>
+            {d.disputes.map((x, i) => (
+              <Text key={i} variant="small" tone="muted">
+                {x.name}: {x.comment ?? t('admin.noComment')}
+              </Text>
+            ))}
+            <View style={styles.row}>
+              <Button
+                title={t('admin.approveResults')}
+                size="md"
+                fullWidth={false}
+                onPress={() => decide.mutate({ id: d.sessionId, approve: true }, { onSuccess: () => toast(t('admin.resultsApproved')), onError: fail })}
+              />
+              <Button
+                title={t('admin.rejectResults')}
+                size="md"
+                variant="secondary"
+                fullWidth={false}
+                onPress={() => decide.mutate({ id: d.sessionId, approve: false }, { onSuccess: () => toast(t('admin.resultsRejected')), onError: fail })}
+              />
+            </View>
+          </Card>
+        ))
+      )}
 
       <SectionHeader title={t('admin.selfReports')} />
       <Text variant="small" tone="muted">

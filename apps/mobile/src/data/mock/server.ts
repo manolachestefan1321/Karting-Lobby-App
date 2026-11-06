@@ -44,6 +44,7 @@ import type {
   AppRules,
   BanInfo,
   ChatMessage,
+  DisputedResults,
   CreateSessionInput,
   KartSession,
   LeaderboardEntry,
@@ -1072,6 +1073,22 @@ export class MockServer {
    * Admin decision on disputed results. `falseDispute`: the admin found the disputing
    * drivers reported false data → XP penalty each (Competitive lobbies only).
    */
+  disputedResults(actorId = this.me().id): DisputedResults[] {
+    this.assertAdmin(actorId);
+    return this.db.results
+      .filter((r) => this.resultsState(r.sessionId) === 'disputed')
+      .map((r) => {
+        const s = this.session(r.sessionId);
+        const t = this.track(s.trackId);
+        return {
+          sessionId: s.id,
+          trackName: t.name,
+          startsAt: s.startsAt,
+          timezone: t.timezone,
+          disputes: r.responses.filter((x) => x.response === 'dispute').map((x) => ({ name: this.name(x.userId), comment: x.comment })),
+        };
+      });
+  }
   adminDecide(sessionId: string, approve: boolean, falseDispute = false) {
     const r = this.resultsOf(sessionId);
     if (!r) throw new ApiError('not_found');

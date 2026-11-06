@@ -6,7 +6,20 @@
  */
 import { participantPrice, type ExperienceLevel } from '@kartup/domain';
 import { ApiError } from '../api';
-import type { CreateSessionInput, KartSession, LobbyMember, SessionFilters, Track, UserSummary } from '../types';
+import type {
+  ChatMessage,
+  CreateSessionInput,
+  DisputedResults,
+  KartSession,
+  LeaderboardEntry,
+  LeaderboardScope,
+  LobbyMember,
+  ProgressEntry,
+  SessionFilters,
+  SessionResults,
+  Track,
+  UserSummary,
+} from '../types';
 import { publicStorageUrl, supabase } from './client';
 
 type Row = Record<string, any>;
@@ -100,7 +113,7 @@ function toSession(r: Row, tracks: Track[]): KartSession | null {
     priceUpdatedAt: r.price_updated_at,
     paidCount: r.paid_count,
     memberCount: r.member_count,
-    resultsStatus: null, // results arrive in step 3
+    resultsStatus: r.results_status ?? null,
     myStatus: r.my_status ?? null,
     createdAt: r.created_at,
   };
@@ -209,6 +222,62 @@ export const sessionsApi = {
     const { error } = await supabase.rpc('cancel_session', { p_session: sessionId, p_reason: reason });
     fail(error);
   },
+
+  /** Lobby chat: members only (the database checks it), without people you blocked. */
+  async messages(sessionId: string): Promise<ChatMessage[]> {
+    const { data, error } = await supabase.from('chat_messages').select('*').eq('session_id', sessionId).order('created_at');
+    fail(error);
+    return (data ?? []).map((m: Row) => ({
+      id: m.id,
+      sessionId: m.session_id,
+      author: m.user_id
+        ? {
+            id: m.user_id,
+            firstName: m.first_name ?? '',
+            lastName: m.last_name ?? '',
+            avatarUrl: avatar(m.avatar_path, m.provider_avatar_url),
+            rankTierId: m.rank_tier_id ?? 1,
+            totalXp: m.total_xp ?? 0,
+            totalKm: (m.total_meters ?? 0) / 1000,
+          }
+        : { id: 'deleted', firstName: 'Deleted', lastName: 'user', avatarUrl: null, rankTierId: 1, totalXp: 0, totalKm: 0 },
+      body: m.body,
+      createdAt: m.created_at,
+      system: m.system,
+    }));
+  },
+
+  async sendMessage(sessionId: string, body: string): Promise<void> {
+    const { error } = await supabase.rpc('send_message', { p_session: sessionId, p_body: body });
+    fail(error);
+  },
+};
+
+/** Reporting and blocking (Apple guideline 1.2). Reports are read by KartUP admins. */
+export const moderationApi = {
+  async report(target: { kind: 'profile'; userId: string } | { kind: 'message'; messageId: string }, reason: string): Promise<void> {
+    const { error } = await supabase.rpc('report_content', {
+      p_kind: target.kind,
+      p_user: target.kind === 'profile' ? target.userId : null,
+      p_message: target.kind === 'message' ? target.messageId : null,
+      p_reason: reason,
+    });
+    fail(error);
+  },
+  async block(userId: string): Promise<void> {
+    const { data } = await supabase.auth.getUser();
+    const { error } = await supabase.from('user_blocks').upsert({ blocker_id: data.user?.id, blocked_id: userId }, { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true });
+    fail(error);
+  },
+  async unblock(userId: string): Promise<void> {
+    const { error } = await supabase.from('user_blocks').delete().eq('blocked_id', userId);
+    fail(error);
+  },
+  async blocked(): Promise<string[]> {
+    const { data, error } = await supabase.from('user_blocks').select('blocked_id');
+    fail(error);
+    return (data ?? []).map((b: Row) => b.blocked_id);
+  },
 };
 
 // ── Live updates: any change to sessions or lobby members refreshes what's on screen ──
@@ -223,6 +292,7 @@ export function subscribeLive(cb: () => void): () => void {
       .channel('kartup-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, fire)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_members' }, fire)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fire)
       .subscribe();
   }
   return () => {
@@ -233,3 +303,144 @@ export function subscribeLive(cb: () => void): () => void {
     }
   };
 }
+
+// ── Results (step 3) ──────────────────────────────────────────────────────────
+const SHEETS = 'timing-sheets';
+
+export const resultsApi = {
+  /** Finalizes them first on the server if their 24 h passed. */
+  async get(sessionId: string): Promise<SessionResults | null> {
+    const { data, error } = await supabase.rpc('get_session_results', { p_session: sessionId });
+    fail(error);
+    if (!data) return null;
+    const r = data as Row;
+    let printoutUrl: string | null = null;
+    if (r.printoutPath) {
+      // Private bucket: a link that works for an hour.
+      const signed = await supabase.storage.from(SHEETS).createSignedUrl(r.printoutPath, 3600);
+      printoutUrl = signed.data?.signedUrl ?? null;
+    }
+    return {
+      sessionId: r.sessionId,
+      submittedBy: r.submittedBy,
+      submittedAt: r.submittedAt,
+      deadline: r.deadline,
+      status: r.status,
+      source: r.source,
+      lobbyType: r.lobbyType,
+      printoutUrl,
+      entries: (r.entries as Row[]).map((e) => ({ userId: e.userId, position: e.position, laps: e.laps, bestLapMs: e.bestLapMs, xp: e.xp, km: e.km, breakdown: e.breakdown })),
+      responses: (r.responses as Row[]).map((x) => ({ userId: x.userId, response: x.response, comment: x.comment })),
+    };
+  },
+
+  async submit(sessionId: string, input: { entries: { userId: string; position: number; laps: number; bestLapMs: number | null }[]; printoutUri: string | null }): Promise<void> {
+    let path: string | null = null;
+    if (input.printoutUri) {
+      path = `${sessionId}/sheet-${Date.now()}.jpg`;
+      const body = await (await fetch(input.printoutUri)).arrayBuffer();
+      const up = await supabase.storage.from(SHEETS).upload(path, body, { contentType: 'image/jpeg', upsert: false });
+      fail(up.error);
+    }
+    const { error } = await supabase.rpc('submit_results', {
+      p_session: sessionId,
+      p_entries: input.entries.map((e) => ({ user_id: e.userId, position: e.position, laps: e.laps, best_lap_ms: e.bestLapMs })),
+      p_printout_path: path,
+    });
+    fail(error);
+  },
+
+  async respond(sessionId: string, response: 'confirm' | 'dispute', comment?: string): Promise<void> {
+    const { error } = await supabase.rpc('respond_results', { p_session: sessionId, p_response: response, p_comment: comment ?? null });
+    fail(error);
+  },
+};
+
+// ── Leaderboards and race history (step 4) ────────────────────────────────────
+export const rankingApi = {
+  async leaderboard(scope: LeaderboardScope): Promise<LeaderboardEntry[]> {
+    const { data, error } = await supabase.rpc('leaderboard', {
+      p_kind: scope.kind,
+      p_city: scope.kind === 'city' ? scope.cityId : null,
+      p_track: scope.kind === 'track' ? scope.trackId : null,
+      p_season: scope.kind === 'season' ? scope.season : null,
+    });
+    fail(error);
+    return ((data as Row[]) ?? []).map((r, i) => ({
+      position: i + 1,
+      user: {
+        id: r.user_id,
+        firstName: r.first_name ?? '',
+        lastName: r.last_name ?? '',
+        avatarUrl: avatar(r.avatar_path, r.provider_avatar_url),
+        rankTierId: r.rank_tier_id ?? 1,
+        totalXp: r.total_xp ?? 0,
+        totalKm: (r.total_meters ?? 0) / 1000,
+      },
+      xp: r.xp,
+      km: r.meters / 1000,
+      sessions: r.sessions,
+      wins: r.wins,
+    }));
+  },
+
+  async seasons(): Promise<string[]> {
+    const { data, error } = await supabase.rpc('race_seasons');
+    fail(error);
+    return ((data as unknown[]) ?? []).map((s) => (typeof s === 'string' ? s : (s as Row).race_seasons));
+  },
+};
+
+/** Verified races of a driver, newest first (self-reports arrive later). */
+export async function progressHistory(userId: string): Promise<ProgressEntry[]> {
+  const { data, error } = await supabase.from('race_ledger').select('*, tracks(name)').eq('user_id', userId).order('raced_at', { ascending: false });
+  fail(error);
+  return (data ?? []).map((l: Row) => ({
+    id: String(l.id),
+    kind: l.kind,
+    casual: l.casual,
+    penaltyReason: null,
+    penaltyNominal: null,
+    sessionId: l.session_id,
+    trackId: l.track_id,
+    trackName: l.tracks?.name ?? '',
+    date: l.raced_at,
+    position: l.position,
+    fieldSize: l.field_size,
+    laps: l.laps,
+    bestLapMs: l.best_lap_ms,
+    verification: 'verified',
+    source: l.source,
+    xp: l.casual ? null : l.xp,
+    km: l.casual ? null : l.meters / 1000,
+    breakdown: l.breakdown,
+    review: null,
+  }));
+}
+
+// ── Admin tools ───────────────────────────────────────────────────────────────
+export const adminSessionsApi = {
+  /** Upcoming sessions (official toggle) and recent ones that may need results. */
+  async sessions(): Promise<KartSession[]> {
+    const since = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    const list = await cards(supabase.from('session_cards').select('*').is('cancelled_at', null).gt('starts_at', since).order('starts_at'));
+    return list.filter((s) => new Date(s.startsAt).getTime() > Date.now() || !s.resultsStatus);
+  },
+  async setOfficialEvent(sessionId: string, official: boolean): Promise<void> {
+    const { error } = await supabase.rpc('set_official_event', { p_session: sessionId, p_official: official });
+    fail(error);
+  },
+  async disputedResults(): Promise<DisputedResults[]> {
+    const { data, error } = await supabase.rpc('admin_disputed_results');
+    fail(error);
+    return (data as DisputedResults[]) ?? [];
+  },
+  async decideResults(sessionId: string, approve: boolean): Promise<void> {
+    const { error } = await supabase.rpc('admin_decide_results', { p_session: sessionId, p_approve: approve });
+    fail(error);
+  },
+  /** Self-reported results come later in the real app. */
+  async pendingSelfReports() {
+    return [];
+  },
+};

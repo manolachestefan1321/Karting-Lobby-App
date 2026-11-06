@@ -470,4 +470,11 @@ export interface AppRules extends RulesConfig {
   minAge: number;
   /** Demo only: results are final as soon as they are entered (no 24 h dispute window). */
   demoInstantResults: boolean;
+  /**
+   * In-app payments. Off = "pay at the track": seats are reserved for free, the track
+   * is paid at the desk and KartUP takes no fee (real app until Stripe is live).
+   */
+  paymentsEnabled: boolean;
+  /** Geofenced check-in at the track (real app: not yet). */
+  checkinEnabled: boolean;
 }

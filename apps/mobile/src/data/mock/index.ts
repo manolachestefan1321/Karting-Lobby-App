@@ -152,6 +152,8 @@ export const mockApi: DataApi = {
       }),
     enterLobby: (id) => call(() => server.enterLobby(id)),
     leaveLobby: (id) => call(() => server.leaveLobby(id)),
+    // The demo always has payments on; this mirrors the real "pay at the track" mode.
+    reserveSeat: (sessionId) => call(() => server.reserveSeatFree(sessionId)),
     cancelSeat: (id) => call(() => server.cancelSeat(id)),
     removeMember: (id, userId) => call(() => server.removeMember(id, userId)),
     cancelSession: (id, reason) => call(() => server.cancelSession(id, 'host', reason)),

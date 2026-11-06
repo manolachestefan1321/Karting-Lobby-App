@@ -77,7 +77,7 @@ import { simulatedTraffic } from './analytics';
 export { RANK_TIERS };
 
 /** `demoInstantResults` here is only the default; the live value is `db.instantResults`. */
-export const RULES: AppRules = { ...DEFAULT_RULES, minAge: DEFAULT_MIN_AGE, demoInstantResults: true };
+export const RULES: AppRules = { ...DEFAULT_RULES, minAge: DEFAULT_MIN_AGE, demoInstantResults: true, paymentsEnabled: true, checkinEnabled: true };
 
 const GROUP: Record<NotificationType, NotificationGroup> = {
   lobby_joined: 'lobby',
@@ -776,6 +776,17 @@ export class MockServer {
       } else {
         this.db.members.push({ sessionId, userId, status: 'joined_unpaid', joinedAt: this.iso(), paidAt: null, checkedInAt: null, hostConfirmed: false, paymentId: null });
       }
+    });
+  }
+  /** "Pay at the track" mode (not used by the demo, which has payments on): a free seat. */
+  reserveSeatFree(sessionId: string, userId = this.me().id) {
+    const s = this.session(sessionId);
+    this.assertCanJoin(s, this.user(userId)!);
+    if (this.member(sessionId, userId)?.status === 'confirmed') return;
+    if (this.paidCount(sessionId) >= s.maxDrivers) throw new ApiError('session_full');
+    this.enterLobby(sessionId, userId);
+    this.mutate(() => {
+      this.member(sessionId, userId)!.status = 'confirmed';
     });
   }
   leaveLobby(sessionId: string) {

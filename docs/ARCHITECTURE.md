@@ -259,3 +259,16 @@ Expo SDK (latest stable), Expo Router, TanStack Query, Zustand (light UI state),
 - **Accounting:** the platform collects the money. Romania requires invoices (e-Factura) for B2C services. This is outside the app's scope, but you should talk to an accountant before launch.
 - **What I can do in this cloud environment:** write the code, run unit tests, type checks and Expo bundling, and preview screens on Expo Web. Docker isn't available here, so local-Supabase tests (RLS, integration) are written by me and run on your Mac, where I'll give you exact commands. Running on iOS/Android simulators also happens on your Mac.
 - **This workspace is temporary.** The code needs a GitHub repository to survive. Please create an empty private repo and connect it to this session, or tell me to keep going and I'll push as soon as one is connected.
+
+## Real app: "pay at the track" mode (until Stripe is live)
+Sessions and lobbies run in the real backend (`supabase/migrations/20261107000100_sessions_lobbies.sql`).
+While `app_config.payments_enabled` is `false`:
+- a seat is **reserved for free** in the app and the driver pays the track at the desk;
+- KartUP takes **no fee** (sessions store `fee_minor = 0`);
+- hosts don't need a payout account; there is no auto-cancel, refund window or check-in yet.
+
+When Stripe is ready (payments step), switch it on in the Supabase SQL editor:
+```
+update public.app_config set value = 'true' where key = 'payments_enabled';
+```
+New sessions then use pay-to-join with the platform fee (`platform_fee_minor`). Existing free sessions keep `fee_minor = 0`.

@@ -15,6 +15,7 @@ import { RankBadge } from '@/features/profile/ProfileView';
 import { LobbyTypeBadge, PhaseBadge, phaseOf } from '@/features/sessions/components';
 import {
   useCancelSeat,
+  useReserveSeat,
   useCancelSession,
   useCheckIn,
   useConfirmAttendance,
@@ -45,6 +46,7 @@ export default function LobbyScreen() {
   const me = usePublicProfile(myId);
   const tiers = useRankTiers();
   const cancelSeat = useCancelSeat();
+  const reserve = useReserveSeat();
   const leave = useLeaveLobby();
   const removeMember = useRemoveMember();
   const cancelSession = useCancelSession();
@@ -129,9 +131,30 @@ export default function LobbyScreen() {
     if (ok) cancelSession.mutate({ id, reason: 'host' }, { onError: fail });
   };
 
+  const onGiveUpSeat = async () => {
+    const ok = await confirmDialog({
+      title: t('lobby.giveUpTitle'),
+      message: t('lobby.giveUpBody'),
+      confirmText: t('lobby.giveUpSeat'),
+      cancelText: t('common.back'),
+      destructive: true,
+    });
+    if (ok) cancelSeat.mutate(id, { onSuccess: () => toast(t('lobby.gaveUpToast')), onError: fail });
+  };
+
   // ── Footer: the one main action for the current state ─────────────────────────
   let footer: React.ReactNode = null;
-  if (!s.cancelledAt && !started) {
+  // "Pay at the track" mode: reserve a seat for free, pay the track at the desk.
+  const payAtTrack = !rules.paymentsEnabled;
+  if (payAtTrack && !s.cancelledAt && !started) {
+    if (!my || my === 'cancelled' || my === 'removed' || my === 'joined_unpaid') {
+      if (spotsLeft > 0) footer = <Button title={t('lobby.reserveSeat')} onPress={() => reserve.mutate(id, { onSuccess: () => toast(t('lobby.reservedToast')), onError: fail })} loading={reserve.isPending} />;
+    } else if (paid && isHost) {
+      footer = <Button title={t('lobby.cancelSession')} variant="danger" onPress={() => void onCancelSession()} loading={cancelSession.isPending} />;
+    } else if (paid) {
+      footer = <Button title={t('lobby.giveUpSeat')} variant="danger" onPress={() => void onGiveUpSeat()} loading={cancelSeat.isPending} />;
+    }
+  } else if (!s.cancelledAt && !started) {
     if (!my || my === 'cancelled' || my === 'removed') {
       if (!ban && spotsLeft > 0) footer = <Button title={t('lobby.joinPay', { amount: fmt(s.price.totalMinor) })} onPress={() => void startPayment()} loading={paying} />;
     } else if (my === 'joined_unpaid') {
@@ -188,7 +211,7 @@ export default function LobbyScreen() {
         ) : null}
         {ban && !s.cancelledAt && !started && !paid ? <Banner tone="danger" icon="ban" text={t('lobby.youreBanned', { time: formatDateTime(ban.endsAt ?? s.startsAt, 'Europe/Bucharest', locale) })} /> : null}
         {my === 'no_show' ? <Banner tone="danger" icon="ban" text={t('lobby.noShowYou')} /> : null}
-        {!s.cancelledAt && !started && s.paidCount < rules.minDrivers ? (
+        {!payAtTrack && !s.cancelledAt && !started && s.paidCount < rules.minDrivers ? (
           <Banner tone="warning" icon="alert-circle" text={t('lobby.minDriversWarning', { min: rules.minDrivers, time: formatDateTime(autoCancelAt, tz, locale) })} />
         ) : null}
 
@@ -213,7 +236,7 @@ export default function LobbyScreen() {
             <Text variant="title">{fmt(s.price.totalMinor)}</Text>
           </View>
           <Text variant="small" tone="muted">
-            {t('lobby.priceBreakdown', { track: fmt(s.price.trackMinor), fee: fmt(s.price.feeMinor) })}
+            {payAtTrack ? t('lobby.payAtTrack') : t('lobby.priceBreakdown', { track: fmt(s.price.trackMinor), fee: fmt(s.price.feeMinor) })}
           </Text>
           <Text variant="caption" tone="faint">
             {t('lobby.priceUpdated', { when: relative(s.priceUpdatedAt, now, locale) })}
@@ -233,7 +256,7 @@ export default function LobbyScreen() {
               {s.track.price.note}
             </Text>
           ) : null}
-          {isHost ? (
+          {isHost && !payAtTrack ? (
             <Text variant="small" tone="accent">
               {t('lobby.payoutInfo', { amount: fmt(hostPayoutMinor(s.price.trackMinor, ['confirmed'])) })}
             </Text>
@@ -269,7 +292,7 @@ export default function LobbyScreen() {
         ) : null}
 
         {/* Check-in */}
-        {paid && !s.cancelledAt && (phase === 'open' || phase === 'locked' || phase === 'checkin') ? (
+        {rules.checkinEnabled && paid && !s.cancelledAt && (phase === 'open' || phase === 'locked' || phase === 'checkin') ? (
           <Card style={styles.gapSm}>
             <SectionHeader title={t('lobby.checkinTitle')} />
             {list.find((m) => m.id === myId)?.checkedInAt ? (

@@ -42,6 +42,7 @@ function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
 
 export const useEnterLobby = () => useAction((id: string) => api.sessions.enterLobby(id));
 export const useLeaveLobby = () => useAction((id: string) => api.sessions.leaveLobby(id));
+export const useReserveSeat = () => useAction((id: string) => api.sessions.reserveSeat(id));
 export const useCancelSeat = () => useAction((id: string) => api.sessions.cancelSeat(id));
 export const useRemoveMember = () => useAction(({ id, userId }: { id: string; userId: string }) => api.sessions.removeMember(id, userId));
 export const useCancelSession = () => useAction(({ id, reason }: { id: string; reason: string }) => api.sessions.cancelSession(id, reason));

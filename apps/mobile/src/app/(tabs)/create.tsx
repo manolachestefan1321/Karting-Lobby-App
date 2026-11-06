@@ -60,12 +60,13 @@ export default function CreateTab() {
   const startsAt = day && time ? zonedToUtc(day, time, tz) : null;
   const maxAllowed = track?.maxDrivers ?? 12;
   const drivers = Math.min(Math.max(maxDrivers, rules.minDrivers), maxAllowed);
-  const price = track ? participantPrice(track.price.perDriverMinor, rules.platformFeeMinor, track.price.currency) : null;
+  // "Pay at the track" mode: the driver pays the track at the desk, KartUP takes no fee.
+  const price = track ? participantPrice(track.price.perDriverMinor, rules.paymentsEnabled ? rules.platformFeeMinor : 0, track.price.currency) : null;
 
   if (!profile) return <LoadingState />;
 
-  // Hosts must verify a payout account (Stripe Connect) before creating sessions.
-  if (!profile.payoutsEnabled) {
+  // With in-app payments, hosts must verify a payout account (Stripe Connect) before creating sessions.
+  if (rules.paymentsEnabled && !profile.payoutsEnabled) {
     return (
       <Screen edges={['top']}>
         <Text variant="title">{t('create.title')}</Text>
@@ -90,7 +91,7 @@ export default function CreateTab() {
           setDay(null);
           setTime(null);
           setNote('');
-          router.push({ pathname: '/session/[id]', params: { id: s.id, pay: '1' } });
+          router.push({ pathname: '/session/[id]', params: rules.paymentsEnabled ? { id: s.id, pay: '1' } : { id: s.id } });
         },
         onError: (e) => toast(errorText(e, t as never, locale), 'danger'),
       },
@@ -98,7 +99,7 @@ export default function CreateTab() {
   };
 
   return (
-    <Screen edges={['top']} footer={<Button title={t('create.submit')} onPress={submit} disabled={!trackId || !startsAt} loading={create.isPending} />}>
+    <Screen edges={['top']} footer={<Button title={rules.paymentsEnabled ? t('create.submit') : t('create.submitFree')} onPress={submit} disabled={!trackId || !startsAt} loading={create.isPending} />}>
       <Text variant="title">{t('create.title')}</Text>
 
       <PickerField
@@ -129,7 +130,11 @@ export default function CreateTab() {
 
       {track && price ? (
         <Card style={styles.gapSm}>
-          <Text>{t('create.priceInfo', { total: money(price.totalMinor, price.currency, locale), track: money(price.trackMinor, price.currency, locale), fee: money(price.feeMinor, price.currency, locale) })}</Text>
+          <Text>
+            {rules.paymentsEnabled
+              ? t('create.priceInfo', { total: money(price.totalMinor, price.currency, locale), track: money(price.trackMinor, price.currency, locale), fee: money(price.feeMinor, price.currency, locale) })
+              : t('create.priceAtTrack', { track: money(price.trackMinor, price.currency, locale) })}
+          </Text>
           <Text variant="caption" tone="faint">
             {t('create.priceUpdated', { when: relative(track.price.updatedAt, now, locale) })} · {track.sessionLengthMin} min · {track.kartTypes.join(', ')}
           </Text>

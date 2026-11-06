@@ -1,7 +1,7 @@
 /**
- * Real backend (Supabase). Auth, profiles and places are wired to the step-1 schema.
- * Sessions, payments, results, ranking and notifications are filled in when we move
- * from the web preview to the real backend — until then they throw `not_implemented`.
+ * Real backend (Supabase). Auth, profiles, places, sessions and lobbies are wired;
+ * chat, payments, results, ranking and notifications are filled in step by step —
+ * until then they throw `not_implemented`.
  */
 import { DEFAULT_MIN_AGE, DEFAULT_RULES } from '@kartup/domain';
 import { ApiError, type DataApi } from '../api';
@@ -9,6 +9,7 @@ import { RANK_TIERS } from '../ranks';
 import { ANALYTICS_RANGES, type AnalyticsReport, type City, type Profile, type PublicProfile, type Track } from '../types';
 import { publicStorageUrl, supabase } from './client';
 import { authRedirectUrl } from './redirect';
+import { allTracks, sessionsApi, subscribeLive } from './sessions';
 import { signInWithApple, signInWithGoogle, signInWithOAuthBrowser, signOutEverywhere } from './social';
 
 const notImplemented = (): never => {
@@ -174,30 +175,32 @@ export const supabaseApi: DataApi = {
   places: {
     rules: async () => {
       const { data } = await supabase.from('app_config').select('key, value');
-      const minAge = data?.find((r: Row) => r.key === 'min_age')?.value;
-      return { ...DEFAULT_RULES, minAge: typeof minAge === 'number' ? minAge : DEFAULT_MIN_AGE, demoInstantResults: false };
+      const value = (key: string) => data?.find((r: Row) => r.key === key)?.value;
+      const num = (key: string, fallback: number) => (typeof value(key) === 'number' ? (value(key) as number) : fallback);
+      return {
+        ...DEFAULT_RULES,
+        minAge: num('min_age', DEFAULT_MIN_AGE),
+        platformFeeMinor: num('platform_fee_minor', DEFAULT_RULES.platformFeeMinor),
+        minDrivers: num('min_drivers', DEFAULT_RULES.minDrivers),
+        demoInstantResults: false,
+        paymentsEnabled: value('payments_enabled') === true,
+        checkinEnabled: false,
+      };
     },
     cities: async () => {
       const { data, error } = await supabase.from('cities').select('id, name, slug, country_code, timezone').order('name');
       wrap(error);
       return (data ?? []).map((c: Row): City => ({ id: c.id, name: c.name, slug: c.slug, countryCode: c.country_code, timezone: c.timezone, lat: 0, lng: 0 }));
     },
-    tracks: async (): Promise<Track[]> => notImplemented(),
-    track: async () => notImplemented(),
+    tracks: async (cityId?: string): Promise<Track[]> => (await allTracks()).filter((t) => !cityId || t.cityId === cityId),
+    track: async (trackId: string) => (await allTracks()).find((t) => t.id === trackId) ?? null,
     // Ranks come from config/progression.ts (the database keeps a copy for its own checks).
     rankTiers: async () => RANK_TIERS,
   },
   sessions: {
-    list: notImplemented,
-    mine: notImplemented,
-    get: notImplemented,
-    create: notImplemented,
-    members: notImplemented,
+    ...sessionsApi,
+    // Pay-to-join (Stripe) arrives with the payments step.
     enterLobby: notImplemented,
-    leaveLobby: notImplemented,
-    cancelSeat: notImplemented,
-    removeMember: notImplemented,
-    cancelSession: notImplemented,
     checkIn: notImplemented,
     confirmAttendance: notImplemented,
     messages: notImplemented,
@@ -216,7 +219,7 @@ export const supabaseApi: DataApi = {
     onNew: () => () => undefined,
   },
   moderation: { report: notImplemented, block: notImplemented, unblock: notImplemented, blocked: notImplemented },
-  realtime: { subscribe: () => () => undefined },
+  realtime: { subscribe: (_topic, cb) => subscribeLive(cb) },
   location: { current: notImplemented },
   launch: {
     signup: async ({ firstName, lastName, phone, email, locale }) => {

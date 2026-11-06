@@ -112,6 +112,8 @@ export interface SessionsApi {
   /** Enter the lobby without a seat (seat is held only after payment). */
   enterLobby(sessionId: string): Promise<void>;
   leaveLobby(sessionId: string): Promise<void>;
+  /** "Pay at the track" mode (rules.paymentsEnabled = false): reserve a seat for free. */
+  reserveSeat(sessionId: string): Promise<void>;
   /** Cancel a PAID seat. Server applies the refund window. */
   cancelSeat(sessionId: string): Promise<{ refunded: boolean }>;
   removeMember(sessionId: string, userId: string): Promise<{ refunded: boolean }>;

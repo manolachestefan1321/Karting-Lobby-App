@@ -38,3 +38,41 @@ on conflict (slug) do nothing;
 -- longer offered. They are NOT deleted (so no data is lost); re-enable with is_active = true.
 update public.tracks set is_active = false
 where slug not in ('amc-kart', 'vmax-romexpo', 'vmax-titan', 'vmax-cluj', 'vmax-brasov', 'vmax-timisoara');
+
+-- Track details (price, lap length, session length, …): all "to verify", like in the demo.
+update public.tracks set
+  website = 'https://www.amckart.ro', phone = '0741 100 700', opening_hours = 'Daily from 10:00 (to verify) · floodlit at night',
+  kart_types = array['6.5 CP', '13 CP', 'Two-seater 9 CP']::text[], session_length_min = 10, max_drivers = 12, indoor = false,
+  lap_length_m = 1240, price_per_driver_minor = 10000, price_note = '10 min, 6.5 CP kart, non-member (13 CP kart: 120 lei). Members −10 lei. Balaclava 15 lei extra.', price_source_url = 'https://www.amckart.ro/pricing/',
+  price_updated_at = '2026-10-20T12:00:00.000Z'
+where slug = 'amc-kart';
+update public.tracks set
+  website = 'https://vmaxromexpo.ro', phone = '+40 760 100 855', opening_hours = 'Booking required (to verify)',
+  kart_types = array['Electric']::text[], session_length_min = 10, max_drivers = 10, indoor = true,
+  lap_length_m = 700, price_per_driver_minor = 12000, price_note = '1-session package bought online, balaclava included. Event page also lists 50 lei (Mon–Fri) / 70 lei (weekend) per extra session.', price_source_url = 'https://vmaxromexpo.ro/categorie-produs/pachete-sesiuni/',
+  price_updated_at = '2026-10-20T12:00:00.000Z'
+where slug = 'vmax-romexpo';
+update public.tracks set
+  website = 'https://vmaxtitan.ro', phone = '0771 240 237', opening_hours = 'Mon–Sun · groups of 8+ by reservation (to verify)',
+  kart_types = array['Electric (with boost)']::text[], session_length_min = 10, max_drivers = 10, indoor = true,
+  lap_length_m = 600, price_per_driver_minor = 10000, price_note = '1-session package bought online, balaclava included (3 sessions: 190 lei). Price page also lists 70–90 lei per adult session (member/non-member columns unclear). Mini Grand Prix 10 min: 90–120 lei.', price_source_url = 'https://vmaxtitan.ro/en/shop/',
+  price_updated_at = '2026-10-20T12:00:00.000Z'
+where slug = 'vmax-titan';
+update public.tracks set
+  website = 'https://vmaxcluj.ro', phone = '+40 771 588 344', opening_hours = 'See website (to verify)',
+  kart_types = array['Electric (Sodi RSX2)']::text[], session_length_min = 8, max_drivers = 13, indoor = true,
+  lap_length_m = 500, price_per_driver_minor = 8000, price_note = '8 min adult session, weekend price (weekdays 70 lei; members 10 lei less). Another listing gives Str. Fabricii de Zahăr 165 as the address: confirm the entrance.', price_source_url = 'https://vmaxcluj.ro/en/preturi/',
+  price_updated_at = '2026-10-20T12:00:00.000Z'
+where slug = 'vmax-cluj';
+update public.tracks set
+  website = 'https://vmaxbrasov.ro', phone = '+40 774 959 913', opening_hours = 'Mon–Thu 15–23, Fri 15–24, Sat 11–24, Sun 11–23 (to verify)',
+  kart_types = array['Electric (Sodi RSX2)']::text[], session_length_min = 8, max_drivers = 13, indoor = true,
+  lap_length_m = 600, price_per_driver_minor = 9000, price_note = '8 min adult session, non-member (members 80 lei on weekdays). Multi-level track; events page says 650 m.', price_source_url = 'https://vmaxbrasov.ro/en/preturi/',
+  price_updated_at = '2026-10-20T12:00:00.000Z'
+where slug = 'vmax-brasov';
+update public.tracks set
+  website = 'https://vmaxtimisoara.ro', phone = '+40 772 232 034', opening_hours = 'See website (to verify)',
+  kart_types = array['Electric (Sodi RSX2)']::text[], session_length_min = 8, max_drivers = 13, indoor = true,
+  lap_length_m = 600, price_per_driver_minor = 9000, price_note = '8 min adult session, non-member (members 80 lei on weekdays). Track length: sources say 500 or 600 m.', price_source_url = 'https://vmaxtimisoara.ro/preturi/',
+  price_updated_at = '2026-10-20T12:00:00.000Z'
+where slug = 'vmax-timisoara';

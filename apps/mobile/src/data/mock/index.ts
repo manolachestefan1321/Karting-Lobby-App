@@ -261,5 +261,6 @@ export const mockApi: DataApi = {
     track: () => Promise.resolve(),
     consent: () => Promise.resolve(),
     report: (range) => call(() => server.analyticsReport(range)),
+    trackReport: (month) => call(() => server.trackReport(month)),
   },
 };

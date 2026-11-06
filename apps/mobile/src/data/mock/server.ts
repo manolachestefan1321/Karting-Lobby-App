@@ -41,6 +41,7 @@ import type {
   AppNotification,
   PenaltyReason,
   Track,
+  TrackReport,
   AppRules,
   BanInfo,
   ChatMessage,
@@ -70,7 +71,7 @@ import type {
 import { PENALTIES } from '@config/progression';
 import { RANK_TIERS } from '../ranks';
 import { clearDb, loadDb, loadDbAsync, saveDb, type Db, type DbBan, type DbLedger, type DbMember, type DbSession, type DbUser } from './db';
-import { counts, penaltyRow, rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
+import { counts, penaltyRow, rankIdFor, scoreResult, seasonOf, totalsOf, type VerifiedResult } from './progression';
 import { DEFAULT_PREFS, seed, TEST_PASSWORD } from './seed';
 import { REAL_TRACKS } from './tracks';
 import { simulatedTraffic } from './analytics';
@@ -111,6 +112,16 @@ const ms = (iso: string) => new Date(iso).getTime();
 const stripeFeeMinor = (amountMinor: number) => Math.round(amountMinor * 0.015) + 100;
 
 type Listener = () => void;
+
+/** Demo booking code: the same for a seat every time (the real app stores a random one). */
+function bookingCode(sessionId: string, userId: string) {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let h = 2166136261;
+  for (const c of `${sessionId}|${userId}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  let code = '';
+  for (let i = 0; i < 4; i++, h = Math.floor(h / chars.length)) code += chars[h % chars.length];
+  return `KUP-${code}`;
+}
 /** Bump to re-apply the founder setup below to an existing demo profile. */
 const FOUNDER_SETUP = 2;
 
@@ -348,6 +359,7 @@ export class MockServer {
       memberCount: members.filter((m) => m.status === 'confirmed' || m.status === 'joined_unpaid').length,
       resultsStatus: this.resultsState(s.id),
       myStatus: mine?.status ?? null,
+      myBookingCode: mine && (mine.status === 'confirmed' || mine.status === 'attended') ? bookingCode(s.id, mine.userId) : null,
       createdAt: s.createdAt,
     };
   }
@@ -355,6 +367,11 @@ export class MockServer {
     return {
       ...this.summary(m.userId),
       status: m.status,
+      // Like the real app: only the driver, the host and admins see the code.
+      bookingCode:
+        (m.status === 'confirmed' || m.status === 'attended') && (m.userId === this.db.currentUserId || s.hostId === this.db.currentUserId || this.isAdmin(this.db.currentUserId))
+          ? bookingCode(s.id, m.userId)
+          : null,
       isHost: m.userId === s.hostId,
       joinedAt: m.joinedAt,
       paidAt: m.paidAt,
@@ -1384,6 +1401,28 @@ export class MockServer {
         raced: phases.filter((x) => !x.s.cancelledAt && inCur(x.s.startsAt) && ms(x.s.startsAt) <= now).length,
       },
     };
+  }
+
+  /** Founder only: seats booked through KartUP per track, for sessions held in `month` (YYYY-MM). */
+  trackReport(month: string, actorId = this.me().id): TrackReport[] {
+    const me = this.user(actorId);
+    if (!me || me.role !== 'admin' || !me.badges?.includes('founder')) throw new ApiError('admin_only');
+    const now = this.now().getTime();
+    const byTrack = new Map<string, TrackReport>();
+    for (const s of this.db.sessions) {
+      const t = this.track(s.trackId);
+      if (s.cancelledAt || ms(s.startsAt) > now || seasonOf(s.startsAt, t.timezone) !== month) continue;
+      const seats = this.membersOf(s.id).filter((m) => m.status === 'confirmed' || m.status === 'attended');
+      if (!seats.length) continue;
+      const r = byTrack.get(t.id) ?? { trackId: t.id, trackName: t.name, sessions: 0, drivers: 0, rows: [] };
+      r.sessions += 1;
+      for (const m of seats) {
+        r.drivers += 1;
+        r.rows.push({ code: bookingCode(s.id, m.userId), driver: this.name(m.userId), startsAt: s.startsAt, sessionId: s.id, status: m.status });
+      }
+      byTrack.set(t.id, r);
+    }
+    return [...byTrack.values()].sort((a, b) => a.trackName.localeCompare(b.trackName));
   }
 
   // ───────────────────────────── join the race (website) ─────────────────────────────

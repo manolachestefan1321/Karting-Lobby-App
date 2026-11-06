@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Card, EmptyState, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
-import { ANALYTICS_RANGES, api, type AnalyticsCount, type AnalyticsRange, type AnalyticsReport } from '@/data';
+import { Button, Card, EmptyState, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
+import { ANALYTICS_RANGES, api, type AnalyticsCount, type AnalyticsRange, type AnalyticsReport, type TrackReport } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { money } from '@/lib/format';
 import { useNow } from '@/lib/live';
@@ -112,10 +112,112 @@ export default function AnalyticsScreen() {
         <Breakdown title={t('analytics.devices')} rows={r.devices.map((d) => ({ ...d, label: t(`analytics.device.${d.label}` as 'analytics.device.mobile') }))} />
       </View>
 
+      <TrackReports />
+
       <Text variant="caption" tone="muted">
         {api.kind === 'mock' ? t('analytics.demoNote') : t('analytics.realNote')}
       </Text>
     </Screen>
+  );
+}
+
+/** "YYYY-MM" of this month and the two before, in the tracks' time zone. */
+function recentMonths(): string[] {
+  const now = new Date(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) + 'T12:00:00Z');
+  return [0, 1, 2].map((back) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, 15));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  });
+}
+
+const csvCell = (v: string) => (/[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+
+/**
+ * Drivers KartUP brought to each track this month (sessions that took place),
+ * with their booking codes: what you invoice the track for. Exports a CSV.
+ */
+function TrackReports() {
+  const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const months = recentMonths();
+  const [month, setMonth] = useState(months[0]!);
+  const report = useQuery({ queryKey: ['track_report', month], queryFn: () => api.analytics.trackReport(month) });
+  const monthLabel = (m: string) => new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${m}-15T12:00:00Z`));
+
+  const exportCsv = async (r: TrackReport) => {
+    const fmt = new Intl.DateTimeFormat('ro-RO', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const lines = [
+      [t('analytics.csv.track'), t('analytics.csv.date'), t('analytics.csv.driver'), t('analytics.csv.code'), t('analytics.csv.status')].join(','),
+      ...r.rows.map((x) => [r.trackName, fmt.format(new Date(x.startsAt)), x.driver, x.code ?? '', t(`analytics.csv.${x.status === 'attended' ? 'attended' : 'reserved'}`)].map(csvCell).join(',')),
+      '',
+      [t('analytics.csv.total'), '', String(r.drivers), '', ''].join(','),
+    ];
+    const csv = '﻿' + lines.join('\n'); // BOM: Excel opens Romanian letters correctly
+    const name = `KartUP-${r.trackName.replace(/\s+/g, '-')}-${month}.csv`;
+    if (Platform.OS === 'web') {
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      await Share.share({ title: name, message: csv });
+    }
+  };
+
+  return (
+    <View style={styles.gapMd}>
+      <View style={styles.flex}>
+        <Text variant="heading">{t('analytics.trackReport')}</Text>
+        <Text variant="caption" tone="muted">
+          {t('analytics.trackReportHint')}
+        </Text>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rangesScroll} contentContainerStyle={styles.ranges}>
+        {months.map((m) => {
+          const on = m === month;
+          return (
+            <Pressable
+              key={m}
+              onPress={() => setMonth(m)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.range, { borderColor: on ? colors.accent : colors.border, backgroundColor: on ? colors.accent : colors.surface }]}
+            >
+              <Text variant="label" style={{ color: on ? colors.onAccent : colors.text }}>
+                {monthLabel(m)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      {report.isPending ? (
+        <LoadingState />
+      ) : !report.data?.length ? (
+        <Card>
+          <Text tone="muted">{t('analytics.noTrackReport')}</Text>
+        </Card>
+      ) : (
+        <View style={styles.grid}>
+          {report.data.map((r) => (
+            <Card key={r.trackId} style={styles.breakdown}>
+              <Text variant="heading">{r.trackName}</Text>
+              <View style={styles.rowBetween}>
+                <Text tone="muted" style={styles.flex}>
+                  {t('analytics.reportDrivers')}
+                </Text>
+                <Text variant="stat">{r.drivers.toLocaleString(i18n.language)}</Text>
+              </View>
+              <Text variant="caption" tone="muted">
+                {t('analytics.reportSessions', { count: r.sessions })}
+              </Text>
+              <Button title={t('analytics.exportCsv')} variant="secondary" size="md" onPress={() => void exportCsv(r)} />
+            </Card>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -329,5 +431,6 @@ const styles = StyleSheet.create({
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3 },
   gapXs: { gap: 4 },
+  gapMd: { gap: spacing.md },
   flex: { flex: 1 },
 });

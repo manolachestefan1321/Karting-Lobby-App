@@ -115,6 +115,7 @@ function toSession(r: Row, tracks: Track[]): KartSession | null {
     memberCount: r.member_count,
     resultsStatus: r.results_status ?? null,
     myStatus: r.my_status ?? null,
+    myBookingCode: r.my_booking_code ?? null,
     createdAt: r.created_at,
   };
 }
@@ -188,6 +189,7 @@ export const sessionsApi = {
       totalXp: m.total_xp,
       totalKm: m.total_meters / 1000,
       status: m.status,
+      bookingCode: m.booking_code ?? null,
       isHost: m.is_host,
       joinedAt: m.joined_at,
       paidAt: m.paid_at,

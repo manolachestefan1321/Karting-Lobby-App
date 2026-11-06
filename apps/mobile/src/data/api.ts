@@ -39,6 +39,7 @@ import type {
   SessionFilters,
   SessionResults,
   Track,
+  TrackReport,
   TrackExperience,
   Locale,
 } from './types';
@@ -206,6 +207,8 @@ export interface LaunchApi {
 export interface AnalyticsApi {
   track(event: SiteEvent): Promise<void>;
   report(range: AnalyticsRange): Promise<AnalyticsReport>;
+  /** Founder only: seats booked through KartUP per track for a month (YYYY-MM), to invoice the tracks. */
+  trackReport(month: string): Promise<TrackReport[]>;
   /** Proof of a cookie choice (random id, no personal data). */
   consent(record: { consentId: string; analytics: boolean; version: string; locale: 'en' | 'ro' }): Promise<void>;
 }

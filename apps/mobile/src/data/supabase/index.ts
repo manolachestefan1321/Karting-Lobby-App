@@ -6,7 +6,7 @@
 import { DEFAULT_MIN_AGE, DEFAULT_RULES } from '@kartup/domain';
 import { ApiError, type DataApi } from '../api';
 import { RANK_TIERS } from '../ranks';
-import { ANALYTICS_RANGES, type AnalyticsReport, type City, type Profile, type PublicProfile, type Track } from '../types';
+import { ANALYTICS_RANGES, type AnalyticsReport, type City, type Profile, type PublicProfile, type Track, type TrackReport } from '../types';
 import { publicStorageUrl, supabase } from './client';
 import { authRedirectUrl } from './redirect';
 import { adminSessionsApi, allTracks, moderationApi, progressHistory, rankingApi, resultsApi, sessionsApi, subscribeLive } from './sessions';
@@ -242,6 +242,11 @@ export const supabaseApi: DataApi = {
         utm_source: e.utmSource?.slice(0, 80) ?? null,
         device: e.device,
       });
+    },
+    trackReport: async (month) => {
+      const { data, error } = await supabase.rpc('track_report', { p_month: month });
+      wrap(error);
+      return (data as TrackReport[]) ?? [];
     },
     consent: async ({ consentId, analytics, version, locale }) => {
       await supabase.from('consent_log').insert({ consent_id: consentId, analytics, version, locale });

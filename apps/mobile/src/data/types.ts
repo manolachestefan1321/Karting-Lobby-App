@@ -165,11 +165,15 @@ export interface KartSession {
   resultsStatus: ResultsState | null;
   /** The signed-in user's status in this session, if any. */
   myStatus: MemberStatus | null;
+  /** Code the driver says at the desk (KUP-4821), once they have a seat. */
+  myBookingCode: string | null;
   createdAt: string;
 }
 
 export interface LobbyMember extends UserSummary {
   status: MemberStatus;
+  /** Booking code: visible to the driver, the host and admins only. */
+  bookingCode: string | null;
   isHost: boolean;
   joinedAt: string;
   paidAt: string | null;
@@ -287,6 +291,15 @@ export interface RankUpEvent {
   rank: RankTier;
   totalKm: number;
   totalXp: number;
+}
+
+/** Monthly report per track: seats booked through KartUP in sessions that took place. */
+export interface TrackReport {
+  trackId: string;
+  trackName: string;
+  sessions: number;
+  drivers: number;
+  rows: { code: string | null; driver: string; startsAt: string; sessionId: string; status: MemberStatus }[];
 }
 
 /** Results a driver disputed, waiting for an admin decision. */

@@ -7,7 +7,7 @@ Pentru testele de mai jos îți trebuie **2 conturi**:
 ## 0. Pregătire (o singură dată)
 1. GitHub Desktop: **Fetch origin**, apoi **Pull origin**.
 2. Terminal: `npm install`
-3. Terminal: `npx supabase db push`. Răspunzi **Y**. Se aplică 5 migrări noi și nu se șterge nimic.
+3. Terminal: `npx supabase db push`. Răspunzi **Y**. Se aplică 6 migrări noi și nu se șterge nimic.
 4. Terminal: `npm run web:real`, apoi deschizi **http://localhost:8081**.
 5. Opțional, ca rezultatele să devină finale singure după 24 h: Supabase → **Database → Extensions** → pornești **pg_cron**, apoi rulezi din nou `npx supabase db push`. Fără pg_cron, rezultatele devin finale oricum, prima dată când cineva le deschide sau deschide clasamentul.
 
@@ -37,7 +37,8 @@ Deschide **localhost:8081** în Incognito.
 | A | **Creează**: VMax Romexpo, mâine, 4 piloți | Prețul „120 RON, plătești la pistă”, apoi lobby-ul cu tine înăuntru |
 | A | Încearcă o oră peste mai puțin de 4 ore | Eroare: „cel puțin 4 ore” |
 | B | **Sesiuni** → deschide sesiunea lui A | „Rezervă locul” |
-| B | **Rezervă locul** | „Loc rezervat! Plătești la pistă.” și „Ești înscris” |
+| B | **Rezervă locul** | „Loc rezervat! Plătești la pistă.”, „Ești înscris” și **„Codul tău KartUP”**, de exemplu KUP-4821 |
+| A (organizator) | Lista de piloți din lobby | Lângă fiecare pilot, codul lui. B vede doar codul lui. |
 | A | Lasă lobby-ul deschis | B apare **singur**, fără să reîncarci pagina |
 | B | **Renunț la loc** | Locul se eliberează. La A scade numărul de piloți. |
 | B | Rezervă din nou | Merge |
@@ -79,6 +80,7 @@ where id = (select id from public.sessions order by created_at desc limit 1);
 
 ## 7. Analytics (contul A)
 Profil → **Analytics**:
+- jos, la **Raport piste**: luna curentă, piloții aduși pe fiecare pistă (doar din sesiunile care au avut loc), iar **Descarcă lista (CSV)** se deschide în Excel cu pista, data, pilotul, codul și starea;
 - vizitatori și înscrieri pe waitlist;
 - **sesiuni karting active**, acum cu date reale;
 - încasările rămân „—” până pornim plățile.

@@ -227,6 +227,21 @@ export default function LobbyScreen() {
           </Card>
         ) : null}
 
+        {/* My booking code: said at the desk (tracks pay KartUP per driver it brings). */}
+        {s.myBookingCode && !s.cancelledAt ? (
+          <Card style={[styles.codeCard, { borderColor: colors.accent }]}>
+            <Text variant="label" tone="muted">
+              {t('lobby.bookingCode')}
+            </Text>
+            <Text variant="display" style={styles.codeText} selectable accessibilityLabel={`${t('lobby.bookingCode')}: ${s.myBookingCode.split('').join(' ')}`}>
+              {s.myBookingCode}
+            </Text>
+            <Text variant="small" tone="muted" align="center">
+              {t('lobby.bookingCodeHint')}
+            </Text>
+          </Card>
+        ) : null}
+
         {/* Price */}
         <Card style={styles.gapSm}>
           <View style={styles.rowBetween}>
@@ -336,6 +351,7 @@ export default function LobbyScreen() {
               hostView={isHost}
               canRemove={isHost && !m.isHost && !started && (m.status === 'confirmed' || m.status === 'joined_unpaid')}
               canMark={isHost && phase === 'checkin' && m.status === 'confirmed' && !m.checkedInAt}
+              payAtTrack={payAtTrack}
               onRemove={() => void onRemove(m)}
               onMark={() => confirmAttendance.mutate({ id, userId: m.id, attended: !m.hostConfirmed }, { onError: fail })}
             />
@@ -403,6 +419,7 @@ function MemberRow({
   hostView,
   canRemove,
   canMark,
+  payAtTrack,
   onRemove,
   onMark,
 }: {
@@ -410,6 +427,7 @@ function MemberRow({
   tiers: RankTier[];
   isMe: boolean;
   hostView: boolean;
+  payAtTrack: boolean;
   canRemove: boolean;
   canMark: boolean;
   onRemove: () => void;
@@ -431,10 +449,16 @@ function MemberRow({
             {tier ? <RankBadge tier={tier} small /> : null}
             {m.isHost ? <Chip label={t('lobby.host')} tone="accent" /> : null}
             {m.status === 'joined_unpaid' ? <Chip label={t('lobby.statusUnpaid')} tone="warning" /> : null}
-            {m.status === 'confirmed' && !m.checkedInAt && !m.hostConfirmed ? <Chip label={t('lobby.statusPaid')} tone="success" /> : null}
+            {m.status === 'confirmed' && !m.checkedInAt && !m.hostConfirmed ? <Chip label={payAtTrack ? t('lobby.statusReserved') : t('lobby.statusPaid')} tone="success" /> : null}
             {m.checkedInAt ? <Chip label={t('lobby.statusCheckedIn')} tone="success" icon="location" /> : null}
             {m.hostConfirmed && !m.checkedInAt ? <Chip label={t('lobby.statusPresent')} tone="success" /> : null}
             {m.status === 'no_show' ? <Chip label={t('lobby.statusNoShow')} tone="danger" /> : null}
+            {/* The host sees every booking code, for the desk. */}
+            {hostView && m.bookingCode ? (
+              <Text variant="caption" tone="muted" style={styles.code}>
+                {m.bookingCode}
+              </Text>
+            ) : null}
           </View>
         </View>
       </Pressable>
@@ -449,6 +473,9 @@ function MemberRow({
 }
 
 const styles = StyleSheet.create({
+  code: { fontFamily: 'monospace', letterSpacing: 1 },
+  codeCard: { alignItems: 'center', gap: spacing.xs, borderWidth: 2 },
+  codeText: { letterSpacing: 3 },
   head: { gap: spacing.xs },
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, alignItems: 'center' },
   rowWrapTight: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignItems: 'center', marginTop: 2 },

@@ -48,9 +48,9 @@ Deschide **localhost:8081** în Incognito.
 | Cine | Ce faci | Ce trebuie să vezi |
 |---|---|---|
 | A și B, în același lobby | Scrieți mesaje | Apar **live** la amândoi |
-| — | Când B intră sau iese | În chat apare „B a intrat” / „B a ieșit” |
-| Un al treilea cont, care nu e în lobby | Deschide lobby-ul | „Chat-ul e doar pentru piloții din lobby” |
-| B | Apasă lung pe un mesaj de la A → **Raportează** | Raportul apare în Supabase → `reports` |
+| — | Când B intră sau iese | În chat apare „B s-a alăturat” / „B a plecat” |
+| Un al treilea cont, care nu e în lobby | Deschide lobby-ul | „Intră în lobby ca să scrii.” și niciun mesaj vizibil |
+| B | Apasă pe un mesaj de la A → **Raportează mesajul** | Raportul apare în Supabase → `reports` |
 | B | **Blochează** pe A | Mesajele lui A dispar doar pentru B |
 | B | Scrie 11 mesaje foarte repede | „Prea multe mesaje deodată” |
 

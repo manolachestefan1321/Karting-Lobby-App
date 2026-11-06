@@ -14,6 +14,9 @@ import type {
   LeaderboardEntry,
   LeaderboardScope,
   LobbyMember,
+  PartnerDeskSession,
+  PartnerReportRow,
+  PartnerStats,
   ProgressEntry,
   SessionFilters,
   SessionResults,
@@ -444,5 +447,33 @@ export const adminSessionsApi = {
   /** Self-reported results come later in the real app. */
   async pendingSelfReports() {
     return [];
+  },
+};
+
+// ── Track partner panel ───────────────────────────────────────────────────────
+export const partnerApi = {
+  async myTracks(): Promise<string[]> {
+    const { data, error } = await supabase.rpc('my_partner_tracks');
+    fail(error);
+    return ((data as unknown[]) ?? []).map((x) => (typeof x === 'string' ? x : (x as Row).my_partner_tracks));
+  },
+  async desk(trackId: string, fromIso: string, toIso: string): Promise<PartnerDeskSession[]> {
+    const { data, error } = await supabase.rpc('track_desk', { p_track: trackId, p_from: fromIso, p_to: toIso });
+    fail(error);
+    return (data as PartnerDeskSession[]) ?? [];
+  },
+  async markArrived(sessionId: string, userId: string, arrived: boolean): Promise<void> {
+    const { error } = await supabase.rpc('mark_arrived', { p_session: sessionId, p_user: userId, p_arrived: arrived });
+    fail(error);
+  },
+  async stats(trackId: string, month: string): Promise<PartnerStats> {
+    const { data, error } = await supabase.rpc('track_partner_stats', { p_track: trackId, p_month: month });
+    fail(error);
+    return data as PartnerStats;
+  },
+  async report(trackId: string, month: string): Promise<PartnerReportRow[]> {
+    const { data, error } = await supabase.rpc('partner_report', { p_track: trackId, p_month: month });
+    fail(error);
+    return (data as PartnerReportRow[]) ?? [];
   },
 };

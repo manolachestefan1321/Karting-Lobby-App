@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, ErrorState, ListRow, Card, LoadingState, promptDialog, Screen, Text } from '@/components/ui';
+import { api } from '@/data';
 import { useMyId } from '@/features/auth/AuthProvider';
 import { toast } from '@/features/notifications/BannerHost';
 import { useAppealBan, useCities, useProgressHistory, usePublicProfile, useRankTiers, useTrackExperience } from '@/features/profile/api';
@@ -21,6 +23,7 @@ export default function MyProfile() {
   const history = useProgressHistory(userId);
   const cities = useCities();
   const appeal = useAppealBan();
+  const partnerTracks = useQuery({ queryKey: ['partner_tracks'], queryFn: () => api.partner.myTracks() });
 
   const refreshing = profile.isRefetching || experience.isRefetching;
   const refresh = () => {
@@ -61,6 +64,10 @@ export default function MyProfile() {
               {/* Owner only: the analytics dashboard. */}
               {profile.data.badges.includes('founder') ? (
                 <Button title={t('analytics.open')} fullWidth={false} size="md" onPress={() => router.push('/admin/analytics')} />
+              ) : null}
+              {/* Track staff (and the founder): the desk panel. */}
+              {partnerTracks.data?.length ? (
+                <Button title={t('partner.open')} variant="secondary" fullWidth={false} size="md" onPress={() => router.push('/partner')} />
               ) : null}
             </View>
           }

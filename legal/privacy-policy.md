@@ -26,6 +26,7 @@ _Last updated: {{DATE}} · TEMPLATE — have it reviewed by a lawyer before publ
 - **Other users** see your public profile: photo, name, age, city, bio, rank, points, sessions and tracks raced, and an active ban if you have one. Lobby members see lobby chat messages.
 - **Service providers** acting on our instructions: Supabase (hosting, EU region), Stripe (payments), Expo (push delivery), our email provider.
 - **Hosts** of a session receive payouts through Stripe; they do not receive your payment details.
+- **The track where you book a seat** sees your name and your booking code (KUP-…) in its KartUP desk panel, so it can check you in and count the drivers KartUP brings. It does not see your email, phone number or profile details.
 - We never sell your data.
 
 ## 4. How long we keep it

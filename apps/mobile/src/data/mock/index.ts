@@ -263,4 +263,11 @@ export const mockApi: DataApi = {
     report: (range) => call(() => server.analyticsReport(range)),
     trackReport: (month) => call(() => server.trackReport(month)),
   },
+  partner: {
+    myTracks: () => call(() => server.partnerTracks()),
+    desk: (trackId, fromIso, toIso) => call(() => server.partnerDesk(trackId, fromIso, toIso)),
+    markArrived: (sessionId, userId, arrived) => call(() => server.partnerMarkArrived(sessionId, userId, arrived)),
+    stats: (trackId, month) => call(() => server.partnerStats(trackId, month)),
+    report: (trackId, month) => call(() => server.partnerReport(trackId, month)),
+  },
 };

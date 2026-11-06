@@ -53,6 +53,9 @@ import type {
   LobbyMember,
   NotificationGroup,
   NotificationType,
+  PartnerDeskSession,
+  PartnerReportRow,
+  PartnerStats,
   AnalyticsRange,
   AnalyticsReport,
   OwnerCashout,
@@ -1423,6 +1426,93 @@ export class MockServer {
       byTrack.set(t.id, r);
     }
     return [...byTrack.values()].sort((a, b) => a.trackName.localeCompare(b.trackName));
+  }
+
+  // ───────────────────────────── track partner panel ─────────────────────────────
+  /** Demo: the founder and admins can open every track's panel (the real app adds track staff). */
+  private assertTrackStaff(actorId = this.me().id) {
+    if (!this.isAdmin(actorId)) throw new ApiError('track_staff_only');
+  }
+  partnerTracks(): string[] {
+    const id = this.db.currentUserId;
+    return id && this.isAdmin(id) ? this.db.tracks.map((t) => t.id) : [];
+  }
+  private partnerSeats(s: DbSession) {
+    return this.membersOf(s.id).filter((m) => m.status === 'confirmed' || m.status === 'attended' || m.status === 'no_show');
+  }
+  partnerDesk(trackId: string, fromIso: string, toIso: string): PartnerDeskSession[] {
+    this.assertTrackStaff();
+    return this.db.sessions
+      .filter((s) => s.trackId === trackId && ms(s.startsAt) >= ms(fromIso) && ms(s.startsAt) < ms(toIso))
+      .sort((a, b) => ms(a.startsAt) - ms(b.startsAt))
+      .map((s) => ({
+        sessionId: s.id,
+        startsAt: s.startsAt,
+        maxDrivers: s.maxDrivers,
+        cancelled: !!s.cancelledAt,
+        lobbyType: s.lobbyType,
+        official: s.isOfficialEvent,
+        host: this.name(s.hostId),
+        trackPriceMinor: s.trackPriceMinor,
+        currency: s.currency,
+        drivers: this.partnerSeats(s)
+          .map((m) => ({ userId: m.userId, name: this.name(m.userId), code: bookingCode(s.id, m.userId), status: m.status, arrivedAt: m.checkedInAt }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      }));
+  }
+  partnerMarkArrived(sessionId: string, userId: string, arrived: boolean) {
+    this.assertTrackStaff();
+    const s = this.session(sessionId);
+    if (s.cancelledAt) throw new ApiError('session_cancelled');
+    const now = this.now().getTime();
+    if (now < ms(s.startsAt) - 2 * 3_600_000 || now > ms(s.startsAt) + 6 * 3_600_000) throw new ApiError('not_today');
+    const m = this.member(sessionId, userId);
+    if (!m || (m.status !== 'confirmed' && m.status !== 'attended')) throw new ApiError('not_found');
+    this.mutate(() => {
+      m.checkedInAt = arrived ? this.iso() : null;
+    });
+  }
+  partnerStats(trackId: string, month: string): PartnerStats {
+    this.assertTrackStaff();
+    const t = this.track(trackId);
+    const now = this.now().getTime();
+    const sessions = this.db.sessions.filter((s) => s.trackId === trackId && !s.cancelledAt);
+    const seats = sessions.flatMap((s) => this.partnerSeats(s).map((m) => ({ m, s })));
+    const inMonth = seats.filter(({ s }) => seasonOf(s.startsAt, t.timezone) === month);
+    const held = inMonth.filter(({ s }) => ms(s.startsAt) <= now);
+    const firsts = new Map<string, number>();
+    for (const { m, s } of seats) firsts.set(m.userId, Math.min(firsts.get(m.userId) ?? Infinity, ms(s.startsAt)));
+    const local = (iso: string) => {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: t.timezone, weekday: 'short', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso));
+      return { day: parts.find((p) => p.type === 'weekday')!.value, hour: Number(parts.find((p) => p.type === 'hour')!.value) };
+    };
+    return {
+      month,
+      currency: t.price.currency,
+      drivers: held.length,
+      sessions: new Set(held.map(({ s }) => s.id)).size,
+      uniqueDrivers: new Set(held.map(({ m }) => m.userId)).size,
+      newCustomers: [...firsts.values()].filter((at) => at <= now && seasonOf(new Date(at).toISOString(), t.timezone) === month).length,
+      revenueMinor: held.reduce((a, { s }) => a + s.trackPriceMinor, 0),
+      offPeakDrivers: held.filter(({ s }) => {
+        const l = local(s.startsAt);
+        return l.day !== 'Sat' && l.day !== 'Sun' && l.hour < 17;
+      }).length,
+      arrived: held.filter(({ m }) => m.checkedInAt).length,
+      upcomingDrivers: inMonth.filter(({ s }) => ms(s.startsAt) > now).length,
+      upcomingSessions: new Set(inMonth.filter(({ s }) => ms(s.startsAt) > now).map(({ s }) => s.id)).size,
+    };
+  }
+  partnerReport(trackId: string, month: string): PartnerReportRow[] {
+    this.assertTrackStaff();
+    const t = this.track(trackId);
+    const now = this.now().getTime();
+    return this.db.sessions
+      .filter((s) => s.trackId === trackId && !s.cancelledAt && ms(s.startsAt) <= now && seasonOf(s.startsAt, t.timezone) === month)
+      .sort((a, b) => ms(a.startsAt) - ms(b.startsAt))
+      .flatMap((s) =>
+        this.partnerSeats(s).map((m) => ({ code: bookingCode(s.id, m.userId), driver: this.name(m.userId), startsAt: s.startsAt, sessionId: s.id, status: m.status, arrivedAt: m.checkedInAt })),
+      );
   }
 
   // ───────────────────────────── join the race (website) ─────────────────────────────

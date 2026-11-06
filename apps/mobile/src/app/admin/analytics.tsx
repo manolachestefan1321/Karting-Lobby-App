@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, EmptyState, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
 import { ANALYTICS_RANGES, api, type AnalyticsCount, type AnalyticsRange, type AnalyticsReport, type TrackReport } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { money } from '@/lib/format';
+import { saveCsv } from '@/lib/csv';
+import { money, monthLabel, recentMonthKeys } from '@/lib/format';
 import { useNow } from '@/lib/live';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, spacing } from '@/theme/tokens';
@@ -121,17 +122,6 @@ export default function AnalyticsScreen() {
   );
 }
 
-/** "YYYY-MM" of this month and the two before, in the tracks' time zone. */
-function recentMonths(): string[] {
-  const now = new Date(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) + 'T12:00:00Z');
-  return [0, 1, 2].map((back) => {
-    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, 15));
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-  });
-}
-
-const csvCell = (v: string) => (/[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-
 /**
  * Drivers KartUP brought to each track this month (sessions that took place),
  * with their booking codes: what you invoice the track for. Exports a CSV.
@@ -139,31 +129,18 @@ const csvCell = (v: string) => (/[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"`
 function TrackReports() {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
-  const months = recentMonths();
+  const months = recentMonthKeys(TZ);
   const [month, setMonth] = useState(months[0]!);
   const report = useQuery({ queryKey: ['track_report', month], queryFn: () => api.analytics.trackReport(month) });
-  const monthLabel = (m: string) => new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${m}-15T12:00:00Z`));
 
-  const exportCsv = async (r: TrackReport) => {
+  const exportCsv = (r: TrackReport) => {
     const fmt = new Intl.DateTimeFormat('ro-RO', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-    const lines = [
-      [t('analytics.csv.track'), t('analytics.csv.date'), t('analytics.csv.driver'), t('analytics.csv.code'), t('analytics.csv.status')].join(','),
-      ...r.rows.map((x) => [r.trackName, fmt.format(new Date(x.startsAt)), x.driver, x.code ?? '', t(`analytics.csv.${x.status === 'attended' ? 'attended' : 'reserved'}`)].map(csvCell).join(',')),
-      '',
-      [t('analytics.csv.total'), '', String(r.drivers), '', ''].join(','),
-    ];
-    const csv = '﻿' + lines.join('\n'); // BOM: Excel opens Romanian letters correctly
-    const name = `KartUP-${r.trackName.replace(/\s+/g, '-')}-${month}.csv`;
-    if (Platform.OS === 'web') {
-      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      await Share.share({ title: name, message: csv });
-    }
+    return saveCsv(`KartUP-${r.trackName.replace(/\s+/g, '-')}-${month}.csv`, [
+      [t('analytics.csv.track'), t('analytics.csv.date'), t('analytics.csv.driver'), t('analytics.csv.code'), t('analytics.csv.status')],
+      ...r.rows.map((x) => [r.trackName, fmt.format(new Date(x.startsAt)), x.driver, x.code ?? '', t(`analytics.csv.${x.status === 'attended' ? 'attended' : 'reserved'}`)]),
+      [],
+      [t('analytics.csv.total'), '', String(r.drivers), '', ''],
+    ]);
   };
 
   return (
@@ -186,7 +163,7 @@ function TrackReports() {
               style={[styles.range, { borderColor: on ? colors.accent : colors.border, backgroundColor: on ? colors.accent : colors.surface }]}
             >
               <Text variant="label" style={{ color: on ? colors.onAccent : colors.text }}>
-                {monthLabel(m)}
+                {monthLabel(m, i18n.language)}
               </Text>
             </Pressable>
           );

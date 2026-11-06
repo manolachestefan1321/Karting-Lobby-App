@@ -91,3 +91,18 @@ export function zonedToUtc(dateKey: string, time: string, timeZone: string): Dat
   guess = naive - tzOffset(guess, timeZone);
   return new Date(guess);
 }
+
+/** "YYYY-MM" of this month and the ones before it, in a time zone (newest first). */
+export function recentMonthKeys(timeZone: string, count = 3): string[] {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit' }).format(new Date());
+  const [y, m] = today.split('-').map(Number) as [number, number];
+  return Array.from({ length: count }, (_, back) => {
+    const d = new Date(Date.UTC(y, m - 1 - back, 15));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  });
+}
+
+/** "noiembrie 2026" for "2026-11". */
+export function monthLabel(month: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${month}-15T12:00:00Z`));
+}

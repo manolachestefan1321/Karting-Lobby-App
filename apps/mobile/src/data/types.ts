@@ -293,6 +293,55 @@ export interface RankUpEvent {
   totalXp: number;
 }
 
+/** Track partner panel (the desk at a track like VMax). */
+export interface PartnerDriver {
+  userId: string;
+  name: string;
+  code: string | null;
+  status: MemberStatus;
+  arrivedAt: string | null;
+}
+
+export interface PartnerDeskSession {
+  sessionId: string;
+  startsAt: string;
+  maxDrivers: number;
+  cancelled: boolean;
+  lobbyType: LobbyType;
+  official: boolean;
+  host: string;
+  trackPriceMinor: number;
+  currency: string;
+  drivers: PartnerDriver[];
+}
+
+/** What KartUP brought to the track in a month (sessions that took place). */
+export interface PartnerStats {
+  month: string;
+  currency: string;
+  drivers: number;
+  sessions: number;
+  uniqueDrivers: number;
+  /** First KartUP booking ever at this track. */
+  newCustomers: number;
+  /** Track price × drivers brought. */
+  revenueMinor: number;
+  /** Monday–Friday before 17:00. */
+  offPeakDrivers: number;
+  arrived: number;
+  upcomingDrivers: number;
+  upcomingSessions: number;
+}
+
+export interface PartnerReportRow {
+  code: string | null;
+  driver: string;
+  startsAt: string;
+  sessionId: string;
+  status: MemberStatus;
+  arrivedAt: string | null;
+}
+
 /** Monthly report per track: seats booked through KartUP in sessions that took place. */
 export interface TrackReport {
   trackId: string;

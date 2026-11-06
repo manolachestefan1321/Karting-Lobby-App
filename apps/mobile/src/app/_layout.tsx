@@ -116,6 +116,7 @@ function RootNavigator() {
             <Stack.Screen name="admin/index" options={header} />
             <Stack.Screen name="admin/finance" options={header} />
             <Stack.Screen name="admin/analytics" options={header} />
+            <Stack.Screen name="partner/index" options={header} />
             <Stack.Screen name="profile/experience" options={{ ...header, presentation: 'modal' }} />
             <Stack.Screen name="user/[id]" options={header} />
             <Stack.Screen name="settings/index" options={header} />

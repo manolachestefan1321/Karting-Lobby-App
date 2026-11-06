@@ -7,7 +7,7 @@ Pentru testele de mai jos îți trebuie **2 conturi**:
 ## 0. Pregătire (o singură dată)
 1. GitHub Desktop: **Fetch origin**, apoi **Pull origin**.
 2. Terminal: `npm install`
-3. Terminal: `npx supabase db push`. Răspunzi **Y**. Se aplică 6 migrări noi și nu se șterge nimic.
+3. Terminal: `npx supabase db push`. Răspunzi **Y**. Se aplică 7 migrări noi și nu se șterge nimic.
 4. Terminal: `npm run web:real`, apoi deschizi **http://localhost:8081**.
 5. Opțional, ca rezultatele să devină finale singure după 24 h: Supabase → **Database → Extensions** → pornești **pg_cron**, apoi rulezi din nou `npx supabase db push`. Fără pg_cron, rezultatele devin finale oricum, prima dată când cineva le deschide sau deschide clasamentul.
 
@@ -84,6 +84,25 @@ Profil → **Analytics**:
 - vizitatori și înscrieri pe waitlist;
 - **sesiuni karting active**, acum cu date reale;
 - încasările rămân „—” până pornim plățile.
+
+## 8. Panou pistă (pentru recepția VMax)
+1. Fă-ți un cont de test pentru „recepție” (de exemplu receptie.test@gmail.com) și completează profilul.
+2. În Supabase → SQL Editor rulezi:
+   ```
+   select public.add_track_staff('receptie.test@gmail.com', 'vmax-romexpo');
+   ```
+3. Intră cu contul ăla: în Profil apare **Panou pistă**.
+
+| Ce verifici | Ce trebuie să vezi |
+|---|---|
+| Recepție → Azi / Mâine | Sesiunile VMax Romexpo cu piloții și codurile lor |
+| Căutare „KUP-…” sau un nume | Doar pilotul căutat |
+| **A sosit** (de la 2 h înainte de start până la 6 h după) | Bifă verde „A sosit” |
+| Statistici | Piloți aduși, clienți noi, bani aduși pistei, orele slabe, câți au venit, rezervări viitoare |
+| Descarcă lista lunii | CSV cu pista, data, pilotul, codul și „a sosit” |
+| Contul de recepție, la altă pistă | Nu are acces |
+
+Tu, ca Founder, vezi panoul pentru toate pistele.
 
 ## Ce NU există încă în aplicația reală (e normal)
 - Plata în aplicație. Acum e „plătești la pistă”, fără comision.

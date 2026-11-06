@@ -25,6 +25,9 @@ import type {
   NotificationPrefs,
   PaymentIntentInfo,
   PaymentOutcome,
+  PartnerDeskSession,
+  PartnerReportRow,
+  PartnerStats,
   PaymentRecord,
   ProgressEntry,
   Profile,
@@ -213,6 +216,16 @@ export interface AnalyticsApi {
   consent(record: { consentId: string; analytics: boolean; version: string; locale: 'en' | 'ro' }): Promise<void>;
 }
 
+/** Track partner panel: staff of a track (and the founder) only — the server checks. */
+export interface PartnerApi {
+  /** Ids of the tracks whose panel I can open (empty for drivers). */
+  myTracks(): Promise<string[]>;
+  desk(trackId: string, fromIso: string, toIso: string): Promise<PartnerDeskSession[]>;
+  markArrived(sessionId: string, userId: string, arrived: boolean): Promise<void>;
+  stats(trackId: string, month: string): Promise<PartnerStats>;
+  report(trackId: string, month: string): Promise<PartnerReportRow[]>;
+}
+
 export interface DataApi {
   kind: 'mock' | 'supabase';
   clock: Clock;
@@ -230,4 +243,5 @@ export interface DataApi {
   location: LocationApi;
   launch: LaunchApi;
   analytics: AnalyticsApi;
+  partner: PartnerApi;
 }

@@ -9,7 +9,7 @@ import { RANK_TIERS } from '../ranks';
 import { ANALYTICS_RANGES, type AnalyticsReport, type City, type Profile, type PublicProfile, type Track, type TrackReport } from '../types';
 import { publicStorageUrl, supabase } from './client';
 import { authRedirectUrl } from './redirect';
-import { adminSessionsApi, allTracks, moderationApi, progressHistory, rankingApi, resultsApi, sessionsApi, subscribeLive } from './sessions';
+import { adminSessionsApi, allTracks, moderationApi, partnerApi, progressHistory, rankingApi, resultsApi, sessionsApi, subscribeLive } from './sessions';
 import { signInWithApple, signInWithGoogle, signInWithOAuthBrowser, signOutEverywhere } from './social';
 
 const notImplemented = (): never => {
@@ -261,4 +261,5 @@ export const supabaseApi: DataApi = {
       return { ...r, range, from: new Date(Date.now() - seconds * 1000).toISOString(), revenue: null, karting: r.karting ?? null };
     },
   },
+  partner: partnerApi,
 };

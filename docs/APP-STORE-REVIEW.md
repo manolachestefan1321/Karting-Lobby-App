@@ -97,7 +97,7 @@ Demo account:
   Password: <parola>
 
 How to test:
-  1. Sessions tab → open any upcoming session → "Reserve seat". You get a booking code.
+  1. Sessions tab → open any upcoming session → "Reserve my seat". You get a booking code.
   2. Open the lobby chat and send a message.
   3. Tap a driver → Report / Block (user-generated content moderation).
   4. Profile → Settings → Delete account.

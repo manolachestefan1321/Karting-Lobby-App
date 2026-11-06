@@ -7,6 +7,7 @@
 import { participantPrice, type ExperienceLevel } from '@kartup/domain';
 import { ApiError } from '../api';
 import type {
+  AppNotification,
   ChatMessage,
   CreateSessionInput,
   DisputedResults,
@@ -14,6 +15,7 @@ import type {
   LeaderboardEntry,
   LeaderboardScope,
   LobbyMember,
+  NotificationPrefs,
   PartnerDeskSession,
   PartnerReportRow,
   PartnerStats,
@@ -289,6 +291,46 @@ export const moderationApi = {
 const listeners = new Set<() => void>();
 let channel: ReturnType<typeof supabase.channel> | null = null;
 
+// ── Notifications ─────────────────────────────────────────────────────────────
+const newListeners = new Set<(n: AppNotification) => void>();
+
+function toNotification(r: Row): AppNotification {
+  return { id: r.id, type: r.type, createdAt: r.created_at, readAt: r.read_at, data: r.data ?? {} };
+}
+
+const DEFAULT_PREFS: NotificationPrefs = { lobby: true, chat: true, reminders: true, results: true, ranking: true, account: true };
+
+export const notificationsApi = {
+  async list(): Promise<AppNotification[]> {
+    const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100);
+    fail(error);
+    return (data ?? []).map(toNotification);
+  },
+  async markAllRead(): Promise<void> {
+    fail((await supabase.rpc('mark_notifications_read', {})).error);
+  },
+  async markRead(id: string): Promise<void> {
+    fail((await supabase.rpc('mark_notifications_read', { p_id: id })).error);
+  },
+  async prefs(): Promise<NotificationPrefs> {
+    const { data, error } = await supabase.from('notification_prefs').select('lobby, chat, reminders, results, ranking').maybeSingle();
+    fail(error);
+    return { ...DEFAULT_PREFS, ...(data ?? {}), account: true };
+  },
+  async setPrefs(p: NotificationPrefs): Promise<void> {
+    fail((await supabase.rpc('set_notification_prefs', { p_lobby: p.lobby, p_chat: p.chat, p_reminders: p.reminders, p_results: p.results, p_ranking: p.ranking })).error);
+  },
+  /** Fires for each new notification while the app is open (banners, rank-up celebration). */
+  onNew(cb: (n: AppNotification) => void): () => void {
+    newListeners.add(cb);
+    const stop = subscribeLive(() => undefined);
+    return () => {
+      newListeners.delete(cb);
+      stop();
+    };
+  },
+};
+
 export function subscribeLive(cb: () => void): () => void {
   listeners.add(cb);
   if (!channel) {
@@ -298,6 +340,12 @@ export function subscribeLive(cb: () => void): () => void {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, fire)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_members' }, fire)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fire)
+      // Row-level security: each user only receives their own notifications.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        fire();
+        const n = toNotification(payload.new as Row);
+        newListeners.forEach((l) => l(n));
+      })
       .subscribe();
   }
   return () => {

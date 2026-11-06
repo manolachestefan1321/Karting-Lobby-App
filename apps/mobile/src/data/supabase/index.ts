@@ -9,7 +9,7 @@ import { RANK_TIERS } from '../ranks';
 import { ANALYTICS_RANGES, type AnalyticsReport, type City, type Profile, type PublicProfile, type Track, type TrackReport } from '../types';
 import { publicStorageUrl, supabase } from './client';
 import { authRedirectUrl } from './redirect';
-import { adminSessionsApi, allTracks, moderationApi, partnerApi, progressHistory, rankingApi, resultsApi, sessionsApi, subscribeLive } from './sessions';
+import { adminSessionsApi, allTracks, moderationApi, notificationsApi, partnerApi, progressHistory, rankingApi, resultsApi, sessionsApi, subscribeLive } from './sessions';
 import { signInWithApple, signInWithGoogle, signInWithOAuthBrowser, signOutEverywhere } from './social';
 
 const notImplemented = (): never => {
@@ -208,14 +208,7 @@ export const supabaseApi: DataApi = {
   results: resultsApi,
   ranking: rankingApi,
   admin: { ...adminSessionsApi, reviewSelfReport: notImplemented, finance: notImplemented, cashout: notImplemented },
-  notifications: {
-    list: notImplemented,
-    markAllRead: notImplemented,
-    markRead: notImplemented,
-    prefs: notImplemented,
-    setPrefs: notImplemented,
-    onNew: () => () => undefined,
-  },
+  notifications: notificationsApi,
   moderation: moderationApi,
   realtime: { subscribe: (_topic, cb) => subscribeLive(cb) },
   location: { current: notImplemented },

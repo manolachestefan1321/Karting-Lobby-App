@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Chip, EmptyState, LoadingState, Screen, Text } from '@/components/ui';
-import type { ProgressEntry } from '@/data';
+import { api, type ProgressEntry } from '@/data';
 import { useMyId } from '@/features/auth/AuthProvider';
 import { useProgressHistory } from '@/features/profile/api';
 import { Breakdown } from '@/features/profile/Breakdown';
@@ -24,7 +24,7 @@ export default function RaceHistory() {
       <Text variant="heading" tone="accent">
         {xp.toLocaleString(i18n.language)} XP · {(Math.round(km * 10) / 10).toLocaleString(i18n.language)} km
       </Text>
-      <Button title={t('profile.addRace')} variant="secondary" size="md" onPress={() => router.push('/profile/self-report')} />
+      {api.kind === 'mock' ? <Button title={t('profile.addRace')} variant="secondary" size="md" onPress={() => router.push('/profile/self-report')} /> : null}
       {!rows.length ? (
         <EmptyState icon="trending-up-outline" title={t('profile.noRaces')} />
       ) : (

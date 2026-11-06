@@ -8,11 +8,12 @@ import { Card, ListRow, Screen, SectionHeader, SegmentedControl, Text, Toggle } 
 import { api, type Locale, type NotificationGroup } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useNotificationPrefs, useSetNotificationPrefs } from '@/features/notifications/hooks';
+import { useRulesOrDefault } from '@/features/sessions/rules';
 import { openCookieSettings } from '@/features/web/consent';
 import { usePreferences, type ThemePreference } from '@/store/preferences';
 import { spacing } from '@/theme/tokens';
 
-const GROUPS: NotificationGroup[] = ['lobby', 'chat', 'reminders', 'results', 'ranking', 'account'];
+const ALL_GROUPS: NotificationGroup[] = ['lobby', 'chat', 'reminders', 'results', 'ranking', 'account'];
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -20,6 +21,9 @@ export default function Settings() {
   const { locale, theme, setLocale, setTheme } = usePreferences();
   const prefs = useNotificationPrefs();
   const setPrefs = useSetNotificationPrefs();
+  const rules = useRulesOrDefault();
+  // Reminders are about refunds and check-in: only shown when those exist.
+  const GROUPS = ALL_GROUPS.filter((g) => g !== 'reminders' || rules.paymentsEnabled || rules.checkinEnabled);
 
   return (
     <Screen>
@@ -71,7 +75,7 @@ export default function Settings() {
 
       <SectionHeader title={t('settings.account')} />
       <Card padded={false}>
-        <ListRow icon="receipt-outline" title={t('settings.payments')} onPress={() => router.push('/settings/payments')} />
+        {rules.paymentsEnabled ? <ListRow icon="receipt-outline" title={t('settings.payments')} onPress={() => router.push('/settings/payments')} /> : null}
         {profile?.role === 'admin' ? <ListRow icon="shield-checkmark-outline" title={t('settings.admin')} onPress={() => router.push('/admin')} /> : null}
         {profile?.role === 'admin' ? <ListRow icon="wallet-outline" title={t('settings.owner')} onPress={() => router.push('/admin/finance')} /> : null}
         {api.kind === 'mock' ? <ListRow icon="construct-outline" title={t('dev.open')} subtitle={t('settings.previewMode')} onPress={() => router.push('/dev')} /> : null}

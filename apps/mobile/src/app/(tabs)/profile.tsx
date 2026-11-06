@@ -92,7 +92,10 @@ export default function MyProfile() {
                 }
                 onPress={() => router.push('/profile/history')}
               />
-              <ListRow icon="add-circle-outline" title={t('profile.addRace')} subtitle={t('profile.unverified')} onPress={() => router.push('/profile/self-report')} />
+              {/* Self-reported races aren't in the real app yet: hidden so nothing leads to an error. */}
+              {api.kind === 'mock' ? (
+                <ListRow icon="add-circle-outline" title={t('profile.addRace')} subtitle={t('profile.unverified')} onPress={() => router.push('/profile/self-report')} />
+              ) : null}
             </Card>
           }
         />

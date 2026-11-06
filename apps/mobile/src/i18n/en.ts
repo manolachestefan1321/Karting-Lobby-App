@@ -358,6 +358,8 @@ const en = {
     },
     appealApproved: 'Your appeal was approved and the ban was lifted.',
     appealRejected: 'Your appeal was rejected.',
+    lobbyJoinedFreeBody: '{{name}} reserved a seat at {{trackName}}.',
+    sessionCancelledFreeBody: '{{trackName}} was cancelled. You don\'t owe anything at the track.',
     resultsCasualBody: '{{trackName}}: P{{position}} · Casual – no ranking.',
     selfReportApproved: 'approved by an admin. km and XP added.',
     selfReportRejected: 'not approved by the admin.',

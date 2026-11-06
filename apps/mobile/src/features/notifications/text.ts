@@ -16,6 +16,9 @@ export function notificationText(n: AppNotification, t: TFunction, locale: strin
   if (typeof d.rankId === 'number') params.rank = rankById(d.rankId)?.name ?? String(d.rank ?? '');
   else if (typeof d.rank === 'string') params.rank = RANK_TIERS.find((r) => r.key === d.rank)?.name ?? d.rank;
   if (n.type === 'xp_penalty') params.reasonText = t(`penalty.${String(d.reason ?? 'no_show')}` as 'penalty.no_show');
+  // Seats paid at the track: nothing was paid in the app, so nothing to refund.
+  if (d.free && n.type === 'lobby_joined') return { title: t('notifications.types.lobby_joined.title'), body: t('notifications.lobbyJoinedFreeBody', params) };
+  if (d.free && n.type === 'session_cancelled') return { title: t('notifications.types.session_cancelled.title'), body: t('notifications.sessionCancelledFreeBody', params) };
   if (n.type === 'results_confirmed' && d.casual) return { title: t('notifications.types.results_confirmed.title'), body: t('notifications.resultsCasualBody', params) };
   if (n.type === 'self_report_reviewed') params.result = d.approved ? t('notifications.selfReportApproved') : t('notifications.selfReportRejected');
   if (n.type === 'appeal_resolved') params.result = d.approved ? t('notifications.appealApproved') : t('notifications.appealRejected');

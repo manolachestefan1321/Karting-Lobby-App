@@ -23,6 +23,13 @@ if ((buildProfile === 'production' || buildProfile === 'preview') && !realBacken
   throw new Error(`Build profile "${buildProfile}" must use the real backend: set EXPO_PUBLIC_DATA_SOURCE=supabase (see eas.json).`);
 }
 
+// App Store builds must not show placeholder contact or company details (Apple rejects them).
+// Fill config/brand.ts (supportEmail, legalEntity, legalAddress) and run `npm run brand:sync`.
+if (buildProfile === 'production') {
+  const placeholder = [brand.supportEmail, brand.legalEntity, brand.legalAddress].find((v) => /placeholder|example/i.test(v));
+  if (placeholder) throw new Error(`config/brand.ts still has a placeholder: "${placeholder}". Replace it before an App Store build.`);
+}
+
 // The iOS URL scheme for Google Sign-In is the reversed iOS client ID.
 const googleIosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
   ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID.split('.').reverse().join('.')

@@ -359,6 +359,8 @@ const ro: Translations = {
     },
     appealApproved: 'Contestația ta a fost aprobată și restricția a fost ridicată.',
     appealRejected: 'Contestația ta a fost respinsă.',
+    lobbyJoinedFreeBody: '{{name}} și-a rezervat loc la {{trackName}}.',
+    sessionCancelledFreeBody: '{{trackName}} a fost anulată. Nu plătești nimic la pistă.',
     resultsCasualBody: '{{trackName}}: P{{position}} · Casual – fără clasament.',
     selfReportApproved: 'aprobat de un administrator. Km și XP adăugate.',
     selfReportRejected: 'neaprobat de administrator.',

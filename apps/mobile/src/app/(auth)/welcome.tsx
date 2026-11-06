@@ -21,6 +21,8 @@ const enabledProviders = new Set(
     ? ['apple', 'google', 'facebook']
     : (process.env.EXPO_PUBLIC_SOCIAL_LOGINS ?? '').split(',').map((p) => p.trim().toLowerCase()),
 );
+// App Store rule 4.8: an iPhone app that offers Google or Facebook sign-in must also offer Apple.
+if (Platform.OS === 'ios' && (enabledProviders.has('google') || enabledProviders.has('facebook'))) enabledProviders.add('apple');
 
 export default function Welcome() {
   const { t } = useTranslation();

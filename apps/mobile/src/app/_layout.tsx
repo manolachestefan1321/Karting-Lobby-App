@@ -21,6 +21,7 @@ import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { BannerHost } from '@/features/notifications/BannerHost';
 import { RankUpCelebration } from '@/components/brand/RankUpCelebration';
 import { WebNav } from '@/components/brand/WebNav';
+import { SiteTracker } from '@/features/web/SiteTracker';
 import { detectDeviceLocale, i18n, initI18n } from '@/i18n';
 import { DebugBridge } from '@/preview/DebugBridge';
 import { PreviewHost } from '@/preview/PreviewHost';
@@ -72,6 +73,7 @@ function RootNavigator() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {Platform.OS === 'web' && ready ? <WebNav /> : null}
+      {ready ? <SiteTracker /> : null}
       {ready && signedIn && !profile ? (
         <Screen scroll={false} edges={['top', 'bottom']}>
           <ErrorState onRetry={() => void refreshProfile()} />
@@ -111,6 +113,7 @@ function RootNavigator() {
             <Stack.Screen name="profile/self-report" options={{ ...header, presentation: 'modal' }} />
             <Stack.Screen name="admin/index" options={header} />
             <Stack.Screen name="admin/finance" options={header} />
+            <Stack.Screen name="admin/analytics" options={header} />
             <Stack.Screen name="profile/experience" options={{ ...header, presentation: 'modal' }} />
             <Stack.Screen name="user/[id]" options={header} />
             <Stack.Screen name="settings/index" options={header} />

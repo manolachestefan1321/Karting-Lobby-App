@@ -319,6 +319,68 @@ export interface OwnerCashout {
   status: 'in_transit' | 'paid';
 }
 
+/** Owner analytics dashboard: time ranges (last hour … last year). */
+export type AnalyticsRange = '1h' | '8h' | '24h' | '2d' | '7d' | '30d' | '1y';
+
+/** Length of each range and how many bars its chart has. */
+export const ANALYTICS_RANGES: Record<AnalyticsRange, { seconds: number; buckets: number }> = {
+  '1h': { seconds: 3600, buckets: 12 },
+  '8h': { seconds: 8 * 3600, buckets: 16 },
+  '24h': { seconds: 86400, buckets: 24 },
+  '2d': { seconds: 2 * 86400, buckets: 24 },
+  '7d': { seconds: 7 * 86400, buckets: 28 },
+  '30d': { seconds: 30 * 86400, buckets: 30 },
+  '1y': { seconds: 365 * 86400, buckets: 52 },
+};
+
+export interface AnalyticsCount {
+  label: string;
+  count: number;
+}
+
+/** Everything on the owner's dashboard for one range; "Prev" = the period just before it. */
+export interface AnalyticsReport {
+  range: AnalyticsRange;
+  /** Start of the range (ISO); the chart's buckets are equal slices from here to now. */
+  from: string;
+  visitors: number;
+  visitorsPrev: number;
+  sessions: number;
+  sessionsPrev: number;
+  pageviews: number;
+  pageviewsPrev: number;
+  /** Website sessions active in the last 5 minutes. */
+  onlineNow: number;
+  avgSessionSecs: number;
+  /** % of website sessions with a single page view. */
+  bounceRate: number;
+  waitlist: number;
+  waitlistPrev: number;
+  waitlistTotal: number;
+  accounts: number;
+  accountsPrev: number;
+  accountsTotal: number;
+  /** null until payments run in the real app. */
+  revenue: { grossMinor: number; grossPrevMinor: number; feesMinor: number; payments: number; currency: string } | null;
+  /** Karting sessions (lobbies); null until they run in the real app. */
+  karting: { active: number; liveNow: number; raced: number } | null;
+  series: { visitors: number; pageviews: number }[];
+  topPages: AnalyticsCount[];
+  sources: AnalyticsCount[];
+  devices: AnalyticsCount[];
+}
+
+/** One anonymous website event (no personal data). */
+export interface SiteEvent {
+  visitorId: string;
+  sessionId: string;
+  kind: 'pageview' | 'heartbeat';
+  path: string;
+  referrer: string | null;
+  utmSource: string | null;
+  device: 'mobile' | 'tablet' | 'desktop';
+}
+
 export type NotificationType =
   | 'lobby_joined'
   | 'lobby_left'

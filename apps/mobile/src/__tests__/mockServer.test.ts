@@ -287,3 +287,24 @@ describe('join the race (website)', () => {
     expect(s.db.launchSignups).toHaveLength(1);
   });
 });
+
+describe('owner analytics (demo)', () => {
+  it('only the founder sees it; every range has its buckets and stable numbers', () => {
+    expect(() => s.analyticsReport('24h', TEST_USER_ID)).toThrow('admin_only');
+    s.mutate(() => {
+      const me = s.user(TEST_USER_ID)!;
+      me.firstName = 'Ștefan';
+      me.lastName = 'Manolache';
+    });
+    for (const [range, buckets] of [['1h', 12], ['8h', 16], ['24h', 24], ['2d', 24], ['7d', 28], ['30d', 30], ['1y', 52]] as const) {
+      const r = s.analyticsReport(range, TEST_USER_ID);
+      expect(r.series).toHaveLength(buckets);
+      expect(r.visitors).toBeGreaterThan(0);
+      expect(r.pageviews).toBeGreaterThanOrEqual(r.visitors);
+      expect(r.revenue).not.toBeNull();
+    }
+    // A year has more visitors than a day, and the same call gives the same numbers.
+    expect(s.analyticsReport('1y', TEST_USER_ID).visitors).toBeGreaterThan(s.analyticsReport('24h', TEST_USER_ID).visitors);
+    expect(s.analyticsReport('7d', TEST_USER_ID).visitors).toBe(s.analyticsReport('7d', TEST_USER_ID).visitors);
+  });
+});

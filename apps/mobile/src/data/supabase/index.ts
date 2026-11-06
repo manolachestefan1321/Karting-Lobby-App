@@ -6,7 +6,7 @@
 import { DEFAULT_MIN_AGE, DEFAULT_RULES } from '@kartup/domain';
 import { ApiError, type DataApi } from '../api';
 import { RANK_TIERS } from '../ranks';
-import type { City, Profile, PublicProfile, Track } from '../types';
+import { ANALYTICS_RANGES, type AnalyticsReport, type City, type Profile, type PublicProfile, type Track } from '../types';
 import { publicStorageUrl, supabase } from './client';
 import { authRedirectUrl } from './redirect';
 import { signInWithApple, signInWithGoogle, signInWithOAuthBrowser, signOutEverywhere } from './social';
@@ -227,6 +227,29 @@ export const supabaseApi: DataApi = {
       if (error?.code === '23505') return 'exists';
       wrap(error);
       return 'created';
+    },
+  },
+  analytics: {
+    track: async (e) => {
+      // Fire and forget: analytics must never break the page.
+      await supabase.from('site_events').insert({
+        visitor_id: e.visitorId,
+        session_id: e.sessionId,
+        kind: e.kind,
+        path: e.path.slice(0, 200),
+        referrer: e.referrer?.slice(0, 200) ?? null,
+        utm_source: e.utmSource?.slice(0, 80) ?? null,
+        device: e.device,
+      });
+    },
+    report: async (range) => {
+      const { seconds, buckets } = ANALYTICS_RANGES[range];
+      const { data, error } = await supabase.rpc('analytics_report', { p_seconds: seconds, p_buckets: buckets });
+      if (error?.message?.includes('founder_only')) throw new ApiError('admin_only');
+      wrap(error);
+      const r = data as Omit<AnalyticsReport, 'range' | 'from' | 'revenue' | 'karting'>;
+      // Payments and karting sessions aren't in the real backend yet: shown as "not live".
+      return { ...r, range, from: new Date(Date.now() - seconds * 1000).toISOString(), revenue: null, karting: null };
     },
   },
 };

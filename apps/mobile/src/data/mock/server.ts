@@ -51,6 +51,8 @@ import type {
   LobbyMember,
   NotificationGroup,
   NotificationType,
+  AnalyticsRange,
+  AnalyticsReport,
   OwnerCashout,
   OwnerFinance,
   PaymentIntentInfo,
@@ -70,6 +72,7 @@ import { clearDb, loadDb, loadDbAsync, saveDb, type Db, type DbBan, type DbLedge
 import { counts, penaltyRow, rankIdFor, scoreResult, totalsOf, type VerifiedResult } from './progression';
 import { DEFAULT_PREFS, seed, TEST_PASSWORD } from './seed';
 import { REAL_TRACKS } from './tracks';
+import { simulatedTraffic } from './analytics';
 
 export { RANK_TIERS };
 
@@ -1311,6 +1314,48 @@ export class MockServer {
       if (xp) xp.bestLapMs = 59_800;
       else this.db.experience.push({ userId: u.id, trackId: 't-vmax-romexpo', level: 'advanced', bestLapMs: 59_800, sessionsCount: 0 });
     }
+  }
+
+  // ───────────────────────────── owner analytics ─────────────────────────────
+  /**
+   * Founder only. Website traffic is simulated (the demo has no visitors); waitlist,
+   * accounts, payments and karting sessions come from the demo data.
+   */
+  analyticsReport(range: AnalyticsRange, actorId = this.me().id): AnalyticsReport {
+    const me = this.user(actorId);
+    if (!me || me.role !== 'admin' || !me.badges?.includes('founder')) throw new ApiError('admin_only');
+    const now = this.now().getTime();
+    const traffic = simulatedTraffic(range, now);
+    const from = ms(traffic.from);
+    const prevFrom = from - (now - from);
+    const inCur = (iso: string) => ms(iso) >= from && ms(iso) <= now;
+    const inPrev = (iso: string) => ms(iso) >= prevFrom && ms(iso) < from;
+    const signups = this.db.launchSignups ?? [];
+    const users = this.db.users.filter((u) => !u.deleted);
+    const paid = this.db.payments.filter((p) => p.status === 'captured');
+    const phases = this.db.sessions.map((s) => ({ s, phase: this.phase(s) }));
+    return {
+      range,
+      ...traffic,
+      waitlist: traffic.waitlist + signups.filter((x) => inCur(x.createdAt)).length,
+      waitlistPrev: traffic.waitlistPrev + signups.filter((x) => inPrev(x.createdAt)).length,
+      waitlistTotal: simulatedTraffic('1y', now).waitlist + signups.length,
+      accounts: users.filter((u) => inCur(u.createdAt)).length,
+      accountsPrev: users.filter((u) => inPrev(u.createdAt)).length,
+      accountsTotal: users.length,
+      revenue: {
+        grossMinor: paid.filter((p) => inCur(p.createdAt)).reduce((a, p) => a + p.amountMinor, 0),
+        grossPrevMinor: paid.filter((p) => inPrev(p.createdAt)).reduce((a, p) => a + p.amountMinor, 0),
+        feesMinor: paid.filter((p) => inCur(p.createdAt)).reduce((a, p) => a + p.feeMinor, 0),
+        payments: paid.filter((p) => inCur(p.createdAt)).length,
+        currency: 'RON',
+      },
+      karting: {
+        active: phases.filter((x) => ['open', 'locked', 'checkin'].includes(x.phase)).length,
+        liveNow: phases.filter((x) => x.phase === 'checkin').length,
+        raced: phases.filter((x) => !x.s.cancelledAt && inCur(x.s.startsAt) && ms(x.s.startsAt) <= now).length,
+      },
+    };
   }
 
   // ───────────────────────────── join the race (website) ─────────────────────────────

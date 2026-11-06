@@ -252,4 +252,9 @@ export const mockApi: DataApi = {
   launch: {
     signup: (input) => call(() => server.launchSignup(input)),
   },
+  analytics: {
+    // The demo has no real website traffic: events aren't stored, the report simulates visitors.
+    track: () => Promise.resolve(),
+    report: (range) => call(() => server.analyticsReport(range)),
+  },
 };

@@ -8,6 +8,8 @@
  */
 import type { LaunchSignupInput, ProfileInput, TrackExperienceInput } from '@kartup/domain';
 import type {
+  AnalyticsRange,
+  AnalyticsReport,
   AppNotification,
   AppRules,
   AuthProvider,
@@ -31,6 +33,7 @@ import type {
   OwnerCashout,
   OwnerFinance,
   SelfReport,
+  SiteEvent,
   SelfReportInput,
   SessionFilters,
   SessionResults,
@@ -193,6 +196,12 @@ export interface LaunchApi {
   signup(input: Omit<LaunchSignupInput, 'consent'> & { locale: 'en' | 'ro' }): Promise<'created' | 'exists'>;
 }
 
+/** Website analytics: anyone sends anonymous events; only the founder reads the report. */
+export interface AnalyticsApi {
+  track(event: SiteEvent): Promise<void>;
+  report(range: AnalyticsRange): Promise<AnalyticsReport>;
+}
+
 export interface DataApi {
   kind: 'mock' | 'supabase';
   clock: Clock;
@@ -209,4 +218,5 @@ export interface DataApi {
   realtime: RealtimeApi;
   location: LocationApi;
   launch: LaunchApi;
+  analytics: AnalyticsApi;
 }

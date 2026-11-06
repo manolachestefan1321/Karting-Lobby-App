@@ -55,7 +55,15 @@ export default function MyProfile() {
           tiers={tiers.data ?? []}
           experience={experience.data ?? []}
           cityName={cities.data?.find((c) => c.id === profile.data!.homeCityId)?.name}
-          actions={<Button title={t('profile.edit')} variant="secondary" fullWidth={false} size="md" onPress={() => router.push('/profile/edit')} />}
+          actions={
+            <View style={styles.actions}>
+              <Button title={t('profile.edit')} variant="secondary" fullWidth={false} size="md" onPress={() => router.push('/profile/edit')} />
+              {/* Owner only: the analytics dashboard. */}
+              {profile.data.badges.includes('founder') ? (
+                <Button title={t('analytics.open')} fullWidth={false} size="md" onPress={() => router.push('/admin/analytics')} />
+              ) : null}
+            </View>
+          }
           banAction={ban && ban.appealStatus === 'none' ? <Button title={t('profile.appeal')} variant="secondary" size="md" onPress={() => void onAppeal()} loading={appeal.isPending} /> : undefined}
           onExperiencePress={(trackId) => router.push({ pathname: '/profile/experience', params: { trackId } })}
           experienceAction={
@@ -87,6 +95,7 @@ export default function MyProfile() {
 }
 
 const styles = StyleSheet.create({
+  actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm },
   topBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1 },
 });

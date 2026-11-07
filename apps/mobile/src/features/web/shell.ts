@@ -3,3 +3,6 @@ export function removeInstantShell(): void {}
 export function shellWasShown(): boolean {
   return false;
 }
+export function takeFormIntent(): boolean {
+  return false;
+}

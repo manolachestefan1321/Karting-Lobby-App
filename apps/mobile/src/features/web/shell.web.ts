@@ -14,3 +14,11 @@ export function removeInstantShell(): void {
 export function shellWasShown(): boolean {
   return document.documentElement.dataset.shellShown === '1';
 }
+
+/** True once if the visitor tapped "Lock in my spot" on the instant first view. */
+export function takeFormIntent(): boolean {
+  const w = window as unknown as { __ksGoToForm?: boolean };
+  const wanted = !!w.__ksGoToForm;
+  w.__ksGoToForm = false;
+  return wanted;
+}

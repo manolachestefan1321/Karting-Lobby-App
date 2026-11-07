@@ -20,4 +20,20 @@ if (process.env.EXPO_PUBLIC_DATA_SOURCE === 'supabase') {
   };
 }
 
+/**
+ * Size: zod ships error messages in ~45 languages (about 300 KB). KartUP translates its own
+ * messages and zod only ever uses its English default, so the other languages become empty
+ * modules. Nothing calls z.locales.<other>(), so nothing changes in behaviour.
+ */
+const zodLocales = path.join('node_modules', 'zod', 'v4', 'locales') + path.sep;
+const previousResolve = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  const result = previousResolve ? previousResolve(context, moduleName, platform) : context.resolveRequest(context, moduleName, platform);
+  if (result.type === 'sourceFile' && result.filePath.includes(zodLocales)) {
+    const file = path.basename(result.filePath).replace(/\.c?js$/, '');
+    if (file !== 'en' && file !== 'index') return { type: 'empty' };
+  }
+  return result;
+};
+
 module.exports = config;

@@ -11,7 +11,7 @@ Telefon simulat, procesor de 4× mai lent, build-ul real (`npm run site:build`):
 |---|---|---|
 | Apare conținutul (înainte) | 9,4 s | – |
 | **Apare conținutul (acum)** | **0,3 s** | **0,2 s** |
-| Site-ul complet funcțional | ~6,9 s (înainte 9,5 s) | **~2,5 s** |
+| Site-ul complet funcțional | ~6,1 s (înainte 9,5 s) | **~2,2 s** |
 | Scroll | 60 fps, 0 cadre pierdute | 60 fps |
 | Elemente care sar (CLS) | 0,064 (bun: sub 0,1) | 0 |
 
@@ -20,6 +20,9 @@ Ce s-a schimbat:
 - **Cod mai mic**: polyfill-urile pentru telefoane nu mai ajung pe site, iconițele se încarcă doar din setul folosit,
   iar build-ul de site elimină codul nefolosit. JavaScript: 1,3 MB → 0,78 MB (comprimat).
 - **Fonturile** nu mai fac textul să sară când se încarcă.
+- **Fonturile pornesc odată cu pagina** (preîncărcate din `public/fonts`), nu după ce pornește aplicația.
+- **zod fără cele ~45 de limbi** pe care nu le folosim (setat în `metro.config.js`).
+- **Butonul „Lock in my spot” merge din prima secundă**: dacă e apăsat înainte să se încarce tot, pagina se deschide direct la formular.
 - **Cache corect** (`apps/mobile/public/_headers`): la a doua vizită telefonul nu mai descarcă nimic din nou.
 
 ### Unde pui site-ul

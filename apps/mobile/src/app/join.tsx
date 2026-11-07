@@ -14,7 +14,7 @@ import { SiteStyles, SpeedLines, TrackLine } from '@/features/web/site/SiteDecor
 import { openCookieSettings } from '@/features/web/consent';
 import { usePageMeta } from '@/features/web/seo';
 import { useSiteMotion } from '@/features/web/motion';
-import { removeInstantShell } from '@/features/web/shell';
+import { removeInstantShell, takeFormIntent } from '@/features/web/shell';
 import { errorKey } from '@/lib/errors';
 import { zodResolver } from '@/lib/zodResolver';
 import { usePreferences } from '@/store/preferences';
@@ -60,7 +60,12 @@ export default function JoinTheRace() {
   const scroll = useRef<ScrollView>(null);
   const formY = useRef(0);
   // The real page is on screen: swap out the instant first view (before the animations start).
-  useLayoutEffect(removeInstantShell, []);
+  // Read the tap before removing the first view: a "Lock in my spot" tap made while loading counts.
+  const goToForm = useRef(false);
+  useLayoutEffect(() => {
+    goToForm.current = takeFormIntent();
+    removeInstantShell();
+  }, []);
   const scrollTo = useSiteMotion(scroll);
   const goToApp = useGoToApp();
   usePageMeta(t('seo.title'), t('seo.description'));
@@ -299,7 +304,16 @@ export default function JoinTheRace() {
       ) : null}
 
       {/* ── Lock in your spot (form) ──────────── */}
-      <View style={section} onLayout={(e) => (formY.current = e.nativeEvent.layout.y)}>
+      <View
+        style={section}
+        onLayout={(e) => {
+          formY.current = e.nativeEvent.layout.y;
+          if (goToForm.current) {
+            goToForm.current = false;
+            scrollTo(formY.current);
+          }
+        }}
+      >
         <View style={[styles.wrap, wide && styles.split]}>
           <View nativeID="reveal-form-intro" style={[styles.gapMd, wide && styles.flex]}>
             <Text style={display(wide ? 72 : 48)}>

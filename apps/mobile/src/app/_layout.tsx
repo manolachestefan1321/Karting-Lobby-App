@@ -154,7 +154,18 @@ function RootNavigator() {
   );
 }
 
-const FONTS = { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold, BarlowCondensed_900Black_Italic };
+const NATIVE_FONTS = { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold, BarlowCondensed_900Black_Italic };
+/**
+ * Website: the same fonts from fixed addresses in public/fonts (written by scripts/brand-sync.ts).
+ * index.html preloads them while the app's code downloads, so they are already there when needed.
+ */
+const WEB_FONTS: Record<keyof typeof NATIVE_FONTS, string> = {
+  BarlowCondensed_600SemiBold: '/fonts/BarlowCondensed_600SemiBold.ttf',
+  BarlowCondensed_700Bold: '/fonts/BarlowCondensed_700Bold.ttf',
+  BarlowCondensed_800ExtraBold: '/fonts/BarlowCondensed_800ExtraBold.ttf',
+  BarlowCondensed_900Black_Italic: '/fonts/BarlowCondensed_900Black_Italic.ttf',
+};
+const FONTS = Platform.OS === 'web' ? WEB_FONTS : NATIVE_FONTS;
 
 /**
  * Web: useFonts can report "loaded" a moment before the browser can actually draw the font, so

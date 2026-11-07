@@ -151,10 +151,18 @@ const publicDir = join(root, 'apps/mobile/public');
 // the switch is invisible; the app removes it the moment the real page is on screen.
 // Only on / and /join. Language and theme follow the visitor's saved choice, like the app.
 mkdirSync(join(publicDir, 'fonts'), { recursive: true });
-writeFileSync(
-  join(publicDir, 'fonts', 'barlow-condensed-900-italic.ttf'),
-  readFileSync(join(root, 'node_modules/@expo-google-fonts/barlow-condensed/900Black_Italic/BarlowCondensed_900Black_Italic.ttf')),
-);
+// The app's 4 fonts, under fixed names: index.html starts downloading them together with the
+// app's code, and the app (on the web) loads them from these same addresses, so they are ready
+// the moment the page is drawn instead of being requested afterwards (see WEB_FONTS in _layout.tsx).
+const WEB_FONT_FILES = {
+  BarlowCondensed_600SemiBold: '600SemiBold',
+  BarlowCondensed_700Bold: '700Bold',
+  BarlowCondensed_800ExtraBold: '800ExtraBold',
+  BarlowCondensed_900Black_Italic: '900Black_Italic',
+};
+for (const [family, dir] of Object.entries(WEB_FONT_FILES)) {
+  writeFileSync(join(publicDir, 'fonts', `${family}.ttf`), readFileSync(join(root, `node_modules/@expo-google-fonts/barlow-condensed/${dir}/${family}.ttf`)));
+}
 const hero = (lang: 'en' | 'ro') => {
   const j = (lang === 'en' ? en : ro).join;
   return `<div class="ks-wrap ks-l-${lang}">
@@ -163,11 +171,11 @@ const hero = (lang: 'en' | 'ro') => {
         <h1 class="ks-h1">${esc(j.headline1)}<br />${esc(j.headline2)}<span class="ks-acc">${esc(j.headlineAccent)}</span></h1>
         <p class="ks-lead">${esc(j.body)}</p>
         <p class="ks-tag">${esc(j.tagline)}</p>
-        <span class="ks-cta">${esc(j.cta)}</span>
+        <button type="button" class="ks-cta">${esc(j.cta)}</button>
       </div>`;
 };
 const shellCss = `
-    @font-face { font-family: KartUPShell; src: url(/fonts/barlow-condensed-900-italic.ttf) format('truetype'); font-display: block; }
+    @font-face { font-family: KartUPShell; src: url(/fonts/BarlowCondensed_900Black_Italic.ttf) format('truetype'); font-display: block; }
     #ks-shell { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: var(--bg); color: var(--tx);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     #ks-shell[hidden] { display: none; }
@@ -189,10 +197,12 @@ const shellCss = `
     .ks-acc { color: var(--ac); }
     .ks-lead { margin: 0; max-width: 600px; font-size: 18px; line-height: 28px; }
     .ks-tag { font-size: 22px; line-height: 1.02; }
-    .ks-cta { align-self: flex-start; background: var(--ac); color: var(--on); border-radius: 10px; padding: 16px 20px;
+    .ks-cta { align-self: flex-start; border: 0; cursor: pointer; background: var(--ac); color: var(--on); border-radius: 10px; padding: 16px 20px;
+      transition: transform .12s ease, opacity .12s ease; -webkit-tap-highlight-color: transparent;
       font: 700 16px/20px 'Arial Narrow', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+    .ks-cta:active, .ks-cta.ks-pressed { transform: scale(.97); opacity: .85; }
     @media (min-width: 900px) { .ks-slogan { font-size: 28px; } .ks-h1 { font-size: 96px; } .ks-tag { font-size: 26px; } }`;
-const shellHtml = `<div id="ks-shell" hidden aria-hidden="true">
+const shellHtml = `<div id="ks-shell" hidden>
       <div class="ks-nav">Kart<b>UP</b></div>
       <div class="ks-stripe"></div>
       ${hero('en')}
@@ -210,6 +220,13 @@ const shellHtml = `<div id="ks-shell" hidden aria-hidden="true">
         if (theme === 'system') theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         shell.className = 'ks-' + theme + ' ks-' + lang;
         shell.hidden = false;
+        // A tap on the button before the page has fully loaded is kept: the page then opens at the form.
+        shell.addEventListener('click', function (e) {
+          var b = e.target.closest && e.target.closest('.ks-cta');
+          if (!b) return;
+          window.__ksGoToForm = true;
+          b.classList.add('ks-pressed');
+        });
       })();
     </script>`;
 
@@ -246,7 +263,9 @@ write(
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <script type="application/ld+json">${jsonLd}</script>
     <!-- The react-native-web style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
-    <link rel="preload" href="/fonts/barlow-condensed-900-italic.ttf" as="font" type="font/ttf" crossorigin />
+${Object.keys(WEB_FONT_FILES)
+  .map((f) => `    <link rel="preload" href="/fonts/${f}.ttf" as="font" type="font/ttf" crossorigin />`)
+  .join('\n')}
     <style id="expo-reset">
       html, body { height: 100%; margin: 0; }
       body { overflow: hidden; }

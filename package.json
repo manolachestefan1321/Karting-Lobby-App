@@ -20,7 +20,8 @@
     "start": "cd apps/mobile && npx expo start",
     "phone": "cd apps/mobile && npx expo start",
     "phone:tunnel": "cd apps/mobile && npx expo start --tunnel --clear",
-    "site:build": "npm run brand:sync -- --skip-images && cd apps/mobile && cross-env EXPO_PUBLIC_DATA_SOURCE=supabase EXPO_UNSTABLE_TREE_SHAKING=1 EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH=1 npx expo export -p web --clear --output-dir dist",
+    "site:build": "npm run brand:sync -- --skip-images && cd apps/mobile && cross-env EXPO_PUBLIC_DATA_SOURCE=supabase EXPO_UNSTABLE_TREE_SHAKING=1 EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH=1 npx expo export -p web --clear --output-dir dist && cd ../.. && node scripts/build-site.ts",
+    "site:preview": "node scripts/serve-site.mjs",
     "load:test": "node scripts/load-test.mjs",
     "web:real": "cross-env EXPO_PUBLIC_DATA_SOURCE=supabase npm run web --workspace apps/mobile -- --clear",
     "phone:real": "cd apps/mobile && cross-env EXPO_PUBLIC_DATA_SOURCE=supabase npx expo start --tunnel --clear"

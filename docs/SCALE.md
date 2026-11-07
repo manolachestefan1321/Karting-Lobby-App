@@ -30,6 +30,27 @@ Ce s-a schimbat:
 (gratuite, servere în toată lumea). Fișierele `_headers` și `_redirects` sunt deja incluse.
 Un site static pe CDN duce fără probleme mii de vizitatori simultan: nu are server propriu care să cadă.
 
+### Pagina de waitlist e acum o pagină separată, ultra-ușoară
+
+`kartup.ro/` și `/join` nu mai încarcă aplicația: sunt o pagină simplă (HTML + CSS + puțin JavaScript),
+construită de `scripts/build-site.ts` din fișierele din `site/`. Arată și se comportă la fel ca înainte
+(aceleași texte, ranguri, animații, formular, banner de cookies, statistici, același tabel în Supabase).
+
+| | Pagina din aplicație | Pagina nouă |
+|---|---|---|
+| Mărime (comprimat) | ~740 KB | **17 KB** (+ ~53 KB animații, după) |
+| Butoane și formular gata (4G normal) | 2,2 s | **0,1 s** |
+| Butoane și formular gata (4G slab) | 6,1 s | **0,24 s** |
+| Animațiile pornesc (4G slab) | 6,1 s | **1,4 s** |
+
+Ce trebuie știut:
+- Textele vin din `apps/mobile/src/i18n` (en.ts / ro.ts), rangurile din `config/progression.ts`: schimbi acolo, apoi `npm run site:build`.
+- Aspectul paginii: `site/landing.css`; comportamentul: `site/landing.js`; animațiile: `site/motion.js`.
+- Un test (`siteParity.test.ts`) verifică la fiecare rulare că formularul acceptă și refuză exact ce acceptă aplicația
+  și că fiecare pagină a aplicației e servită corect pe site.
+- `npm run site:preview` arată site-ul construit pe calculatorul tău (http://localhost:8080).
+- `src/app/join.tsx` (versiunea din aplicație) rămâne pentru demo și dezvoltare (`npm run web`).
+
 ## Aplicația: ce am reparat în cod
 
 Problema principală era la noi, nu la Supabase: fiecare schimbare (un mesaj în chat, o rezervare) făcea ca

@@ -7,4 +7,6 @@
   Cache-Control: public, max-age=31536000, immutable
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+/site/*
+  Cache-Control: public, max-age=31536000, immutable
 # index.html itself is left to the host's default (always re-checked), so updates show up at once.

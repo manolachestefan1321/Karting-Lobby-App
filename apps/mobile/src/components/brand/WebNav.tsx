@@ -3,6 +3,7 @@ import { router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CheckeredStripe, Text } from '@/components/ui';
+import { api } from '@/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { usePreferences } from '@/store/preferences';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -14,6 +15,16 @@ import { Wordmark } from './Wordmark';
  * app), and JOIN THE RACE = the launch-event sign-up page.
  */
 /** HOME on the website = the app: sign up / sign in, or the app itself once signed in. */
+/**
+ * The real website's waitlist page (/ and /join) is a separate lightweight page (site/), not part
+ * of the app: reach it with a normal page load there. Demo / development: the app's own page.
+ */
+const STANDALONE_SITE = api.kind === 'supabase';
+function goToWaitlist(path: '/' | '/join') {
+  if (STANDALONE_SITE) window.location.assign(path);
+  else router.navigate(path);
+}
+
 export function useGoToApp() {
   const { user } = useAuth();
   return () => router.navigate(user ? '/' : '/welcome');
@@ -27,6 +38,7 @@ export function WebNav() {
   const setTheme = usePreferences((s) => s.setTheme);
   const pathname = usePathname();
   const goToApp = useGoToApp();
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const onJoin = pathname === '/join';
 
@@ -34,7 +46,7 @@ export function WebNav() {
     <View style={{ backgroundColor: colors.background }}>
       <View style={styles.bar} accessibilityRole="header">
         <View style={styles.inner}>
-          <Pressable onPress={() => router.navigate('/')} accessibilityRole="link" accessibilityLabel="KartUP">
+          <Pressable onPress={() => (user ? router.navigate('/') : goToWaitlist('/'))} accessibilityRole="link" accessibilityLabel="KartUP">
             <Wordmark size={26} slogan={false} />
           </Pressable>
           <View style={styles.links}>
@@ -63,7 +75,7 @@ export function WebNav() {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => router.navigate('/join')}
+              onPress={() => goToWaitlist('/join')}
               accessibilityRole="link"
               style={[styles.cta, { backgroundColor: onJoin ? colors.text : colors.accent }]}
             >

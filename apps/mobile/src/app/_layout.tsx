@@ -36,6 +36,9 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000 } },
 });
 
+/** Visitors of the public website (real site, or the /join page): they get no app splash screen. */
+const WEBSITE_ENTRY = Platform.OS === 'web' && (api.kind === 'supabase' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/join')));
+
 /** The outer web-preview page (phone frame + debug panel) instead of the app. */
 const SHOW_PREVIEW_HOST = Platform.OS === 'web' && api.kind === 'mock' && isPreviewHost();
 
@@ -137,7 +140,8 @@ function RootNavigator() {
       {/* Real website only: the demo stores no statistics, so it needs no consent. */}
       {Platform.OS === 'web' && ready && api.kind === 'supabase' ? <CookieBanner /> : null}
       {api.kind === 'mock' ? <DebugBridge /> : null}
-      <AnimatedSplash ready={ready} />
+      {/* The website (waitlist) opens straight on its first view: no intro screen there. */}
+      {WEBSITE_ENTRY ? null : <AnimatedSplash ready={ready} />}
     </View>
   );
 }

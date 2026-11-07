@@ -6,8 +6,11 @@ import { Controller, useForm } from 'react-hook-form';
 import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Checkbox, Text, TextField } from '@/components/ui';
+import { brand } from '@config/brand';
 import { useGoToApp } from '@/components/brand/WebNav';
-import { api } from '@/data';
+import { api, DATA_SOURCE } from '@/data';
+import { RANK_TIERS } from '@/data/ranks';
+import { SiteStyles, SpeedLines, TrackLine } from '@/features/web/site/SiteDecor';
 import { openCookieSettings } from '@/features/web/consent';
 import { usePageMeta } from '@/features/web/seo';
 import { useSiteMotion } from '@/features/web/motion';
@@ -19,6 +22,28 @@ import { fonts, spacing } from '@/theme/tokens';
 
 const CARDS = ['first', 'priority', 'history'] as const;
 const FLOW = ['heats', 'final', 'podium'] as const;
+const STEPS = ['city', 'lobby', 'race'] as const;
+
+/**
+ * PLACEHOLDER: the waitlist has no public count yet (visitors can't read launch_signups, on purpose).
+ * Wire it later to a count-only database function and put the real number here.
+ * null hides the counter, so the real site never shows an invented number.
+ */
+const WAITLIST_COUNT: number | null = DATA_SOURCE === 'mock' ? 1248 : null;
+
+/** Splits a line into words the hero animation can move one by one (ids hw-N). */
+/** Each word gets the full headline style: the shared Text applies body text styles otherwise. */
+function words(text: string, start: number, style: object) {
+  return text
+    .split(' ')
+    .filter(Boolean)
+    .flatMap((w, i) => [
+      <Text key={`w${start + i}`} nativeID={`hw-${start + i}`} style={style}>
+        {w}
+      </Text>,
+      ' ',
+    ]);
+}
 
 /**
  * "JOIN THE RACE" (website menu, before launch): the launch event is coming,
@@ -72,6 +97,9 @@ export default function JoinTheRace() {
   });
 
   const big = wide ? 96 : 52;
+  const stepsRow = width >= 768;
+  const h1 = t('join.headline1').split(' ').filter(Boolean).length;
+  const h2 = t('join.headline2').split(' ').filter(Boolean).length;
   const display = (size: number) => ({
     fontFamily: fonts.wordmark,
     fontSize: size,
@@ -81,33 +109,48 @@ export default function JoinTheRace() {
   const section = [styles.section, { borderTopColor: colors.border }];
 
   return (
-    <ScrollView ref={scroll} style={{ backgroundColor: colors.background }} keyboardShouldPersistTaps="handled">
+    <ScrollView ref={scroll} nativeID="join-page" style={{ backgroundColor: colors.background }} keyboardShouldPersistTaps="handled">
+      <SiteStyles accent={colors.accent} line={colors.border} />
       {/* ── Hero ───────────────────────────── */}
-      <View style={styles.wrap}>
-        <View nativeID="hero-badges" style={styles.badges}>
-          <View style={[styles.badge, { borderColor: colors.accent }]}>
-            <Text variant="caption" tone="accent" style={styles.tracked}>
-              {t('join.badge')}
+      <View nativeID="hero" style={styles.hero}>
+        {/*
+          VIDEO PLACEHOLDER: when there is footage, put a muted, looping, playsInline background
+          video here (absolute, full size, object-fit cover, behind the content, with a dark
+          overlay for contrast), e.g. <video src="/hero-loop.mp4" autoPlay muted loop playsInline poster="/hero-poster.jpg" />
+          in a web-only component like SpeedLines. Keep it under ~2 MB and load it after the page is
+          interactive. The speed lines can stay on top of it or be removed.
+        */}
+        <SpeedLines />
+        <View style={styles.wrap}>
+          <Text nativeID="hero-slogan" style={[display(wide ? 28 : 22), { color: colors.accent }]}>
+            {brand.slogan.toUpperCase()}
+          </Text>
+          <View nativeID="hero-badges" style={styles.badges}>
+            <View style={[styles.badge, { borderColor: colors.accent }]}>
+              <Text variant="caption" tone="accent" style={styles.tracked}>
+                {t('join.badge')}
+              </Text>
+            </View>
+            <Text variant="caption" tone="muted" style={styles.tracked}>
+              {t('join.badgeNote')}
             </Text>
           </View>
-          <Text variant="caption" tone="muted" style={styles.tracked}>
-            {t('join.badgeNote')}
+          <Text nativeID="headline" accessibilityRole="header" style={display(big)}>
+            {words(t('join.headline1'), 0, display(big))}
+            {'\n'}
+            {words(t('join.headline2'), h1, display(big))}
+            {words(t('join.headlineAccent'), h1 + h2, [display(big), { color: colors.accent }])}
           </Text>
-        </View>
-        <Text nativeID="hero-headline" style={display(big)}>
-          {t('join.headline1')}
-          {'\n'}
-          {t('join.headline2')}
-          <Text style={[display(big), { color: colors.accent }]}>{t('join.headlineAccent')}</Text>
-        </Text>
-        <Text nativeID="hero-body" style={styles.lead}>
-          {t('join.body')}
-        </Text>
-        <Text nativeID="hero-tagline" style={display(wide ? 26 : 22)}>
-          {t('join.tagline')}
-        </Text>
-        <View nativeID="hero-cta" style={styles.ctaRow}>
-          <Button title={t('join.cta')} fullWidth={false} onPress={() => scrollTo(formY.current)} />
+          <Text nativeID="hero-body" style={styles.lead}>
+            {t('join.body')}
+          </Text>
+          <Text nativeID="hero-tagline" style={display(wide ? 26 : 22)}>
+            {t('join.tagline')}
+          </Text>
+          {/* Never animated or delayed: usable from the first frame. */}
+          <View nativeID="btn-hero" style={styles.ctaRow}>
+            <Button title={t('join.cta')} fullWidth={false} onPress={() => scrollTo(formY.current)} />
+          </View>
         </View>
       </View>
 
@@ -119,24 +162,25 @@ export default function JoinTheRace() {
           </Text>
           <View style={styles.cards}>
             {CARDS.map((c) => (
-              <View
-                key={c}
-                nativeID={`reveal-card-${c}`}
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Text variant="caption" tone="accent" style={styles.tracked}>
-                  {t(`join.cards.${c}.kicker`)}
-                </Text>
-                <Text variant="heading" style={styles.cardTitle}>
-                  {t(`join.cards.${c}.title`)}
-                </Text>
-                <Text tone="muted">{t(`join.cards.${c}.body`)}</Text>
+              <View key={c} nativeID={`reveal-card-${c}`} style={styles.cardSlot}>
+                <View
+                  nativeID={`hc-card-${c}`}
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text variant="caption" tone="accent" style={styles.tracked}>
+                    {t(`join.cards.${c}.kicker`)}
+                  </Text>
+                  <Text variant="heading" style={styles.cardTitle}>
+                    {t(`join.cards.${c}.title`)}
+                  </Text>
+                  <Text tone="muted">{t(`join.cards.${c}.body`)}</Text>
+                </View>
               </View>
             ))}
           </View>
@@ -165,6 +209,91 @@ export default function JoinTheRace() {
           </View>
         </View>
       </View>
+
+      {/* ── How it works ──────────────────────── */}
+      <View style={section}>
+        <View style={styles.wrap}>
+          <View nativeID="reveal-how" style={styles.gapXs}>
+            <Text variant="caption" tone="accent" style={styles.tracked}>
+              {t('join.how.kicker')}
+            </Text>
+            <Text style={display(wide ? 52 : 36)}>{t('join.how.title')}</Text>
+          </View>
+          <View nativeID="how-steps" style={stepsRow ? styles.stepsRow : styles.stepsCol}>
+            <TrackLine vertical={!stepsRow} />
+            {STEPS.map((s, i) => (
+              <View key={s} nativeID={`step-${i}`} style={stepsRow ? styles.stepWide : styles.stepNarrow}>
+                <View style={[styles.stepBadge, stepsRow ? styles.stepBadgeWide : null, { borderColor: colors.accent, backgroundColor: colors.background }]}>
+                  <Text style={[styles.stepNum, { color: colors.accent }]}>{i + 1}</Text>
+                </View>
+                <View style={[styles.stepBody, stepsRow && styles.center]}>
+                  <Text variant="heading" style={[styles.cardTitle, stepsRow && styles.textCenter]}>
+                    {t(`join.how.${s}.title`)}
+                  </Text>
+                  <Text tone="muted" style={stepsRow ? styles.textCenter : undefined}>
+                    {t(`join.how.${s}.body`)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {/* ── Ranks (the highlight) ─────────────── */}
+      <View style={section}>
+        <View style={styles.wrap}>
+          <View nativeID="reveal-ranks" style={styles.gapSm}>
+            <Text variant="caption" tone="accent" style={styles.tracked}>
+              {t('join.ranks.kicker')}
+            </Text>
+            <Text style={display(wide ? 52 : 36)}>{t('join.ranks.title')}</Text>
+            <Text style={styles.lead}>{t('join.ranks.body')}</Text>
+          </View>
+          <View nativeID="ranks-grid" style={styles.gapMd}>
+            <View style={[styles.rankBar, { backgroundColor: colors.surfaceAlt }]}>
+              <View nativeID="rank-fill" style={[styles.rankFill, { backgroundColor: colors.accent }]} />
+            </View>
+            <View style={styles.rankGrid}>
+              {RANK_TIERS.map((r, i) => {
+                const top = i === RANK_TIERS.length - 1;
+                return (
+                  <View key={r.key} nativeID={`rcard-${i}`} style={[styles.rankSlot, { flexBasis: wide ? 240 : 150 }]}>
+                    <View
+                      nativeID={`hc-rank-${i}`}
+                      style={[styles.rankCard, { backgroundColor: colors.surface, borderColor: top ? colors.accent : colors.border }, top && styles.rankTop]}
+                    >
+                      <View style={[styles.rankStripe, { backgroundColor: r.color }]} />
+                      <Text variant="caption" tone="muted" style={styles.tracked}>
+                        {top ? t('join.ranks.top') : String(i + 1).padStart(2, '0')}
+                      </Text>
+                      <Text style={[display(wide ? 30 : 24), top && { color: colors.accent }]}>{r.name.toUpperCase()}</Text>
+                      <Text variant="caption" tone="muted">
+                        {t('join.ranks.km', { km: r.minKm.toLocaleString('en-US') })} · {t('join.ranks.xp', { xp: r.minXp.toLocaleString('en-US') })}
+                      </Text>
+                      <View nativeID={`rlock-${i}`} style={styles.rankLock} accessibilityLabel={t('join.ranks.locked')}>
+                        <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Waitlist counter (hidden until there is a real number, see WAITLIST_COUNT) ── */}
+      {WAITLIST_COUNT !== null ? (
+        <View style={section}>
+          <View nativeID="reveal-counter" style={[styles.wrap, styles.counter]}>
+            <Text nativeID="count-waitlist" style={[display(wide ? 120 : 72), { color: colors.accent }]}>
+              {WAITLIST_COUNT.toLocaleString('en-US')}
+            </Text>
+            <Text style={[styles.lead, styles.textCenter]}>{t('join.counter.label')}</Text>
+          </View>
+        </View>
+      ) : null}
 
       {/* ── Lock in your spot (form) ──────────── */}
       <View style={section} onLayout={(e) => (formY.current = e.nativeEvent.layout.y)}>
@@ -294,7 +423,9 @@ export default function JoinTheRace() {
                     {error}
                   </Text>
                 ) : null}
-                <Button title={t('join.submit')} onPress={() => void onSubmit()} loading={formState.isSubmitting} />
+                <View nativeID="btn-submit">
+                  <Button title={t('join.submit')} onPress={() => void onSubmit()} loading={formState.isSubmitting} />
+                </View>
               </>
             )}
           </View>
@@ -350,6 +481,29 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   section: { borderTopWidth: StyleSheet.hairlineWidth },
+  hero: { position: 'relative', overflow: 'hidden' },
+  cardSlot: { flexGrow: 1, flexBasis: 300 },
+  // How it works: a row of 3 on tablets/desktop (line across the badges), a column on phones (line down the left).
+  stepsRow: { position: 'relative', flexDirection: 'row' },
+  stepsCol: { position: 'relative', gap: spacing.xl },
+  stepWide: { flex: 1, alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md },
+  stepNarrow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  stepBadge: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
+  stepBadgeWide: { width: 56, height: 56, borderRadius: 28, marginTop: 4 },
+  stepNum: { fontFamily: fonts.wordmark, fontSize: 24, lineHeight: 28 },
+  stepBody: { flex: 1, gap: spacing.xs, paddingTop: spacing.xs },
+  center: { alignItems: 'center' },
+  textCenter: { textAlign: 'center' },
+  gapSm: { gap: spacing.sm },
+  rankBar: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  rankFill: { width: '100%', height: '100%' },
+  rankGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  rankSlot: { flexGrow: 1 },
+  rankCard: { borderWidth: 1, borderRadius: 8, padding: spacing.md, paddingTop: spacing.lg, gap: spacing.xs, overflow: 'hidden', minHeight: 124 },
+  rankTop: { borderWidth: 2 },
+  rankStripe: { position: 'absolute', left: 0, right: 0, top: 0, height: 4 },
+  rankLock: { position: 'absolute', top: spacing.md, right: spacing.md },
+  counter: { alignItems: 'center', gap: spacing.xs },
   badges: {
     flexDirection: 'row',
     alignItems: 'center',

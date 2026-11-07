@@ -51,4 +51,10 @@ describe('website waitlist page', () => {
     const covered = (p: string) => APP_ROUTES.some((r) => (r.endsWith('/*') ? p.startsWith(r.slice(0, -1)) : p === r));
     expect(paths.filter((p) => !covered(p))).toEqual([]);
   });
+
+  it('vercel.json sends the same addresses to the app as _redirects', () => {
+    const vercel = JSON.parse(readFileSync(join(__dirname, '../../../../vercel.json'), 'utf8')) as { rewrites: { source: string; destination: string }[] };
+    const fromVercel = vercel.rewrites.filter((r) => r.destination === '/app.html').map((r) => r.source.replace('/:path*', '/*'));
+    expect(fromVercel.sort()).toEqual([...APP_ROUTES].sort());
+  });
 });

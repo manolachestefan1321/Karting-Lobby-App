@@ -20,3 +20,6 @@ supabase/.temp
 google-services.json
 GoogleService-Info.plist
 coverage/
+
+# Vercel CLI link and local build output
+.vercel/

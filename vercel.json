@@ -1,0 +1,144 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": "npm run site:build",
+  "outputDirectory": "apps/mobile/dist",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/welcome",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/sign-in",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/sign-up",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/forgot-password",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/verify-email",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/onboarding",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/sessions",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/leaderboard",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/create",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/notifications",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/profile",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/profile/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/settings/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/session/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/user/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/partner",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/partner/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/legal/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/dev",
+      "destination": "/app.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/_expo/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/site/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}

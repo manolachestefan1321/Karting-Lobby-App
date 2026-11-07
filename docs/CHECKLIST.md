@@ -13,36 +13,40 @@ Legendă: 👤 faci tu · 🤖 fac eu · 👥 împreună · ⏱ durata aproximat
       Fac cont → creează o sesiune la VMax → alții rezervă loc (primesc cod KUP) → chat → host-ul pune rezultatele
       → ceilalți confirmă → XP, rang și clasament se actualizează. Notează tot ce e ciudat sau nu merge.
       Ghid pas cu pas: `docs/TEST-REAL-APP.md`. Trimite-mi capturi la orice problemă.
-- [ ] **2. Datele firmei** 👤 ⏱ 10 min (+ cât durează PFA/SRL)
-      În `config/brand.ts`: email de suport real, numele PFA/SRL, adresa. Fără ele nu putem trimite la Apple
-      și nu poți factura pistele.
-- [ ] **3. `support@kartup.ro` care primește emailuri** 👥 ⏱ 30 min
+- [ ] **2. `support@kartup.ro` care primește emailuri** 👥 ⏱ 30 min
       Necesar pentru App Store, politica de confidențialitate și ca oamenii să-ți poată scrie.
       Tot atunci: poza de profil KartUP la expeditorul emailurilor (cont Google pe adresa de trimitere).
-- [ ] **4. Textele legale verificate de un avocat** 👤 ⏱ câteva zile
-      Termeni + politica de confidențialitate (sunt șabloane bune, dar nu verificate juridic).
 
 ## 🟠 2. Aplicația pe telefon (după ce Apple îți aprobă contul)
 
-- [ ] **5. Primul build pe iPhone prin TestFlight** 👥 ⏱ 1–2 ore
-      Plus APK pentru Android (merge și fără cont plătit).
-- [ ] **6. Notificări push pe telefon** 🤖 ⏱ 1 zi
+- [ ] **3. Primul build pe iPhone prin TestFlight** 👥 ⏱ 1–2 ore
+      Plus APK pentru Android (merge și fără cont plătit). TestFlight merge și cu datele firmei încă de test.
+- [ ] **4. Notificări push pe telefon** 🤖 ⏱ 1 zi
       „S-a umplut sesiunea”, „mesaj nou în chat”, „rezultate postate”. Fără ele oamenii nu revin în aplicație.
-- [ ] **7. Login cu Apple** 👥 ⏱ 30 min — obligatoriu pentru App Store când există Google.
-- [ ] **8. Login cu Facebook** 👥 ⏱ 30 min
-- [ ] **9. Trimitere la Apple și Google Play** 👥 ⏱ 2 ore + 1–3 zile review
-      Ghid: `docs/APP-STORE-REVIEW.md` (cont de test pentru Apple, capturi, App Privacy).
+- [ ] **5. Login cu Apple** 👥 ⏱ 30 min — obligatoriu pentru App Store când există Google.
+- [ ] **6. Login cu Facebook** 👥 ⏱ 30 min
 
 ## 🟡 3. Siguranță și creștere
 
-- [ ] **10. Sentry (vezi erorile utilizatorilor)** 🤖 ⏱ 1 oră + contul tău Sentry gratuit
-- [ ] **11. Testul de încărcare pe proiectul real** 👥 ⏱ 30 min
+- [ ] **7. Sentry (vezi erorile utilizatorilor)** 🤖 ⏱ 1 oră + contul tău Sentry gratuit
+- [ ] **8. Testul de încărcare pe proiectul real** 👥 ⏱ 30 min
       `npm run load:test` la 100 / 200 oameni (vezi `docs/SCALE.md`). Înainte de evenimentul de lansare: Supabase Pro.
-- [ ] **12. Bing Webmaster Tools** 👤 ⏱ 2 min — „Import from Google Search Console”.
-- [ ] **13. Profilurile sociale** 👤 — Instagram/TikTok cu link spre kartup.ro, apoi îmi trimiți linkurile
+- [ ] **9. Bing Webmaster Tools** 👤 ⏱ 2 min — „Import from Google Search Console”.
+- [ ] **10. Profilurile sociale** 👤 — Instagram/TikTok cu link spre kartup.ro, apoi îmi trimiți linkurile
       (le leg de site pentru Google).
-- [ ] **14. Parteneriatul VMax** 👤 — prezentarea e gata; după acord: cont de recepție în Panoul pistei.
-- [ ] **15. Anunțul pentru waitlist** 👥 — emailul cu data evenimentului, trimis prin Resend.
+- [ ] **11. Parteneriatul VMax** 👤 — prezentarea e gata; după acord: cont de recepție în Panoul pistei.
+- [ ] **12. Anunțul pentru waitlist** 👥 — emailul cu data evenimentului, trimis prin Resend.
+
+## 🔵 Final – chiar înainte de trimiterea în magazine
+
+- [ ] **13. Firma (PFA/SRL)** 👤 ⏱ max. 2 zile
+      Apoi datele ei în `config/brand.ts` (email de suport, nume firmă, adresă). Fără ele build-ul pentru
+      App Store se oprește intenționat, și ai nevoie de firmă ca să facturezi comisionul pistelor.
+- [ ] **14. Textele legale verificate de un avocat** 👤 ⏱ câteva zile
+      Termeni + politica de confidențialitate (sunt șabloane bune, dar nu verificate juridic).
+      Poți trimite avocatului textele din timp, în paralel cu restul.
+- [ ] **15. Trimitere la Apple și Google Play** 👥 ⏱ 2 ore + 1–3 zile review
+      Ghid: `docs/APP-STORE-REVIEW.md` (cont de test pentru Apple, capturi, App Privacy).
 
 ## ⚪ 4. După lansare
 

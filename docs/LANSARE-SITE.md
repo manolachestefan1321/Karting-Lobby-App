@@ -4,6 +4,30 @@ Bifează pe rând. Unde scrie **„scrie-mi”**, te oprești și îmi trimiți 
 
 ---
 
+## Varianta de pe TELEFON (fără laptop, recomandată)
+
+Vercel construiește site-ul singur din GitHub. Bonus: la fiecare modificare pe care o urc pe GitHub, site-ul se actualizează automat.
+Înlocuiește Pașii 0, 1 și 2.1 de mai jos; Pașii 2.2, 3, 4 și 5 rămân la fel.
+
+1. Pe telefon, în browser: **vercel.com** → **Log in with GitHub** (contul `manolachestefan1321`).
+2. **Add New…** → **Project** → la „Import Git Repository” alegi **karting-lobby-app** → **Import**.
+   Dacă nu apare: **Adjust GitHub App Permissions** → dai acces la repository → revii.
+3. Pe ecranul de configurare:
+   - **Project Name**: `kartup`
+   - **Framework Preset**: `Other` · **Root Directory**: lași `./` · la **Build and Output Settings** nu schimbi nimic (le ia din `vercel.json`).
+   - **Environment Variables** → adaugi, una câte una (valorile le iei din Supabase → **Project Settings** → **API**):
+     - `EXPO_PUBLIC_SUPABASE_URL` = Project URL
+     - `EXPO_PUBLIC_SUPABASE_ANON_KEY` = cheia **anon / publishable** (NICIODATĂ `service_role`)
+     - `EXPO_PUBLIC_DATA_SOURCE` = `supabase`
+     - `EXPO_PUBLIC_SOCIAL_LOGINS` = `google`
+4. **Deploy**. Durează 3–6 minute. La final apasă pe imaginea site-ului → se deschide `kartup-....vercel.app`.
+   👉 Dacă apare „Build Failed”, **scrie-mi** – mă uit eu în log.
+5. În proiect → **Settings** → **Domains** → **Add** → `kartup.ro` → **Add** (alege varianta recomandată, cu `www` care redirecționează spre `kartup.ro`).
+   Verifică: `www.kartup.ro` → **Redirect to `kartup.ro` (308)**; `kartup.ro` fără redirect.
+6. Continuă cu **Pasul 2.3** (notezi nameserverele), apoi **Pasul 3** (Romarg, merge din browserul telefonului), **Pasul 4** și **Pasul 5**.
+
+---
+
 ## Pasul 0 – Pregătire (o singură dată)
 
 1. Deschide **GitHub Desktop** → **Fetch origin** → **Pull origin**.

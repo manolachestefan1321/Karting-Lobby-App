@@ -54,8 +54,8 @@ export const brand = {
     /** Link preview (WhatsApp, Instagram, Facebook). */
     shareTitle: 'KartUP — Fii pe grilă înaintea tuturor',
     shareDescription: 'Evenimentul de lansare KartUP: calificări, finală, podium și numele tău în primul clasament. Înscrie-te gratuit pe waitlist.',
-    /** Public pages listed for Google (the app's private pages are not). */
-    pages: ['/', '/join', '/welcome', '/legal/privacy', '/legal/terms'],
+    /** Pages listed for Google: the waitlist page in Romanian (/) and English (/en/). */
+    pages: ['/', '/en/'],
   },
 
   /** Contact / legal — placeholders, replace before launch. Shown in Settings, emails and legal texts. */

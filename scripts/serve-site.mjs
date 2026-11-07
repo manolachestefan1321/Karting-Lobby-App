@@ -22,7 +22,7 @@ const matches = (pattern, path) => (pattern.endsWith('/*') ? path === pattern.sl
 function resolve(urlPath) {
   const path = decodeURIComponent(urlPath.split('?')[0]).replace(/\/$/, '') || '/';
   const safe = normalize(path).replace(/^(\.\.[/\\])+/, '');
-  for (const candidate of [safe === '/' ? '/index.html' : safe, `${safe}.html`]) {
+  for (const candidate of [safe === '/' ? '/index.html' : safe, `${safe}.html`, `${safe}/index.html`]) {
     const file = join(dist, candidate);
     if (file.startsWith(dist) && existsSync(file) && statSync(file).isFile()) return file;
   }

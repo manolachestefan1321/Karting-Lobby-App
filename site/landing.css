@@ -180,6 +180,17 @@ html.ks-motion .hero .fx { --rise: 16px; }
 .display.big { font-size: 48px; }
 @media (min-width: 900px) { .display.big { font-size: 72px; } }
 
+/* ── FAQ ─────────────────────────────────────────────────────── */
+.faq { display: flex; flex-direction: column; }
+.faq details { border-top: 1px solid var(--border); padding: 4px 0; }
+.faq details:last-child { border-bottom: 1px solid var(--border); }
+.faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; flex: none; font-size: 24px; line-height: 1; color: var(--accent); transition: transform .15s ease; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq h3 { margin: 0; font-family: BarlowCondensed_700Bold, 'Arial Narrow', sans-serif; font-size: 22px; line-height: 26px; text-transform: uppercase; font-weight: normal; }
+.faq p { padding: 0 0 16px; max-width: 760px; font-size: 16px; line-height: 24px; }
+
 /* ── Footer ──────────────────────────────────────────────────── */
 .disclaimer { max-width: 820px; font-size: 12px; line-height: 19px; color: var(--muted); }
 .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 12px; line-height: 16px; color: var(--muted); }

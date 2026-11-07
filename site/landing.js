@@ -47,12 +47,8 @@
   }
   applyMeta();
 
-  $('#lang-toggle').addEventListener('click', function () {
-    var next = lang() === 'ro' ? 'en' : 'ro';
-    doc.lang = next;
-    savePref('locale', next);
-    applyMeta();
-  });
+  // The language button is a link to the other language's page; remember the choice for the app too.
+  $('#lang-toggle').addEventListener('click', function () { savePref('locale', this.getAttribute('data-lang')); });
   $('#theme-toggle').addEventListener('click', function () {
     var next = doc.dataset.theme === 'dark' ? 'light' : 'dark';
     doc.dataset.theme = next;

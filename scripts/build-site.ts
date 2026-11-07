@@ -59,7 +59,12 @@ if (!supabaseUrl || !supabaseKey) {
 const consentVersion = /CONSENT_VERSION = '([^']+)'/.exec(readFileSync(join(mobile, 'src/features/web/consent.ts'), 'utf8'))?.[1];
 if (!consentVersion) throw new Error('CONSENT_VERSION not found in src/features/web/consent.ts');
 
-// ── Texts: both languages are in the page, CSS shows the visitor's one ─────
+// ── Texts: one page per language (/ = Romanian, /en/ = English) ─────────────
+// One language per address is what Google expects (it reads the page in its own language);
+// the language button links to the other page.
+type Lang = 'en' | 'ro';
+let L: Lang = 'ro';
+const PAGE: Record<Lang, string> = { ro: '/', en: '/en/' };
 type Dict = typeof en;
 const get = (d: Dict, key: string): string => {
   const v = key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], d);
@@ -68,20 +73,19 @@ const get = (d: Dict, key: string): string => {
 };
 const esc = (s: string) => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const fill = (s: string, params: Record<string, string | number> = {}) => s.replace(/{{\s*(\w+)\s*}}/g, (_, k: string) => String(params[k] ?? ''));
-/** Text in both languages. */
-const t = (key: string, params?: Record<string, string | number>) =>
-  `<span data-l="en">${esc(fill(get(en, key), params))}</span><span data-l="ro">${esc(fill(get(ro, key), params))}</span>`;
-/** Headline words, numbered for the staggered entrance; `n` continues the count. */
-function words(key: string, start: number, cls = '') {
-  const out = (d: Dict, lang: string) =>
-    `<span data-l="${lang}">${get(d, key)
-      .split(' ')
-      .filter(Boolean)
-      .map((w, i) => `<span class="w${cls}" style="--i:${start + i}">${esc(w)}</span>`)
-      .join(' ')}</span>`;
-  return `${out(en, 'en')}${out(ro, 'ro')}`;
+const D = () => (L === 'en' ? en : ro);
+/** Text in the page's language. */
+const t = (key: string, params?: Record<string, string | number>) => esc(fill(get(D(), key), params));
+/** Headline words, numbered for the staggered entrance; `start` continues the count. */
+function words(key: string, start: number) {
+  return get(D(), key)
+    .split(' ')
+    .filter(Boolean)
+    .map((w, i) => `<span class="w" style="--i:${start + i}">${esc(w)}</span>`)
+    .join(' ');
 }
-const count = (key: string) => Math.max(get(en, key).split(' ').filter(Boolean).length, get(ro, key).split(' ').filter(Boolean).length);
+const count = (key: string) => get(D(), key).split(' ').filter(Boolean).length;
+const FAQ = ['what', 'cost', 'tracks', 'ranks', 'level', 'launch', 'signup'] as const;
 
 // Strings the script writes (errors) or sets as attributes.
 const DICT_KEYS = ['validation.required', 'validation.tooLong', 'validation.email', 'validation.phone', 'validation.consent', 'errors.generic', 'errors.network', 'seo.title', 'seo.description', 'settings.themeLight', 'settings.themeDark'];
@@ -97,8 +101,6 @@ const icon = {
 };
 
 // ── Page ────────────────────────────────────────────────────────────────────
-const h1 = count('join.headline1');
-const h2 = count('join.headline2');
 const streaks = [
   ['14%', '38%', '0s'], ['31%', '24%', '.55s'], ['52%', '44%', '1.1s'], ['68%', '28%', '.3s'],
   ['22%', '30%', '1.4s'], ['83%', '36%', '.85s'], ['43%', '20%', '1.6s'],
@@ -114,7 +116,7 @@ const field = (name: string, labelKey: string, attrs: string) => `
             <p class="err" data-err="${name}" hidden></p>
           </div>`;
 
-const body = `
+const renderBody = () => `
 <header class="nav">
   <div class="nav-in">
     <a class="logo" href="/" aria-label="${esc(brand.name)}">
@@ -122,7 +124,7 @@ const body = `
       <span class="speed" aria-hidden="true"></span>
     </a>
     <nav class="links">
-      <button class="link label" id="lang-toggle" type="button"><span data-l="ro">EN</span><span data-l="en">RO</span></button>
+      <a class="link label" id="lang-toggle" href="${PAGE[L === 'ro' ? 'en' : 'ro']}" hreflang="${L === 'ro' ? 'en' : 'ro'}" data-lang="${L === 'ro' ? 'en' : 'ro'}" aria-label="${L === 'ro' ? 'English' : 'Română'}">${L === 'ro' ? 'EN' : 'RO'}</a>
       <button class="link" id="theme-toggle" type="button">${icon.sun}${icon.moon}</button>
       <a class="link label home" href="/welcome" data-home>${t('web.home')}</a>
       <button class="nav-cta" type="button" data-to-form>${t('web.join')}</button>
@@ -143,7 +145,7 @@ const body = `
     <div class="wrap">
       <p class="slogan fx" style="--i:0">${esc(brand.slogan.toUpperCase())}</p>
       <div class="badges fx" style="--i:1"><span class="badge cap">${t('join.badge')}</span><span class="cap muted">${t('join.badgeNote')}</span></div>
-      <h1 class="hl">${words('join.headline1', 0)}<br />${words('join.headline2', h1)} <span class="acc">${words('join.headlineAccent', h1 + h2)}</span></h1>
+      <h1 class="hl">${words('join.headline1', 0)}<br />${words('join.headline2', count('join.headline1'))} <span class="acc">${words('join.headlineAccent', count('join.headline1') + count('join.headline2'))}</span></h1>
       <p class="lead fx" style="--i:2">${t('join.body')}</p>
       <p class="tag fx" style="--i:3">${t('join.tagline')}</p>
       <div class="cta-row"><button class="btn cta" type="button" data-to-form><span class="lb">${t('join.cta')}</span></button></div>
@@ -247,6 +249,18 @@ const body = `
     </div>
   </section>
 
+  <section class="section" id="faq">
+    <div class="wrap">
+      <div class="rv">
+        <p class="cap acc-text">${t('join.faq.kicker')}</p>
+        <h2 class="display">${t('join.faq.title')}</h2>
+      </div>
+      <div class="faq">
+        ${FAQ.map((k) => `<details class="rv"><summary><h3>${t(`join.faq.${k}.q`)}</h3></summary><p class="muted">${t(`join.faq.${k}.a`)}</p></details>`).join('\n        ')}
+      </div>
+    </div>
+  </section>
+
   <section class="section">
     <div class="wrap">
       <p class="disclaimer"><strong>${t('join.disclaimerLabel')}</strong> ${t('join.disclaimer')}</p>
@@ -263,14 +277,14 @@ const body = `
 </main>
 
 <div class="cookie" id="cookie" hidden>
-  <div class="cookie-card" aria-label="${esc(get(en, 'cookies.title'))}">
+  <div class="cookie-card" aria-label="${t('cookies.title')}">
     <div class="cookie-body">
       <h2 class="heading only-simple">${t('cookies.title')}</h2>
       <h2 class="heading only-detailed">${t('cookies.settingsTitle')}</h2>
       <p class="small muted">${t('cookies.intro')} <a class="acc-text" href="/legal/privacy">${t('cookies.privacyLink')}</a></p>
       <div class="cat only-detailed"><div class="cat-head"><strong>${t('cookies.necessary.title')}</strong><span class="cap muted" style="letter-spacing:0;text-transform:none;font-weight:400">${t('cookies.alwaysOn')}</span></div>
         <p class="small muted">${t('cookies.necessary.body')}</p><p class="cap muted" style="letter-spacing:0;text-transform:none;font-weight:400">${t('cookies.necessary.items')}</p></div>
-      <div class="cat only-detailed"><div class="cat-head"><strong>${t('cookies.analytics.title')}</strong><input class="switch" type="checkbox" id="cookie-analytics" aria-label="${esc(get(en, 'cookies.analytics.title'))}" /></div>
+      <div class="cat only-detailed"><div class="cat-head"><strong>${t('cookies.analytics.title')}</strong><input class="switch" type="checkbox" id="cookie-analytics" aria-label="${t('cookies.analytics.title')}" /></div>
         <p class="small muted">${t('cookies.analytics.body')}</p><p class="cap muted" style="letter-spacing:0;text-transform:none;font-weight:400">${t('cookies.analytics.items')}</p></div>
       <div class="cat only-detailed"><div class="cat-head"><strong>${t('cookies.marketing.title')}</strong><span class="cap muted" style="letter-spacing:0;text-transform:none;font-weight:400">${t('cookies.notUsed')}</span></div>
         <p class="small muted">${t('cookies.marketing.body')}</p></div>
@@ -290,6 +304,40 @@ const headInner = appHead
   .replace(/<style id="expo-reset">[\s\S]*?<\/style>/, '')
   .replace(/<style id="ks-shell-css">[\s\S]*?<\/style>/, '')
   .trim();
+const siteUrl = brand.siteUrl.replace(/\/$/, '');
+const attr = (s: string) => s.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
+
+/** The brand / SEO tags, in the page's language, with links between the two languages. */
+function headFor(lang: Lang): string {
+  const d = lang === 'en' ? en : ro;
+  const url = `${siteUrl}${PAGE[lang]}`;
+  const title = attr(get(d, 'seo.title'));
+  const description = attr(get(d, 'seo.description'));
+  // Link previews: the Romanian page keeps the launch-event wording from config/brand.ts.
+  const shareTitle = lang === 'ro' ? attr(brand.seo.shareTitle) : title;
+  const shareDescription = lang === 'ro' ? attr(brand.seo.shareDescription) : description;
+  const faq = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    inLanguage: lang,
+    mainEntity: FAQ.map((k) => ({ '@type': 'Question', name: get(d, `join.faq.${k}.q`), acceptedAnswer: { '@type': 'Answer', text: get(d, `join.faq.${k}.a`) } })),
+  };
+  return headInner
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`)
+    .replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${url}" />
+    <link rel="alternate" hreflang="ro" href="${siteUrl}${PAGE.ro}" />
+    <link rel="alternate" hreflang="en" href="${siteUrl}${PAGE.en}" />
+    <link rel="alternate" hreflang="x-default" href="${siteUrl}${PAGE.ro}" />
+    <meta name="description" content="${description}" />`)
+    .replace(/<meta property="og:locale" content="[^"]*" \/>/, `<meta property="og:locale" content="${lang === 'en' ? 'en_US' : 'ro_RO'}" />`)
+    .replace(/<meta property="og:locale:alternate" content="[^"]*" \/>/, `<meta property="og:locale:alternate" content="${lang === 'en' ? 'ro_RO' : 'en_US'}" />`)
+    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${url}" />`)
+    .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${shareTitle}" />`)
+    .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${shareDescription}" />`)
+    .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${shareTitle}" />`)
+    .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${shareDescription}" />`)
+    .concat(`\n    <script type="application/ld+json">${JSON.stringify(faq).replaceAll('<', '\\u003c')}</script>`);
+}
 
 // Scripts that load after the page (fingerprinted names, cached forever by the host).
 mkdirSync(join(dist, 'site'), { recursive: true });
@@ -313,18 +361,21 @@ const config = {
   dict,
 };
 
-// Before the first paint: the visitor's language and theme (same choice as the app), and motion
-// only when the visitor allows it.
+// Before the first paint: the visitor's theme (same choice as the app) and motion only when allowed.
+// The address decides the language; someone who chose the other language before (here or in the
+// app) is sent to that page. Search engines have no saved choice, so they always get the address's language.
 const boot = `(function(){var d=document.documentElement,p={};try{p=JSON.parse(localStorage.getItem('kartup-preferences')||'{}').state||{}}catch(e){}
-var l=p.locale||(((navigator.languages&&navigator.languages[0])||navigator.language||'en').slice(0,2).toLowerCase()==='ro'?'ro':'en');
+if(p.locale&&p.locale!==d.lang&&(p.locale==='en'||p.locale==='ro')){location.replace((p.locale==='en'?'/en/':'/')+location.search+location.hash);return;}
 var t=p.theme||'light';if(t==='system')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
-d.lang=l;d.dataset.theme=t;if(!matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('ks-motion');})();`;
+d.dataset.theme=t;if(!matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('ks-motion');})();`;
 
-const html = `<!DOCTYPE html>
+const renderPage = (lang: Lang) => {
+  L = lang;
+  return `<!DOCTYPE html>
 <!-- GENERATED by scripts/build-site.ts — do not edit by hand (edit site/ and the app's texts). -->
-<html lang="en" data-theme="light">
+<html lang="${lang}" data-theme="light">
   <head>
-    ${headInner}
+    ${headFor(lang)}
     <script>${boot}</script>
     <style>${readFileSync(join(site, 'landing.css'), 'utf8')}</style>
     <script src="${gsapSrc}" defer></script>
@@ -332,20 +383,45 @@ const html = `<!DOCTYPE html>
     <script src="${lenisSrc}" defer></script>
     <script src="${motionSrc}" defer></script>
   </head>
-  <body>${body}
+  <body>${renderBody()}
     <script>window.KS=${JSON.stringify(config).replaceAll('<', '\\u003c')};</script>
     <script>${readFileSync(join(site, 'validate.js'), 'utf8')}</script>
     <script>${readFileSync(join(site, 'landing.js'), 'utf8')}</script>
   </body>
 </html>
 `;
+};
 
 // The app moves to app.html (every other address); the waitlist page is / and /join.
 if (existsSync(join(dist, 'index.html')) && !readFileSync(join(dist, 'index.html'), 'utf8').includes('GENERATED by scripts/build-site.ts')) {
   renameSync(join(dist, 'index.html'), join(dist, 'app.html'));
 }
+const html = renderPage('ro');
 writeFileSync(join(dist, 'index.html'), html);
-writeFileSync(join(dist, 'join.html'), html);
+writeFileSync(join(dist, 'join.html'), html); // old address: same page, canonical points to /
+mkdirSync(join(dist, 'en'), { recursive: true });
+writeFileSync(join(dist, 'en', 'index.html'), renderPage('en'));
+
+// For AI assistants (llms.txt, a proposed standard): a short, factual summary in plain text.
+L = 'en';
+writeFileSync(
+  join(dist, 'llms.txt'),
+  `# ${brand.name}
+
+> ${get(en, 'seo.description')}
+
+${brand.name} — ${brand.slogan} ${get(en, 'join.faq.what.a')}
+
+## Facts
+${FAQ.map((k) => `- **${get(en, `join.faq.${k}.q`)}** ${get(en, `join.faq.${k}.a`)}`).join('\n')}
+
+## Pages
+- [${brand.name} (Romanian)](${siteUrl}/): the waitlist for the launch event, how it works, ranks, FAQ
+- [${brand.name} (English)](${siteUrl}/en/): the same in English
+- [Privacy policy](${siteUrl}/legal/privacy)
+- [Terms of service](${siteUrl}/legal/terms)
+`,
+);
 
 // Addresses of the app (everything except / and /join) → app.html. Listed explicitly so it works
 // the same on Netlify and Cloudflare Pages (static files always win; these paths have none).

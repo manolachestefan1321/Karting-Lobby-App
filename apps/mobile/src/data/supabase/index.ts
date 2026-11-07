@@ -210,7 +210,7 @@ export const supabaseApi: DataApi = {
   admin: { ...adminSessionsApi, reviewSelfReport: notImplemented, finance: notImplemented, cashout: notImplemented },
   notifications: notificationsApi,
   moderation: moderationApi,
-  realtime: { subscribe: (_topic, cb) => subscribeLive(cb) },
+  realtime: { subscribe: (topic, cb) => subscribeLive(topic, cb) },
   location: { current: notImplemented },
   launch: {
     signup: async ({ firstName, lastName, phone, email, locale }) => {

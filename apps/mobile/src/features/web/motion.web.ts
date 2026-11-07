@@ -3,6 +3,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import type { ScrollView } from 'react-native';
+import { shellWasShown } from './shell';
 
 // Registered once, when the website code loads.
 gsap.registerPlugin(ScrollTrigger);
@@ -53,7 +54,9 @@ export function useSiteMotion(scroll: RefObject<ScrollView | null>) {
         const st = { scroller: node };
 
         // Hero: short and fast, finished in well under a second. The form button is never animated.
-        gsap
+        // If the instant first view was showing, the text is already there: no entrance.
+        if (shellWasShown()) gsap.set(q('[id^="hw-"], [id^="hero-"]'), { y: 0, opacity: 1 });
+        else gsap
           .timeline({ defaults: { ease: 'power4.out' } })
           .to(q('[id^="hw-"]'), { y: 0, opacity: 1, duration: 0.5, stagger: 0.045 })
           .to(q('[id^="hero-"]'), { y: 0, opacity: 1, duration: 0.4, stagger: 0.05 }, 0.12);

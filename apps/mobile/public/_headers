@@ -1,0 +1,10 @@
+# Caching for the website (read by Netlify and Cloudflare Pages; other hosts: set the same rules).
+# Files under these folders have a fingerprint in their name, so browsers can keep them forever.
+# Without this, phones download the fonts and the app code again on every visit.
+/_expo/*
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+# index.html itself is left to the host's default (always re-checked), so updates show up at once.

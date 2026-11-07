@@ -26,8 +26,12 @@ describe('build profiles', () => {
     expect(() => loadConfig({ EAS_BUILD_PROFILE: 'preview', APP_VARIANT: 'preview', EXPO_PUBLIC_DATA_SOURCE: 'mock' })).toThrow(/real backend/);
   });
 
-  it('allows production with the real backend, and the demo profile with demo data', () => {
-    expect(loadConfig({ EAS_BUILD_PROFILE: 'production', APP_VARIANT: 'production', EXPO_PUBLIC_DATA_SOURCE: 'supabase' }).ios?.bundleIdentifier).toBe('com.kartup.app');
+  it('allows production with the real backend (once brand.ts has real contact details), and the demo profile with demo data', () => {
+    const production = () => loadConfig({ EAS_BUILD_PROFILE: 'production', APP_VARIANT: 'production', EXPO_PUBLIC_DATA_SOURCE: 'supabase' });
+    const { brand } = require('../../../../config/brand') as { brand: { supportEmail: string; legalEntity: string; legalAddress: string } }; // eslint-disable-line @typescript-eslint/no-require-imports
+    if ([brand.supportEmail, brand.legalEntity, brand.legalAddress].some((v) => /placeholder|example/i.test(v))) expect(production).toThrow(/placeholder/);
+    else expect(production().ios?.bundleIdentifier).toBe('com.kartup.app');
+    expect(loadConfig({ EAS_BUILD_PROFILE: 'preview', APP_VARIANT: 'preview', EXPO_PUBLIC_DATA_SOURCE: 'supabase' }).ios?.bundleIdentifier).toBe('com.kartup.app.preview');
     const demo = loadConfig({ EAS_BUILD_PROFILE: 'demo', APP_VARIANT: 'demo', EXPO_PUBLIC_DATA_SOURCE: 'mock' });
     expect(demo.ios?.bundleIdentifier).toBe('com.kartup.app.demo');
     expect(demo.name).toBe('KartUP Demo');

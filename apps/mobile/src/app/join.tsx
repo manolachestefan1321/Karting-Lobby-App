@@ -1,7 +1,7 @@
 import { launchSignupSchema } from '@kartup/domain';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useLayoutEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import { SiteStyles, SpeedLines, TrackLine } from '@/features/web/site/SiteDecor
 import { openCookieSettings } from '@/features/web/consent';
 import { usePageMeta } from '@/features/web/seo';
 import { useSiteMotion } from '@/features/web/motion';
+import { removeInstantShell } from '@/features/web/shell';
 import { errorKey } from '@/lib/errors';
 import { zodResolver } from '@/lib/zodResolver';
 import { usePreferences } from '@/store/preferences';
@@ -58,6 +59,8 @@ export default function JoinTheRace() {
   const locale = usePreferences((s) => s.locale) ?? 'ro';
   const scroll = useRef<ScrollView>(null);
   const formY = useRef(0);
+  // The real page is on screen: swap out the instant first view (before the animations start).
+  useLayoutEffect(removeInstantShell, []);
   const scrollTo = useSiteMotion(scroll);
   const goToApp = useGoToApp();
   usePageMeta(t('seo.title'), t('seo.description'));

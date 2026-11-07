@@ -3,7 +3,7 @@
  * preview's debug panel, so the demo can be driven on a real iPhone/Android phone.
  * Opened from Settings → Developer menu, or the "Demo version" badge on the welcome screen.
  */
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useReducer, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';

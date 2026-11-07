@@ -3,7 +3,8 @@
  *   1. Placeholder logo images (app icon, Android adaptive icon, splash, favicon)
  *   2. Supabase auth email templates (supabase/templates/*.html)
  *   3. Legal texts bundled in the app (apps/mobile/src/generated/legal.ts)
- *   4. The website's page for Google and link previews, robots.txt and sitemap.xml (apps/mobile/public)
+ *   4. The website's page for Google and link previews, robots.txt and sitemap.xml (apps/mobile/public),
+ *      including the instant first view of the waitlist page (shown while the app's code downloads)
  *
  * Run: npm run brand:sync   (also runs automatically before `npm run web`)
  * When the real logo exists, put the files in apps/mobile/assets/images and run
@@ -15,6 +16,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { brand } from '../config/brand.ts';
 import { renderEmail } from '../config/email-templates.ts';
+import en from '../apps/mobile/src/i18n/en.ts';
+import ro from '../apps/mobile/src/i18n/ro.ts';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fontFile = join(root, 'node_modules/@expo-google-fonts/barlow-condensed/900Black_Italic/BarlowCondensed_900Black_Italic.ttf');
@@ -141,6 +144,75 @@ const jsonLd = JSON.stringify([
   { '@context': 'https://schema.org', '@type': 'WebSite', name: brand.name, url: `${site}/`, inLanguage: ['ro', 'en'] },
 ]).replaceAll('<', '\\u003c');
 const publicDir = join(root, 'apps/mobile/public');
+
+// ── Instant first view of the waitlist page ─────────────────────────────────────
+// Plain HTML + CSS painted straight away, while the app's JavaScript downloads (seconds on a
+// slow phone connection). Same texts, colours and sizes as the real hero (src/app/join.tsx), so
+// the switch is invisible; the app removes it the moment the real page is on screen.
+// Only on / and /join. Language and theme follow the visitor's saved choice, like the app.
+mkdirSync(join(publicDir, 'fonts'), { recursive: true });
+writeFileSync(
+  join(publicDir, 'fonts', 'barlow-condensed-900-italic.ttf'),
+  readFileSync(join(root, 'node_modules/@expo-google-fonts/barlow-condensed/900Black_Italic/BarlowCondensed_900Black_Italic.ttf')),
+);
+const hero = (lang: 'en' | 'ro') => {
+  const j = (lang === 'en' ? en : ro).join;
+  return `<div class="ks-wrap ks-l-${lang}">
+        <p class="ks-slogan">${esc(brand.slogan.toUpperCase())}</p>
+        <div class="ks-badges"><span class="ks-badge">${esc(j.badge)}</span><span class="ks-note">${esc(j.badgeNote)}</span></div>
+        <h1 class="ks-h1">${esc(j.headline1)}<br />${esc(j.headline2)}<span class="ks-acc">${esc(j.headlineAccent)}</span></h1>
+        <p class="ks-lead">${esc(j.body)}</p>
+        <p class="ks-tag">${esc(j.tagline)}</p>
+        <span class="ks-cta">${esc(j.cta)}</span>
+      </div>`;
+};
+const shellCss = `
+    @font-face { font-family: KartUPShell; src: url(/fonts/barlow-condensed-900-italic.ttf) format('truetype'); font-display: block; }
+    #ks-shell { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: var(--bg); color: var(--tx);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    #ks-shell[hidden] { display: none; }
+    #ks-shell.ks-light { --bg: #E2DAC2; --tx: #181818; --mu: #45403A; --ac: #EC4624; --on: #FFFFFF; }
+    #ks-shell.ks-dark { --bg: #222A2A; --tx: #E2DAC2; --mu: #B4AE9E; --ac: #F39120; --on: #222A2A; }
+    #ks-shell .ks-l-en, #ks-shell .ks-l-ro { display: none; }
+    #ks-shell.ks-en .ks-l-en, #ks-shell.ks-ro .ks-l-ro { display: flex; }
+    .ks-nav { height: 62px; padding: 0 16px; display: flex; align-items: center; font: italic 900 26px/1 KartUPShell, 'Arial Narrow', sans-serif; }
+    .ks-nav b { color: var(--ac); font-weight: 900; }
+    .ks-stripe { height: 12px; background: repeating-conic-gradient(var(--tx) 0 25%, var(--bg) 0 50%) 0 0 / 12px 12px; }
+    .ks-wrap { flex-direction: column; gap: 16px; max-width: 1160px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
+    .ks-slogan, .ks-h1, .ks-tag { margin: 0; font-family: KartUPShell, 'Arial Narrow', sans-serif; font-style: italic; font-weight: 900; }
+    .ks-slogan { color: var(--ac); font-size: 22px; line-height: 1.02; }
+    .ks-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .ks-badge, .ks-note { font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    .ks-badge { color: var(--ac); border: 1px solid var(--ac); border-radius: 4px; padding: 4px 8px; }
+    .ks-note { color: var(--mu); }
+    .ks-h1 { font-size: 52px; line-height: 1.02; }
+    .ks-acc { color: var(--ac); }
+    .ks-lead { margin: 0; max-width: 600px; font-size: 18px; line-height: 28px; }
+    .ks-tag { font-size: 22px; line-height: 1.02; }
+    .ks-cta { align-self: flex-start; background: var(--ac); color: var(--on); border-radius: 10px; padding: 16px 20px;
+      font: 700 16px/20px 'Arial Narrow', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+    @media (min-width: 900px) { .ks-slogan { font-size: 28px; } .ks-h1 { font-size: 96px; } .ks-tag { font-size: 26px; } }`;
+const shellHtml = `<div id="ks-shell" hidden aria-hidden="true">
+      <div class="ks-nav">Kart<b>UP</b></div>
+      <div class="ks-stripe"></div>
+      ${hero('en')}
+      ${hero('ro')}
+    </div>
+    <script>
+      (function () {
+        var shell = document.getElementById('ks-shell');
+        var path = location.pathname.replace(/\\/$/, '') || '/';
+        if (path !== '/' && path !== '/join') { shell.remove(); return; }
+        var prefs = {};
+        try { prefs = JSON.parse(localStorage.getItem('kartup-preferences') || '{}').state || {}; } catch (e) {}
+        var lang = prefs.locale || ((navigator.language || 'en').slice(0, 2).toLowerCase() === 'ro' ? 'ro' : 'en');
+        var theme = prefs.theme || 'light';
+        if (theme === 'system') theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        shell.className = 'ks-' + theme + ' ks-' + lang;
+        shell.hidden = false;
+      })();
+    </script>`;
+
 write(
   join(publicDir, 'index.html'),
   `<!DOCTYPE html>
@@ -174,10 +246,13 @@ write(
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <script type="application/ld+json">${jsonLd}</script>
     <!-- The react-native-web style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <link rel="preload" href="/fonts/barlow-condensed-900-italic.ttf" as="font" type="font/ttf" crossorigin />
     <style id="expo-reset">
-      html, body { height: 100%; }
+      html, body { height: 100%; margin: 0; }
       body { overflow: hidden; }
       #root { display: flex; height: 100%; flex: 1; }
+    </style>
+    <style id="ks-shell-css">${shellCss}
     </style>
   </head>
   <body>
@@ -187,6 +262,7 @@ write(
       <p>Activează JavaScript ca să folosești ${esc(brand.name)}. · Enable JavaScript to use ${esc(brand.name)}.</p>
     </noscript>
     <div id="root"></div>
+    ${shellHtml}
   </body>
 </html>
 `,

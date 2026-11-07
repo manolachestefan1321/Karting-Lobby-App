@@ -288,7 +288,6 @@ export const moderationApi = {
 };
 
 // ── Live updates: any change to sessions or lobby members refreshes what's on screen ──
-const listeners = new Set<() => void>();
 let channel: ReturnType<typeof supabase.channel> | null = null;
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -323,7 +322,7 @@ export const notificationsApi = {
   /** Fires for each new notification while the app is open (banners, rank-up celebration). */
   onNew(cb: (n: AppNotification) => void): () => void {
     newListeners.add(cb);
-    const stop = subscribeLive(() => undefined);
+    const stop = subscribeLive('notifications', () => undefined);
     return () => {
       newListeners.delete(cb);
       stop();
@@ -331,28 +330,112 @@ export const notificationsApi = {
   },
 };
 
-export function subscribeLive(cb: () => void): () => void {
-  listeners.add(cb);
-  if (!channel) {
-    const fire = () => listeners.forEach((l) => l());
-    channel = supabase
-      .channel('kartup-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, fire)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_members' }, fire)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fire)
-      // Row-level security: each user only receives their own notifications.
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
-        fire();
-        const n = toNotification(payload.new as Row);
-        newListeners.forEach((l) => l(n));
-      })
-      .subscribe();
+/**
+ * Live updates, built to stay light with hundreds of people online at once:
+ *  - each change only refreshes the screens it concerns (its topic), not everything;
+ *  - refreshes are grouped (several changes in a moment = one refresh), and the shared
+ *    session list waits a small random delay so 500 phones don't hit the database together;
+ *  - chat messages are only received for the sessions you have open (filtered on the server);
+ *  - notifications are only received for yourself (filtered on the server).
+ * One connection per phone; channels are opened only while a screen needs them.
+ */
+const topicListeners = new Map<string, Set<() => void>>();
+const pendingTopics = new Map<string, ReturnType<typeof setTimeout>>();
+let liveUserId: string | null = null;
+const sessionChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+let authWatch: { unsubscribe: () => void } | null = null;
+
+function emit(topic: string, spreadMs = 0) {
+  if (!topicListeners.get(topic)?.size || pendingTopics.has(topic)) return;
+  const delay = 250 + Math.round(Math.random() * spreadMs);
+  pendingTopics.set(
+    topic,
+    setTimeout(() => {
+      pendingTopics.delete(topic);
+      topicListeners.get(topic)?.forEach((l) => l());
+    }, delay),
+  );
+}
+
+function openBaseChannel(userId: string) {
+  const onSession = (sessionId?: string) => {
+    emit('sessions', 1500);
+    if (sessionId) emit(`session:${sessionId}`);
+  };
+  channel = supabase
+    .channel(`kartup-live-${userId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, (p) => onSession(((p.new as Row)?.id ?? (p.old as Row)?.id) as string))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'session_members' }, (p) => {
+      const row = ((p.new as Row) ?? (p.old as Row)) || {};
+      onSession(row.session_id);
+      if (row.user_id === userId) emit('me');
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (payload) => {
+      const n = toNotification(payload.new as Row);
+      emit('notifications');
+      // Results posted / disputed / final for a session: refresh that session's screens too.
+      if (typeof n.data.sessionId === 'string') emit(`session:${n.data.sessionId}`);
+      if (n.type === 'results_confirmed' || n.type === 'rank_up') {
+        emit('leaderboard', 1500);
+        emit(`profile:${userId}`);
+        emit('me');
+      }
+      newListeners.forEach((l) => l(n));
+    })
+    .subscribe();
+}
+
+function closeBaseChannel() {
+  if (channel) void supabase.removeChannel(channel);
+  channel = null;
+}
+
+async function ensureBaseChannel() {
+  const { data } = await supabase.auth.getSession();
+  const userId = data.session?.user.id ?? null;
+  if (userId === liveUserId && (channel || !userId)) return;
+  closeBaseChannel();
+  liveUserId = userId;
+  if (userId && topicListeners.size) openBaseChannel(userId);
+}
+
+/** Chat messages of one session, only while that session is on screen. */
+function syncSessionChannel(topic: string) {
+  if (!topic.startsWith('session:')) return;
+  const id = topic.slice('session:'.length);
+  const wanted = !!topicListeners.get(topic)?.size;
+  const open = sessionChannels.get(id);
+  if (wanted && !open) {
+    sessionChannels.set(
+      id,
+      supabase
+        .channel(`kartup-chat-${id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `session_id=eq.${id}` }, () => emit(topic))
+        .subscribe(),
+    );
+  } else if (!wanted && open) {
+    void supabase.removeChannel(open);
+    sessionChannels.delete(id);
   }
+}
+
+export function subscribeLive(topic: string, cb: () => void): () => void {
+  if (!topicListeners.has(topic)) topicListeners.set(topic, new Set());
+  topicListeners.get(topic)!.add(cb);
+  syncSessionChannel(topic);
+  void ensureBaseChannel();
+  // Signing in or out (or switching accounts) re-opens the channel for the right person.
+  authWatch ??= supabase.auth.onAuthStateChange(() => void ensureBaseChannel()).data.subscription;
   return () => {
-    listeners.delete(cb);
-    if (listeners.size === 0 && channel) {
-      void supabase.removeChannel(channel);
-      channel = null;
+    const set = topicListeners.get(topic);
+    set?.delete(cb);
+    if (set && set.size === 0) topicListeners.delete(topic);
+    syncSessionChannel(topic);
+    if (topicListeners.size === 0) {
+      closeBaseChannel();
+      liveUserId = null;
+      authWatch?.unsubscribe();
+      authWatch = null;
     }
   };
 }

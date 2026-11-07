@@ -6,7 +6,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/barlow-condensed';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { brand } from '@config/brand';
 import { AnimatedSplash } from '@/components/brand/AnimatedSplash';
+import { removeInstantShell } from '@/features/web/shell';
 import { DialogHost, ErrorState, Screen } from '@/components/ui';
 import { api } from '@/data';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
@@ -66,6 +67,13 @@ function RootNavigator() {
   const signedIn = !!user;
   const onboarded = !!profile?.onboardedAt;
   const ready = !initializing && !profileLoading;
+  const pathname = usePathname();
+
+  // The website's instant first view (public/index.html) is removed by the waitlist page itself;
+  // anywhere else (e.g. a signed-in visitor sent from / to the app) it goes once the app is ready.
+  useEffect(() => {
+    if (ready && pathname !== '/' && pathname !== '/join') removeInstantShell();
+  }, [ready, pathname]);
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync().catch(() => undefined);
@@ -146,9 +154,46 @@ function RootNavigator() {
   );
 }
 
+const FONTS = { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold, BarlowCondensed_900Black_Italic };
+
+/**
+ * Web: useFonts can report "loaded" a moment before the browser can actually draw the font, so
+ * the first paint used a fallback font and the text jumped when Barlow arrived (worst on slow
+ * phone connections). Wait until the browser confirms each font is usable. The website's
+ * instant first view stays on screen meanwhile, so nobody looks at a blank page.
+ */
+function useWebFontsUsable(loaded: boolean): boolean {
+  const [usable, setUsable] = useState(Platform.OS !== 'web');
+  useEffect(() => {
+    if (!loaded || usable) return;
+    if (!document.fonts) return setUsable(true);
+    const names = Object.keys(FONTS);
+    const families = names.map((f) => `16px "${f}"`);
+    // check() is also true when the font isn't on the page yet, so first wait for it to be there.
+    const registered = () => names.every((f) => [...document.fonts].some((face) => face.family.replace(/["']/g, '') === f));
+    const started = Date.now();
+    // expo-font adds the fonts to the page a moment after useFonts resolves, and the browser
+    // only downloads a font once asked: keep asking until every one can actually be drawn.
+    const id = setInterval(() => {
+      const pending = registered() ? families.filter((f) => !document.fonts.check(f)) : families;
+      pending.forEach((f) => void document.fonts.load(f).catch(() => undefined));
+      if (!pending.length || Date.now() - started > 3000) {
+        clearInterval(id);
+        setUsable(true);
+      }
+    }, 40);
+    return () => clearInterval(id);
+  }, [loaded, usable]);
+  return loaded && usable;
+}
+
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold, BarlowCondensed_900Black_Italic });
+  const [fontsReady] = useFonts(FONTS);
+  const fontsLoaded = useWebFontsUsable(fontsReady);
   const prefsReady = usePreferencesReady();
+  useEffect(() => {
+    if (SHOW_PREVIEW_HOST) removeInstantShell(); // the demo's preview page is not the website
+  }, []);
   if (SHOW_PREVIEW_HOST) return <PreviewHost />;
   if (!fontsLoaded || !prefsReady) return null;
 

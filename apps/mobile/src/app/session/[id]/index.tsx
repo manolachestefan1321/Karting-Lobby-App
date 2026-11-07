@@ -1,6 +1,6 @@
 import { checkinWindow, hostPayoutMinor, isLateLeave, participantCancellation, refundDeadline } from '@kartup/domain';
 import { PENALTIES } from '@config/progression';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';

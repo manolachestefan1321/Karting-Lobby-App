@@ -4,8 +4,15 @@
   "installCommand": "npm install",
   "buildCommand": "npm run site:build",
   "outputDirectory": "apps/mobile/dist",
-  "cleanUrls": true,
   "rewrites": [
+    {
+      "source": "/join",
+      "destination": "/join.html"
+    },
+    {
+      "source": "/en",
+      "destination": "/en/index.html"
+    },
     {
       "source": "/welcome",
       "destination": "/app.html"

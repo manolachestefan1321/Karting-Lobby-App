@@ -3,6 +3,8 @@ import type { Translations } from './en';
 // Brand name and slogan are NOT translated (brand rule) — they come from config/brand.ts.
 const ro: Translations = {
   common: {
+    showPassword: 'Arată parola',
+    hidePassword: 'Ascunde parola',
     continue: 'Continuă',
     save: 'Salvează',
     cancel: 'Anulează',

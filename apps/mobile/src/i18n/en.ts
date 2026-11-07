@@ -2,6 +2,8 @@
 // from config/brand.ts and are never translated.
 const en = {
   common: {
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     continue: 'Continue',
     save: 'Save',
     cancel: 'Cancel',

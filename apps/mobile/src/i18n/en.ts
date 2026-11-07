@@ -539,7 +539,9 @@ const en = {
     demoNote: 'Demo: amounts come from the demo sessions and no real money moves. In the real app this comes from your Stripe account.',
   },
   web: {
-    home: 'HOME',
+    login: 'LOG IN',
+    signup: 'SIGN UP',
+    openApp: 'OPEN THE APP',
     join: 'JOIN THE RACE',
   },
   join: {

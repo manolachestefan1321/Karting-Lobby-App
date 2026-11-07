@@ -119,14 +119,18 @@ const field = (name: string, labelKey: string, attrs: string) => `
 const renderBody = () => `
 <header class="nav">
   <div class="nav-in">
-    <a class="logo" href="/" aria-label="${esc(brand.name)}">
-      <span class="row"><span class="wd">${esc(brand.wordmark.lead)}<span class="acc">${esc(brand.wordmark.accent)}</span></span><span class="flag" aria-hidden="true">${'<i></i>'.repeat(12)}</span></span>
-      <span class="speed" aria-hidden="true"></span>
-    </a>
+    <div class="nav-left">
+      <a class="logo" href="/" aria-label="${esc(brand.name)}">
+        <span class="row"><span class="wd">${esc(brand.wordmark.lead)}<span class="acc">${esc(brand.wordmark.accent)}</span></span><span class="flag" aria-hidden="true">${'<i></i>'.repeat(12)}</span></span>
+        <span class="speed" aria-hidden="true"></span>
+      </a>
+      <!-- Top left: log in / sign up; landing.js swaps them for "Open the app" when already signed in. -->
+      <span class="auth" data-auth="out"><a class="link label strong" href="/sign-in">${t('web.login')}</a><a class="nav-btn label" href="/sign-up">${t('web.signup')}</a></span>
+      <a class="nav-btn label" href="/sessions" data-auth="in" hidden>${t('web.openApp')}</a>
+    </div>
     <nav class="links">
       <a class="link label" id="lang-toggle" href="${PAGE[L === 'ro' ? 'en' : 'ro']}" hreflang="${L === 'ro' ? 'en' : 'ro'}" data-lang="${L === 'ro' ? 'en' : 'ro'}" aria-label="${L === 'ro' ? 'English' : 'Română'}">${L === 'ro' ? 'EN' : 'RO'}</a>
       <button class="link" id="theme-toggle" type="button">${icon.sun}${icon.moon}</button>
-      <a class="link label home" href="/welcome" data-home>${t('web.home')}</a>
       <button class="nav-cta" type="button" data-to-form>${t('web.join')}</button>
     </nav>
   </div>
@@ -269,7 +273,6 @@ const renderBody = () => `
         <nav>
           <a href="/legal/privacy">${t('cookies.privacyLink')}</a>
           <button type="button" data-cookie-settings>${t('cookies.settingsLink')}</button>
-          <a href="/welcome" data-home>${t('join.backHome')}</a>
         </nav>
       </div>
     </div>

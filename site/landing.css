@@ -60,8 +60,14 @@ p { margin: 0; }
 .logo .flag i:nth-child(6), .logo .flag i:nth-child(8) { background: var(--text); }
 .logo .speed { width: 42px; height: 3px; background: var(--accent); margin-top: 1px; }
 .links { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.nav-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.auth { display: inline-flex; align-items: center; gap: 4px; }
+.link.strong { color: var(--text); }
+.nav-btn { display: inline-flex; align-items: center; text-decoration: none; color: var(--text); border: 1.5px solid var(--text); border-radius: 4px; padding: 4px 8px; }
+.label { white-space: nowrap; }
+/* Phones: the hero has the big button, so the menu keeps room for the account buttons. */
+@media (max-width: 599px) { .nav-cta { display: none; } }
 .link { background: none; border: 0; padding: 4px 8px; cursor: pointer; text-decoration: none; color: var(--muted); display: inline-flex; align-items: center; }
-.link.home { color: var(--muted); }
 .link svg { width: 18px; height: 18px; }
 html[data-theme='dark'] .i-moon, html:not([data-theme='dark']) .i-sun { display: none; }
 .nav-cta { border: 0; cursor: pointer; padding: 8px 12px; border-radius: 4px; background: var(--text); color: var(--bg);
@@ -228,3 +234,13 @@ html.ks-anim .lock { opacity: 1; }
   .btn, .hc, .switch, .switch::after { transition: none; }
   .speed-lines i { animation: none !important; opacity: .12; transform: none; width: 30% !important; }
 }
+
+/* Narrow phones (under 400 px): tighter menu so the account buttons fit next to the logo. */
+@media (max-width: 399px) {
+  .nav { padding: 12px 10px; }
+  .nav-in, .nav-left, .links { gap: 4px; }
+  .link { padding: 4px; }
+  .nav-btn { padding: 4px 6px; }
+}
+/* The smallest phones (under 350 px): the light/dark button gives its place to the account buttons. */
+@media (max-width: 349px) { #theme-toggle { display: none; } }

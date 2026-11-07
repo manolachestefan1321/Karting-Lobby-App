@@ -56,12 +56,12 @@
     applyMeta();
   });
 
-  // HOME = the app: signed in → the app, otherwise sign up / sign in (as in the app's menu).
+  // Top left: "Log in / Sign up", or "Open the app" for someone already signed in on this browser.
   var signedIn = false;
   try {
     for (var i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token$/.test(localStorage.key(i) || '')) signedIn = true;
   } catch (e) { /* no storage: signed out */ }
-  $$('[data-home]').forEach(function (a) { a.setAttribute('href', signedIn ? '/sessions' : '/welcome'); });
+  document.querySelectorAll('[data-auth]').forEach(function (el) { el.hidden = el.getAttribute('data-auth') !== (signedIn ? 'in' : 'out'); });
 
   // ── Scrolling to the form (smooth with Lenis once motion.js is loaded) ────
   function toForm(e) {

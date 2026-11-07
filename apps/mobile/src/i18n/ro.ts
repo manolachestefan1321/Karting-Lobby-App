@@ -540,7 +540,9 @@ const ro: Translations = {
     demoNote: 'Demo: sumele vin din sesiunile demo și nu se mișcă bani reali. În aplicația reală datele vin din contul tău Stripe.',
   },
   web: {
-    home: 'HOME',
+    login: 'INTRĂ ÎN CONT',
+    signup: 'CONT NOU',
+    openApp: 'DESCHIDE APLICAȚIA',
     join: 'JOIN THE RACE',
   },
   join: {

@@ -37,50 +37,71 @@ export function WebNav() {
   const setLocale = usePreferences((s) => s.setLocale);
   const setTheme = usePreferences((s) => s.setTheme);
   const pathname = usePathname();
-  const goToApp = useGoToApp();
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const onJoin = pathname === '/join';
+  // Phones: the waitlist page has its own big button, so the menu keeps room for the account buttons.
+  const showJoin = width >= 600;
+  // Narrow phones (under 400 px): tighter spacing so the account buttons fit next to the logo.
+  const tight = width < 400;
+  const link = tight ? [styles.link, styles.linkTight] : styles.link;
 
   return (
     <View style={{ backgroundColor: colors.background }}>
-      <View style={styles.bar} accessibilityRole="header">
+      <View style={[styles.bar, tight && styles.barTight]} accessibilityRole="header">
         <View style={styles.inner}>
-          <Pressable onPress={() => (user ? router.navigate('/') : goToWaitlist('/'))} accessibilityRole="link" accessibilityLabel="KartUP">
-            <Wordmark size={26} slogan={false} />
-          </Pressable>
-          <View style={styles.links}>
+          <View style={[styles.left, tight && styles.gapTight]}>
+            <Pressable onPress={() => goToWaitlist('/')} accessibilityRole="link" accessibilityLabel="KartUP">
+              <Wordmark size={26} slogan={false} />
+            </Pressable>
+            {/* Top left: log in / sign up, or straight into the app when already signed in. */}
+            {user ? (
+              <Pressable onPress={() => router.navigate('/sessions')} accessibilityRole="link" style={[styles.account, { borderColor: colors.text }]}>
+                <Text variant="label">{t('web.openApp')}</Text>
+              </Pressable>
+            ) : (
+              <>
+                <Pressable onPress={() => router.navigate('/sign-in')} accessibilityRole="link" style={link}>
+                  <Text variant="label">{t('web.login')}</Text>
+                </Pressable>
+                <Pressable onPress={() => router.navigate('/sign-up')} accessibilityRole="link" style={[styles.account, { borderColor: colors.text }]}>
+                  <Text variant="label">{t('web.signup')}</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+          <View style={[styles.links, tight && styles.gapTight]}>
             {/* Visitors can't reach Settings on the website: language and light/dark live here. */}
             <Pressable
               onPress={() => setLocale(locale === 'ro' ? 'en' : 'ro')}
               accessibilityRole="button"
               accessibilityLabel={locale === 'ro' ? 'English' : 'Română'}
-              style={styles.link}
+              style={link}
             >
               <Text variant="label" tone="muted">
                 {locale === 'ro' ? 'EN' : 'RO'}
               </Text>
             </Pressable>
-            <Pressable
-              onPress={() => setTheme(scheme === 'dark' ? 'light' : 'dark')}
-              accessibilityRole="button"
-              accessibilityLabel={scheme === 'dark' ? t('settings.themeLight') : t('settings.themeDark')}
-              style={styles.link}
-            >
-              <Ionicons name={scheme === 'dark' ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textMuted} />
-            </Pressable>
-            <Pressable onPress={goToApp} accessibilityRole="link" style={styles.link}>
-              <Text variant="label" tone={onJoin ? 'muted' : 'default'}>
-                {t('web.home')}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => goToWaitlist('/join')}
-              accessibilityRole="link"
-              style={[styles.cta, { backgroundColor: onJoin ? colors.text : colors.accent }]}
-            >
-              <Text style={[styles.ctaText, { color: onJoin ? colors.background : colors.onAccent }]}>{t('web.join')}</Text>
-            </Pressable>
+            {/* The smallest phones (under 350 px): the light/dark button gives its place to the account buttons. */}
+            {width >= 350 ? (
+              <Pressable
+                onPress={() => setTheme(scheme === 'dark' ? 'light' : 'dark')}
+                accessibilityRole="button"
+                accessibilityLabel={scheme === 'dark' ? t('settings.themeLight') : t('settings.themeDark')}
+                style={link}
+              >
+                <Ionicons name={scheme === 'dark' ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+            {showJoin ? (
+              <Pressable
+                onPress={() => goToWaitlist('/join')}
+                accessibilityRole="link"
+                style={[styles.cta, { backgroundColor: onJoin ? colors.text : colors.accent }]}
+              >
+                <Text style={[styles.ctaText, { color: onJoin ? colors.background : colors.onAccent }]}>{t('web.join')}</Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       </View>
@@ -110,6 +131,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   links: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  left: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  barTight: { paddingHorizontal: 10 },
+  gapTight: { gap: 4 },
+  linkTight: { paddingHorizontal: 4 },
+  account: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderWidth: 1.5, borderRadius: 4 },
   link: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   cta: {
     paddingHorizontal: spacing.md,
